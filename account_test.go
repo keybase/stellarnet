@@ -154,7 +154,7 @@ func TestScenario(t *testing.T) {
 	}
 
 	t.Logf("alice (%s) sending 10 XLM to bob (%s)", helper.alice.Address(), helper.bob.Address())
-	if err := acctAlice.Send(helper.alice.Seed(), helper.bob.Address(), "10.0"); err != nil {
+	if _, err := acctAlice.Send(helper.alice.Seed(), helper.bob.Address(), "10.0"); err != nil {
 		herr, ok := err.(*horizon.Error)
 		if ok {
 			t.Logf("horizon problem: %+v", herr.Problem)
@@ -180,5 +180,40 @@ func TestScenario(t *testing.T) {
 	}
 	if balance != bobExpected {
 		t.Errorf("bob balance: %s, expected %s", balance, bobExpected)
+	}
+
+	if _, err := acctBob.Send(helper.bob.Seed(), helper.alice.Address(), "1.0"); err != nil {
+		t.Fatal(err)
+	}
+
+	aliceTx, err := acctAlice.RecentTransactions()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(aliceTx) != 3 {
+		t.Errorf("# alice transactions: %d, expected 3", len(aliceTx))
+	}
+	if aliceTx[0].Operations[0].Type != "payment" {
+		t.Errorf("tx 0 type: %s, expected payment", aliceTx[0].Operations[0].Type)
+	}
+	if aliceTx[1].Operations[0].Type != "create_account" {
+		t.Errorf("tx 1 type: %s, expected create_account", aliceTx[1].Operations[0].Type)
+	}
+	if aliceTx[2].Operations[0].Type != "create_account" {
+		t.Errorf("tx 2 type: %s, expected create_account", aliceTx[2].Operations[0].Type)
+	}
+
+	bobTx, err := acctBob.RecentTransactions()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(bobTx) != 2 {
+		t.Errorf("# bob transactions: %d, expected 2", len(bobTx))
+	}
+	if bobTx[0].Operations[0].Type != "payment" {
+		t.Errorf("tx 0 type: %s, expected payment", bobTx[0].Operations[0].Type)
+	}
+	if bobTx[1].Operations[0].Type != "create_account" {
+		t.Errorf("tx 1 type: %s, expected create_account", bobTx[1].Operations[0].Type)
 	}
 }

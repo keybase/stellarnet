@@ -23,50 +23,44 @@ func NewKeyPair() (*keypair.Full, error) {
 }
 
 type Account struct {
-	id           string
-	paymentsLink string
+	address  string
+	internal *horizon.Account
 }
 
-func NewAccount(id string) *Account {
-	return &Account{id: id}
+func NewAccount(address string) *Account {
+	return &Account{address: address}
 }
 
-func (a *Account) load() (*horizon.Account, error) {
-	acct, err := client.LoadAccount(a.id)
+func (a *Account) load() error {
+	internal, err := client.LoadAccount(a.address)
 	if err != nil {
 		if herr, ok := err.(*horizon.Error); ok {
 			if herr.Problem.Status == 404 {
-				return nil, ErrAccountNotFound
+				return ErrAccountNotFound
 			}
 		}
-		return nil, err
+		return err
 	}
 
-	a.paymentsLink = strings.Split(acct.Links.Payments.Href, "{")[0]
+	a.internal = &internal
 
-	return &acct, nil
+	return nil
 }
 
 func (a *Account) BalanceXLM() (string, error) {
-	acct, err := a.load()
-	if err != nil {
+	if err := a.load(); err != nil {
 		return "", err
 	}
 
-	return acct.GetNativeBalance(), nil
+	return a.internal.GetNativeBalance(), nil
 }
 
 func (a *Account) RecentPayments() ([]string, error) {
-	if a.paymentsLink == "" {
-		if _, err := a.load(); err != nil {
-			return nil, err
-		}
-		if a.paymentsLink == "" {
-			return nil, errors.New("no payments link")
-		}
+	link, err := a.paymentsLink()
+	if err != nil {
+		return nil, err
 	}
-
-	res, err := client.HTTP.Get(a.paymentsLink + "?order=desc&limit=10")
+	res, err := client.HTTP.Get(link + "?order=desc&limit=10")
 	if err != nil {
 		return nil, err
 	}
@@ -91,6 +85,50 @@ func (a *Account) RecentPayments() ([]string, error) {
 	return payments, nil
 }
 
+func (a *Account) RecentTransactions() ([]Transaction, error) {
+	link, err := a.transactionsLink()
+	if err != nil {
+		return nil, err
+	}
+	res, err := client.HTTP.Get(link + "?order=desc&limit=10")
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	var page TransactionsPage
+	if err := json.NewDecoder(res.Body).Decode(&page); err != nil {
+		return nil, err
+	}
+
+	transactions := make([]Transaction, len(page.Embedded.Records))
+	for i := 0; i < len(page.Embedded.Records); i++ {
+		transactions[i] = Transaction{Internal: page.Embedded.Records[i]}
+		ops, err := a.loadOperations(transactions[i])
+		if err != nil {
+			return nil, err
+		}
+		transactions[i].Operations = ops
+	}
+
+	return transactions, nil
+}
+
+func (a *Account) loadOperations(tx Transaction) ([]Operation, error) {
+	link := a.linkHref(tx.Internal.Links.Operations)
+	res, err := client.HTTP.Get(link)
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	var page OperationsPage
+	if err := json.NewDecoder(res.Body).Decode(&page); err != nil {
+		return nil, err
+	}
+	return page.Embedded.Records, nil
+}
+
 func (a *Account) IsOpNoDestination(inErr error) bool {
 	herr, ok := inErr.(*horizon.Error)
 	if !ok {
@@ -110,11 +148,13 @@ func (a *Account) IsOpNoDestination(inErr error) bool {
 	return resultCodes.OperationCodes[0] == "op_no_destination"
 }
 
-func (a *Account) Send(from, to, amount string) error {
+func (a *Account) Send(from, to, amount string) (ledger int32, err error) {
 	// try payment first
-	if err := a.payment(from, to, amount); err != nil {
+	ledger, err = a.payment(from, to, amount)
+
+	if err != nil {
 		if !a.IsOpNoDestination(err) {
-			return err
+			return 0, err
 		}
 
 		// if payment failed due to op_no_destination, then
@@ -122,10 +162,10 @@ func (a *Account) Send(from, to, amount string) error {
 		return a.createAccount(from, to, amount)
 	}
 
-	return nil
+	return ledger, nil
 }
 
-func (a *Account) payment(from, to, amount string) error {
+func (a *Account) payment(from, to, amount string) (ledger int32, err error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from},
 		network,
@@ -137,29 +177,13 @@ func (a *Account) payment(from, to, amount string) error {
 		build.MemoText{Value: "via keybase"},
 	)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	txe, err := tx.Sign(from)
-	if err != nil {
-		return err
-	}
-
-	txeB64, err := txe.Base64()
-	if err != nil {
-		return err
-	}
-
-	resp, err := client.SubmitTransaction(txeB64)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("transaction posted in ledger:", resp.Ledger)
-	return nil
+	return a.signAndSubmit(from, tx)
 }
 
-func (a *Account) createAccount(from, to, amount string) error {
+func (a *Account) createAccount(from, to, amount string) (ledger int32, err error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from},
 		network,
@@ -171,47 +195,55 @@ func (a *Account) createAccount(from, to, amount string) error {
 		build.MemoText{Value: "via keybase"},
 	)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
+	return a.signAndSubmit(from, tx)
+}
+
+func (a *Account) signAndSubmit(from string, tx *build.TransactionBuilder) (ledger int32, err error) {
 	txe, err := tx.Sign(from)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	txeB64, err := txe.Base64()
 	if err != nil {
-		return err
+		return 0, err
 	}
 
 	resp, err := client.SubmitTransaction(txeB64)
 	if err != nil {
-		return err
+		return 0, err
 	}
 
-	fmt.Println("transaction posted in ledger:", resp.Ledger)
-	return nil
-
+	return resp.Ledger, nil
 }
 
-type TransactionsPage struct {
-	Links struct {
-		Self horizon.Link `json:"self"`
-		Next horizon.Link `json:"next"`
-		Prev horizon.Link `json:"prev"`
-	} `json:"_links"`
-	Embedded struct {
-		Records []horizon.Transaction `json:"records"`
-	} `json:"_embedded"`
+func (a *Account) paymentsLink() (string, error) {
+	if a.internal == nil {
+		if err := a.load(); err != nil {
+			return "", err
+		}
+	}
+
+	return a.linkHref(a.internal.Links.Payments), nil
 }
 
-type PaymentsPage struct {
-	Links struct {
-		Self horizon.Link `json:"self"`
-		Next horizon.Link `json:"next"`
-		Prev horizon.Link `json:"prev"`
-	} `json:"_links"`
-	Embedded struct {
-		Records []horizon.Payment `json:"records"`
-	} `json:"_embedded"`
+func (a *Account) transactionsLink() (string, error) {
+	if a.internal == nil {
+		if err := a.load(); err != nil {
+			return "", err
+		}
+	}
+
+	return a.linkHref(a.internal.Links.Transactions), nil
+}
+
+func (a *Account) linkHref(link horizon.Link) string {
+	if link.Templated {
+		return strings.Split(link.Href, "{")[0]
+	}
+	return link.Href
+
 }
