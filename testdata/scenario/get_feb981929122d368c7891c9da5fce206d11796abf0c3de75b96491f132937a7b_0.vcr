@@ -2,11 +2,11 @@ HTTP/1.1 404 Not Found
 Content-Length: 325
 Connection: keep-alive
 Content-Type: application/problem+json; charset=utf-8
-Date: Wed, 07 Mar 2018 22:20:49 GMT
+Date: Thu, 08 Mar 2018 16:53:46 GMT
 Vary: Origin
 X-Ratelimit-Limit: 18000
-X-Ratelimit-Remaining: 17988
-X-Ratelimit-Reset: 932
+X-Ratelimit-Remaining: 17992
+X-Ratelimit-Reset: 2380
 
 {
   "type": "https://stellar.org/horizon-errors/not_found",

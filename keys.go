@@ -2,13 +2,18 @@ package stellarnet
 
 import "github.com/stellar/go/keypair"
 
+// NewKeyPair creates a new random stellar keypair.
 func NewKeyPair() (*keypair.Full, error) {
 	return keypair.Random()
 }
 
+// SeedStr is a string representation of a private stellar key.
 type SeedStr string
+
+// AddressStr is a string representation of a public stellar key.
 type AddressStr string
 
+// NewSeedStr ensures that s is a valid stellar seed.
 func NewSeedStr(s string) (SeedStr, error) {
 	// parse s to make sure it is a valid seed
 	kp, err := keypair.Parse(s)
@@ -28,6 +33,7 @@ func NewSeedStr(s string) (SeedStr, error) {
 
 func (s SeedStr) String() string { return string(s) }
 
+// NewAddressStr ensures that s is a valid stellar address.
 func NewAddressStr(s string) (AddressStr, error) {
 	// parse s to make sure it is a valid address
 	kp, err := keypair.Parse(s)

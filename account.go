@@ -2,7 +2,6 @@ package stellarnet
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	samount "github.com/stellar/go/amount"
@@ -13,15 +12,19 @@ import (
 var client = horizon.DefaultPublicNetClient
 var network = build.PublicNetwork
 
+// Account represents a Stellar account.
 type Account struct {
 	address  AddressStr
 	internal *horizon.Account
 }
 
+// NewAccount makes a new Account item for address.
 func NewAccount(address AddressStr) *Account {
 	return &Account{address: address}
 }
 
+// load uses the horizon client to get the current account
+// information.
 func (a *Account) load() error {
 	internal, err := client.LoadAccount(a.address.String())
 	if err != nil {
@@ -38,6 +41,7 @@ func (a *Account) load() error {
 	return nil
 }
 
+// BalanceXLM returns the account's lumen balance.
 func (a *Account) BalanceXLM() (string, error) {
 	if err := a.load(); err != nil {
 		return "", err
@@ -46,7 +50,11 @@ func (a *Account) BalanceXLM() (string, error) {
 	return a.internal.GetNativeBalance(), nil
 }
 
-func (a *Account) RecentPayments() ([]string, error) {
+// RecentPayments returns the account's recent payments.
+// This is a summary of any recent payment transactions (payment or create_account).
+// It does not contain as much information as RecentTransactions.
+// It is faster as it is only one request to horizon.
+func (a *Account) RecentPayments() ([]horizon.Payment, error) {
 	link, err := a.paymentsLink()
 	if err != nil {
 		return nil, err
@@ -62,20 +70,11 @@ func (a *Account) RecentPayments() ([]string, error) {
 		return nil, err
 	}
 
-	var payments []string
-	for _, rec := range page.Embedded.Records {
-		var s string
-		switch rec.Type {
-		case "create_account":
-			s = fmt.Sprintf("%s\tcreate account %s, starting balance: %s", rec.ID, rec.Account, rec.StartingBalance)
-		case "payment":
-			s = fmt.Sprintf("%s\tpayment from %s to %s: %s", rec.ID, rec.From, rec.To, rec.Amount)
-		}
-		payments = append(payments, s)
-	}
-	return payments, nil
+	return page.Embedded.Records, nil
 }
 
+// RecentTransactions returns the account's recent transactions, for
+// all types of transactions.
 func (a *Account) RecentTransactions() ([]Transaction, error) {
 	link, err := a.transactionsLink()
 	if err != nil {
@@ -142,9 +141,11 @@ func (a *Account) isOpNoDestination(inErr error) bool {
 	return resultCodes.OperationCodes[0] == "op_no_destination"
 }
 
+// SendXLM sends 'amount' lumens from 'from' account to 'to' account.
+// If the recipient has no account yet, this will create it.
 func (a *Account) SendXLM(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
 	// this is checked in build.Transaction, but can't hurt to break out early
-	if _, err := samount.Parse(amount); err != nil {
+	if _, err = samount.Parse(amount); err != nil {
 		return 0, err
 	}
 
@@ -164,6 +165,7 @@ func (a *Account) SendXLM(from SeedStr, to AddressStr, amount string) (ledger in
 	return ledger, nil
 }
 
+// paymentXLM creates a payment transaction from 'from' to 'to' for 'amount' lumens.
 func (a *Account) paymentXLM(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from.String()},
@@ -182,6 +184,7 @@ func (a *Account) paymentXLM(from SeedStr, to AddressStr, amount string) (ledger
 	return a.signAndSubmit(from, tx)
 }
 
+// createAccountXLM funds an new account 'to' from 'from' with a starting balance of 'amount'.
 func (a *Account) createAccountXLM(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from.String()},
@@ -200,6 +203,7 @@ func (a *Account) createAccountXLM(from SeedStr, to AddressStr, amount string) (
 	return a.signAndSubmit(from, tx)
 }
 
+// signAndSubmit signs a transaction and submits it to horizon.
 func (a *Account) signAndSubmit(from SeedStr, tx *build.TransactionBuilder) (ledger int32, err error) {
 	txe, err := tx.Sign(from.String())
 	if err != nil {
@@ -219,6 +223,7 @@ func (a *Account) signAndSubmit(from SeedStr, tx *build.TransactionBuilder) (led
 	return resp.Ledger, nil
 }
 
+// paymentsLink returns the horizon endpoint to get payment information.
 func (a *Account) paymentsLink() (string, error) {
 	if a.internal == nil {
 		if err := a.load(); err != nil {
@@ -229,6 +234,7 @@ func (a *Account) paymentsLink() (string, error) {
 	return a.linkHref(a.internal.Links.Payments), nil
 }
 
+// transactionsLink returns the horizon endpoint to get transaction information.
 func (a *Account) transactionsLink() (string, error) {
 	if a.internal == nil {
 		if err := a.load(); err != nil {
@@ -239,6 +245,7 @@ func (a *Account) transactionsLink() (string, error) {
 	return a.linkHref(a.internal.Links.Transactions), nil
 }
 
+// linkHref gets a usable href out of a horizon.Link.
 func (a *Account) linkHref(link horizon.Link) string {
 	if link.Templated {
 		return strings.Split(link.Href, "{")[0]

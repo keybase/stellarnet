@@ -210,7 +210,7 @@ func TestScenario(t *testing.T) {
 	}
 
 	t.Logf("alice (%s) sending 10 XLM to bob (%s)", helper.alice.Address(), helper.bob.Address())
-	if _, err := acctAlice.SendXLM(seedStr(t, helper.alice), addressStr(t, helper.bob), "10.0"); err != nil {
+	if _, err = acctAlice.SendXLM(seedStr(t, helper.alice), addressStr(t, helper.bob), "10.0"); err != nil {
 		herr, ok := err.(*horizon.Error)
 		if ok {
 			t.Logf("horizon problem: %+v", herr.Problem)
@@ -238,7 +238,7 @@ func TestScenario(t *testing.T) {
 		t.Errorf("bob balance: %s, expected %s", balance, bobExpected)
 	}
 
-	if _, err := acctBob.SendXLM(seedStr(t, helper.bob), addressStr(t, helper.alice), "1.0"); err != nil {
+	if _, err = acctBob.SendXLM(seedStr(t, helper.bob), addressStr(t, helper.alice), "1.0"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -262,4 +262,20 @@ func TestScenario(t *testing.T) {
 	}
 	assertPayment(t, bobTx[0], "1.0000000", helper.bob.Address(), helper.alice.Address())
 	assertCreateAccount(t, bobTx[1], "10.0000000", helper.alice.Address(), helper.bob.Address())
+
+	alicePayments, err := acctAlice.RecentPayments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(alicePayments) != 3 {
+		t.Fatal("not 3")
+	}
+
+	bobPayments, err := acctBob.RecentPayments()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(bobPayments) != 2 {
+		t.Fatal("not 2")
+	}
 }

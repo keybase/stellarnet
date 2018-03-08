@@ -6,6 +6,8 @@ import (
 	"github.com/stellar/go/clients/horizon"
 )
 
+// TransactionEmbed is used to get the Links in addition to
+// the horizon.Transaction from the transactions endpoints.
 type TransactionEmbed struct {
 	Links struct {
 		Self       horizon.Link `json:"self"`
@@ -19,6 +21,8 @@ type TransactionEmbed struct {
 	horizon.Transaction
 }
 
+// TransactionsPage is used to unmarshal the results from the account
+// transactions endpoint.
 type TransactionsPage struct {
 	Links struct {
 		Self horizon.Link `json:"self"`
@@ -30,6 +34,8 @@ type TransactionsPage struct {
 	} `json:"_embedded"`
 }
 
+// PaymentsPage is used to unmarshal the results from the account
+// payments endpoint.
 type PaymentsPage struct {
 	Links struct {
 		Self horizon.Link `json:"self"`
@@ -41,6 +47,8 @@ type PaymentsPage struct {
 	} `json:"_embedded"`
 }
 
+// OperationsPage is used to unmarshal the results from a transaction's
+// operations endpoint.
 type OperationsPage struct {
 	Links struct {
 		Self horizon.Link `json:"self"`
@@ -52,6 +60,7 @@ type OperationsPage struct {
 	} `json:"_embedded"`
 }
 
+// Operation is a single operation in a transaction.
 type Operation struct {
 	ID              string    `json:"id"`
 	PagingToken     string    `json:"paging_token"`
