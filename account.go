@@ -2,37 +2,27 @@ package stellarnet
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/horizon"
-	"github.com/stellar/go/keypair"
 )
 
 var client = horizon.DefaultPublicNetClient
 var network = build.PublicNetwork
 
-var (
-	ErrAccountNotFound = errors.New("account not found")
-)
-
-func NewKeyPair() (*keypair.Full, error) {
-	return keypair.Random()
-}
-
 type Account struct {
-	address  string
+	address  AddressStr
 	internal *horizon.Account
 }
 
-func NewAccount(address string) *Account {
+func NewAccount(address AddressStr) *Account {
 	return &Account{address: address}
 }
 
 func (a *Account) load() error {
-	internal, err := client.LoadAccount(a.address)
+	internal, err := client.LoadAccount(a.address.String())
 	if err != nil {
 		if herr, ok := err.(*horizon.Error); ok {
 			if herr.Problem.Status == 404 {
@@ -148,7 +138,7 @@ func (a *Account) IsOpNoDestination(inErr error) bool {
 	return resultCodes.OperationCodes[0] == "op_no_destination"
 }
 
-func (a *Account) Send(from, to, amount string) (ledger int32, err error) {
+func (a *Account) Send(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
 	// try payment first
 	ledger, err = a.payment(from, to, amount)
 
@@ -165,13 +155,13 @@ func (a *Account) Send(from, to, amount string) (ledger int32, err error) {
 	return ledger, nil
 }
 
-func (a *Account) payment(from, to, amount string) (ledger int32, err error) {
+func (a *Account) payment(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
 	tx, err := build.Transaction(
-		build.SourceAccount{AddressOrSeed: from},
+		build.SourceAccount{AddressOrSeed: from.String()},
 		network,
 		build.AutoSequence{SequenceProvider: client},
 		build.Payment(
-			build.Destination{AddressOrSeed: to},
+			build.Destination{AddressOrSeed: to.String()},
 			build.NativeAmount{Amount: amount},
 		),
 		build.MemoText{Value: "via keybase"},
@@ -183,13 +173,13 @@ func (a *Account) payment(from, to, amount string) (ledger int32, err error) {
 	return a.signAndSubmit(from, tx)
 }
 
-func (a *Account) createAccount(from, to, amount string) (ledger int32, err error) {
+func (a *Account) createAccount(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
 	tx, err := build.Transaction(
-		build.SourceAccount{AddressOrSeed: from},
+		build.SourceAccount{AddressOrSeed: from.String()},
 		network,
 		build.AutoSequence{SequenceProvider: client},
 		build.CreateAccount(
-			build.Destination{AddressOrSeed: to},
+			build.Destination{AddressOrSeed: to.String()},
 			build.NativeAmount{Amount: amount},
 		),
 		build.MemoText{Value: "via keybase"},
@@ -201,8 +191,8 @@ func (a *Account) createAccount(from, to, amount string) (ledger int32, err erro
 	return a.signAndSubmit(from, tx)
 }
 
-func (a *Account) signAndSubmit(from string, tx *build.TransactionBuilder) (ledger int32, err error) {
-	txe, err := tx.Sign(from)
+func (a *Account) signAndSubmit(from SeedStr, tx *build.TransactionBuilder) (ledger int32, err error) {
+	txe, err := tx.Sign(from.String())
 	if err != nil {
 		return 0, err
 	}

@@ -40,6 +40,22 @@ func fullFromSeed(t *testing.T, seed string) *keypair.Full {
 	return full
 }
 
+func seedStr(t *testing.T, full *keypair.Full) SeedStr {
+	ss, err := NewSeedStr(full.Seed())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return ss
+}
+
+func addressStr(t *testing.T, full *keypair.Full) AddressStr {
+	as, err := NewAddressStr(full.Address())
+	if err != nil {
+		t.Fatal(err)
+	}
+	return as
+}
+
 func NewHelper(t *testing.T, c *Config) *Helper {
 	return &Helper{
 		config:  c,
@@ -134,7 +150,7 @@ func TestScenario(t *testing.T) {
 	helper.SetState(t, "scenario")
 
 	t.Log("alice key pair not an account yet")
-	acctAlice := NewAccount(helper.alice.Address())
+	acctAlice := NewAccount(addressStr(t, helper.alice))
 	_, err := acctAlice.BalanceXLM()
 	if err != ErrAccountNotFound {
 		t.Fatalf("error: %q, expected %q (ErrAccountNotFound)", err, ErrAccountNotFound)
@@ -154,7 +170,7 @@ func TestScenario(t *testing.T) {
 	}
 
 	t.Logf("alice (%s) sending 10 XLM to bob (%s)", helper.alice.Address(), helper.bob.Address())
-	if _, err := acctAlice.Send(helper.alice.Seed(), helper.bob.Address(), "10.0"); err != nil {
+	if _, err := acctAlice.Send(seedStr(t, helper.alice), addressStr(t, helper.bob), "10.0"); err != nil {
 		herr, ok := err.(*horizon.Error)
 		if ok {
 			t.Logf("horizon problem: %+v", herr.Problem)
@@ -173,7 +189,7 @@ func TestScenario(t *testing.T) {
 	}
 
 	bobExpected := "10.0000000"
-	acctBob := NewAccount(helper.bob.Address())
+	acctBob := NewAccount(addressStr(t, helper.bob))
 	balance, err = acctBob.BalanceXLM()
 	if err != nil {
 		t.Fatal(err)
@@ -182,7 +198,7 @@ func TestScenario(t *testing.T) {
 		t.Errorf("bob balance: %s, expected %s", balance, bobExpected)
 	}
 
-	if _, err := acctBob.Send(helper.bob.Seed(), helper.alice.Address(), "1.0"); err != nil {
+	if _, err := acctBob.Send(seedStr(t, helper.bob), addressStr(t, helper.alice), "1.0"); err != nil {
 		t.Fatal(err)
 	}
 
