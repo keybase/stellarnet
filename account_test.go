@@ -15,6 +15,8 @@ import (
 	"github.com/stellar/go/keypair"
 )
 
+const friendbotAddress = "GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR"
+
 type Config struct {
 	AliceSeed   string
 	BobSeed     string
@@ -144,6 +146,44 @@ func getTestLumens(t *testing.T, kp keypair.KP) {
 	}
 }
 
+func assertPayment(t *testing.T, tx Transaction, amount, from, to string) {
+	if len(tx.Operations) == 0 {
+		t.Fatal("no operations")
+	}
+	op := tx.Operations[0]
+	if op.Type != "payment" {
+		t.Fatalf("op type: %s, expected payment", op.Type)
+	}
+	if op.Amount != amount {
+		t.Fatalf("amount: %s, expected %s", op.Amount, amount)
+	}
+	if op.From != from {
+		t.Fatalf("from: %s, expected %s", op.From, from)
+	}
+	if op.To != to {
+		t.Fatalf("to: %s, expected %s", op.To, to)
+	}
+}
+
+func assertCreateAccount(t *testing.T, tx Transaction, startingBalance, funder, account string) {
+	if len(tx.Operations) == 0 {
+		t.Fatal("no operations")
+	}
+	op := tx.Operations[0]
+	if op.Type != "create_account" {
+		t.Fatalf("op type: %s, expected create_account", op.Type)
+	}
+	if op.StartingBalance != startingBalance {
+		t.Fatalf("starting balance: %s, expected %s", op.StartingBalance, startingBalance)
+	}
+	if op.Funder != funder {
+		t.Fatalf("funder: %s, expected %s", op.Funder, funder)
+	}
+	if op.Account != account {
+		t.Fatalf("account: %s, expected %s", op.Account, account)
+	}
+}
+
 func TestScenario(t *testing.T) {
 	helper := setup(t)
 
@@ -170,7 +210,7 @@ func TestScenario(t *testing.T) {
 	}
 
 	t.Logf("alice (%s) sending 10 XLM to bob (%s)", helper.alice.Address(), helper.bob.Address())
-	if _, err := acctAlice.Send(seedStr(t, helper.alice), addressStr(t, helper.bob), "10.0"); err != nil {
+	if _, err := acctAlice.SendXLM(seedStr(t, helper.alice), addressStr(t, helper.bob), "10.0"); err != nil {
 		herr, ok := err.(*horizon.Error)
 		if ok {
 			t.Logf("horizon problem: %+v", herr.Problem)
@@ -198,7 +238,7 @@ func TestScenario(t *testing.T) {
 		t.Errorf("bob balance: %s, expected %s", balance, bobExpected)
 	}
 
-	if _, err := acctBob.Send(seedStr(t, helper.bob), addressStr(t, helper.alice), "1.0"); err != nil {
+	if _, err := acctBob.SendXLM(seedStr(t, helper.bob), addressStr(t, helper.alice), "1.0"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -209,15 +249,9 @@ func TestScenario(t *testing.T) {
 	if len(aliceTx) != 3 {
 		t.Errorf("# alice transactions: %d, expected 3", len(aliceTx))
 	}
-	if aliceTx[0].Operations[0].Type != "payment" {
-		t.Errorf("tx 0 type: %s, expected payment", aliceTx[0].Operations[0].Type)
-	}
-	if aliceTx[1].Operations[0].Type != "create_account" {
-		t.Errorf("tx 1 type: %s, expected create_account", aliceTx[1].Operations[0].Type)
-	}
-	if aliceTx[2].Operations[0].Type != "create_account" {
-		t.Errorf("tx 2 type: %s, expected create_account", aliceTx[2].Operations[0].Type)
-	}
+	assertPayment(t, aliceTx[0], "1.0000000", helper.bob.Address(), helper.alice.Address())
+	assertCreateAccount(t, aliceTx[1], "10.0000000", helper.alice.Address(), helper.bob.Address())
+	assertCreateAccount(t, aliceTx[2], "10000.0000000", friendbotAddress, helper.alice.Address())
 
 	bobTx, err := acctBob.RecentTransactions()
 	if err != nil {
@@ -226,10 +260,6 @@ func TestScenario(t *testing.T) {
 	if len(bobTx) != 2 {
 		t.Errorf("# bob transactions: %d, expected 2", len(bobTx))
 	}
-	if bobTx[0].Operations[0].Type != "payment" {
-		t.Errorf("tx 0 type: %s, expected payment", bobTx[0].Operations[0].Type)
-	}
-	if bobTx[1].Operations[0].Type != "create_account" {
-		t.Errorf("tx 1 type: %s, expected create_account", bobTx[1].Operations[0].Type)
-	}
+	assertPayment(t, bobTx[0], "1.0000000", helper.bob.Address(), helper.alice.Address())
+	assertCreateAccount(t, bobTx[1], "10.0000000", helper.alice.Address(), helper.bob.Address())
 }

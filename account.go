@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 
+	samount "github.com/stellar/go/amount"
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/horizon"
 )
@@ -92,6 +93,9 @@ func (a *Account) RecentTransactions() ([]Transaction, error) {
 	}
 
 	transactions := make([]Transaction, len(page.Embedded.Records))
+	// unfortunately, the operations are not included, so for each
+	// transaction, we need to make an additional request to get
+	// the operations.
 	for i := 0; i < len(page.Embedded.Records); i++ {
 		transactions[i] = Transaction{Internal: page.Embedded.Records[i]}
 		ops, err := a.loadOperations(transactions[i])
@@ -119,7 +123,7 @@ func (a *Account) loadOperations(tx Transaction) ([]Operation, error) {
 	return page.Embedded.Records, nil
 }
 
-func (a *Account) IsOpNoDestination(inErr error) bool {
+func (a *Account) isOpNoDestination(inErr error) bool {
 	herr, ok := inErr.(*horizon.Error)
 	if !ok {
 		return false
@@ -138,24 +142,29 @@ func (a *Account) IsOpNoDestination(inErr error) bool {
 	return resultCodes.OperationCodes[0] == "op_no_destination"
 }
 
-func (a *Account) Send(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
+func (a *Account) SendXLM(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
+	// this is checked in build.Transaction, but can't hurt to break out early
+	if _, err := samount.Parse(amount); err != nil {
+		return 0, err
+	}
+
 	// try payment first
-	ledger, err = a.payment(from, to, amount)
+	ledger, err = a.paymentXLM(from, to, amount)
 
 	if err != nil {
-		if !a.IsOpNoDestination(err) {
+		if !a.isOpNoDestination(err) {
 			return 0, err
 		}
 
 		// if payment failed due to op_no_destination, then
 		// should try createAccount instead
-		return a.createAccount(from, to, amount)
+		return a.createAccountXLM(from, to, amount)
 	}
 
 	return ledger, nil
 }
 
-func (a *Account) payment(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
+func (a *Account) paymentXLM(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from.String()},
 		network,
@@ -173,7 +182,7 @@ func (a *Account) payment(from SeedStr, to AddressStr, amount string) (ledger in
 	return a.signAndSubmit(from, tx)
 }
 
-func (a *Account) createAccount(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
+func (a *Account) createAccountXLM(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from.String()},
 		network,

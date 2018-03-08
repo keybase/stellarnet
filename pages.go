@@ -54,12 +54,20 @@ type OperationsPage struct {
 
 type Operation struct {
 	ID              string    `json:"id"`
-	Type            string    `json:"type"`
 	PagingToken     string    `json:"paging_token"`
-	Account         string    `json:"account"`
-	StartingBalance string    `json:"starting_balance"`
 	SourceAccount   string    `json:"source_account"`
-	Funder          string    `json:"funder"`
+	Type            string    `json:"type"`
 	CreatedAt       time.Time `json:"created_at"`
 	TransactionHash string    `json:"transaction_hash"`
+
+	// create_account fields
+	Account         string `json:"account"`
+	StartingBalance string `json:"starting_balance"`
+	Funder          string `json:"funder"`
+
+	// payment fields
+	AssetType string `json:"asset_type"`
+	From      string `json:"from"`
+	To        string `json:"to"`
+	Amount    string `json:"amount"`
 }
