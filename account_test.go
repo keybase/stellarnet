@@ -8,8 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"vcr"
 
+	"github.com/keybase/vcr"
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/horizon"
 	"github.com/stellar/go/keypair"
