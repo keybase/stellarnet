@@ -168,7 +168,7 @@ func (a *Account) SendXLM(from SeedStr, to AddressStr, amount string) (ledger in
 // paymentXLM creates a payment transaction from 'from' to 'to' for 'amount' lumens.
 func (a *Account) paymentXLM(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
 	tx, err := build.Transaction(
-		build.SourceAccount{AddressOrSeed: from.String()},
+		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
 		network,
 		build.AutoSequence{SequenceProvider: client},
 		build.Payment(
@@ -187,7 +187,7 @@ func (a *Account) paymentXLM(from SeedStr, to AddressStr, amount string) (ledger
 // createAccountXLM funds an new account 'to' from 'from' with a starting balance of 'amount'.
 func (a *Account) createAccountXLM(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
 	tx, err := build.Transaction(
-		build.SourceAccount{AddressOrSeed: from.String()},
+		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
 		network,
 		build.AutoSequence{SequenceProvider: client},
 		build.CreateAccount(
@@ -205,7 +205,7 @@ func (a *Account) createAccountXLM(from SeedStr, to AddressStr, amount string) (
 
 // signAndSubmit signs a transaction and submits it to horizon.
 func (a *Account) signAndSubmit(from SeedStr, tx *build.TransactionBuilder) (ledger int32, err error) {
-	txe, err := tx.Sign(from.String())
+	txe, err := tx.Sign(from.SecureNoLogString())
 	if err != nil {
 		return 0, err
 	}

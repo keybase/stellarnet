@@ -31,7 +31,15 @@ func NewSeedStr(s string) (SeedStr, error) {
 	return "", ErrUnknownKeypairType
 }
 
-func (s SeedStr) String() string { return string(s) }
+func (s SeedStr) String() string {
+	return "DONOTLOGDONOTLOGDONOTLOGDONOTLOGDONOTLOGDONOTLOGDONOTLOG"
+}
+
+// SecureNoLogString returns a native string representation of SeedStr.
+// It should not be logged or persisted anywhere.
+func (s SeedStr) SecureNoLogString() string {
+	return string(s)
+}
 
 // NewAddressStr ensures that s is a valid stellar address.
 func NewAddressStr(s string) (AddressStr, error) {
