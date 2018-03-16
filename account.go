@@ -12,6 +12,12 @@ import (
 var client = horizon.DefaultPublicNetClient
 var network = build.PublicNetwork
 
+// SetClientURL sets the url for the horizon server this client
+// connects to.
+func SetClientURL(url string) {
+	client.URL = url
+}
+
 // Account represents a Stellar account.
 type Account struct {
 	address  AddressStr
@@ -48,6 +54,15 @@ func (a *Account) BalanceXLM() (string, error) {
 	}
 
 	return a.internal.GetNativeBalance(), nil
+}
+
+// Balances returns all the balances for an account.
+func (a *Account) Balances() ([]horizon.Balance, error) {
+	if err := a.load(); err != nil {
+		return nil, err
+	}
+
+	return a.internal.Balances, nil
 }
 
 // RecentPayments returns the account's recent payments.
