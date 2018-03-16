@@ -182,6 +182,15 @@ func (a *Account) SendXLM(from SeedStr, to AddressStr, amount string) (ledger in
 
 // paymentXLM creates a payment transaction from 'from' to 'to' for 'amount' lumens.
 func (a *Account) paymentXLM(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
+	signed, err := a.paymentXLMTransaction(from, to, amount)
+	if err != nil {
+		return 0, err
+	}
+
+	return a.submit(signed)
+}
+
+func (a *Account) paymentXLMTransaction(from SeedStr, to AddressStr, amount string) (string, error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
 		network,
@@ -193,14 +202,25 @@ func (a *Account) paymentXLM(from SeedStr, to AddressStr, amount string) (ledger
 		build.MemoText{Value: "via keybase"},
 	)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	return a.signAndSubmit(from, tx)
+	return a.sign(from, tx)
 }
 
 // createAccountXLM funds an new account 'to' from 'from' with a starting balance of 'amount'.
 func (a *Account) createAccountXLM(from SeedStr, to AddressStr, amount string) (ledger int32, err error) {
+	signed, err := a.createAccountXLMTransaction(from, to, amount)
+	if err != nil {
+		return 0, err
+	}
+
+	return a.submit(signed)
+}
+
+// createAccountXLMTransaction creates a signed transaction to fund an new account 'to' from 'from'
+// with a starting balance of 'amount'.
+func (a *Account) createAccountXLMTransaction(from SeedStr, to AddressStr, amount string) (string, error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
 		network,
@@ -212,25 +232,25 @@ func (a *Account) createAccountXLM(from SeedStr, to AddressStr, amount string) (
 		build.MemoText{Value: "via keybase"},
 	)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	return a.signAndSubmit(from, tx)
+	return a.sign(from, tx)
 }
 
-// signAndSubmit signs a transaction and submits it to horizon.
-func (a *Account) signAndSubmit(from SeedStr, tx *build.TransactionBuilder) (ledger int32, err error) {
+// sign signs and base64-encodes a transaction.
+func (a *Account) sign(from SeedStr, tx *build.TransactionBuilder) (string, error) {
 	txe, err := tx.Sign(from.SecureNoLogString())
 	if err != nil {
-		return 0, err
+		return "", err
 	}
 
-	txeB64, err := txe.Base64()
-	if err != nil {
-		return 0, err
-	}
+	return txe.Base64()
+}
 
-	resp, err := client.SubmitTransaction(txeB64)
+// submit submits a signed transaction to horizon.
+func (a *Account) submit(signed string) (ledger int32, err error) {
+	resp, err := client.SubmitTransaction(signed)
 	if err != nil {
 		return 0, err
 	}
