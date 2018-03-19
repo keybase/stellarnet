@@ -128,7 +128,7 @@ func Setup(t *testing.T) (*Helper, *horizon.Client, build.Network) {
 func GetTestLumens(t *testing.T, kp keypair.KP) {
 	if *record || *live {
 		t.Logf("getting test lumens from friendbot for %s", kp.Address())
-		resp, err := http.Get("https://horizon-testnet.stellar.org/friendbot?addr=" + kp.Address())
+		resp, err := http.Get("https://friendbot.stellar.org/?addr=" + kp.Address())
 		if err != nil {
 			t.Fatal(err)
 		}
