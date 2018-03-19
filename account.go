@@ -18,6 +18,12 @@ func SetClientURL(url string) {
 	client.URL = url
 }
 
+// SetClient sets the horizon client and network. Used by stellarnet/testclient.
+func SetClient(c *horizon.Client, n build.Network) {
+	client = c
+	network = n
+}
+
 // Account represents a Stellar account.
 type Account struct {
 	address  AddressStr
