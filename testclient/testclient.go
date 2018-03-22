@@ -39,13 +39,15 @@ type Helper struct {
 }
 
 // NewHelper creates a new Helper.
-func NewHelper(t *testing.T, c *Config) *Helper {
-	return &Helper{
-		Config:  c,
-		Alice:   fullFromSeed(t, c.AliceSeed),
-		Bob:     fullFromSeed(t, c.BobSeed),
-		Charlie: fullFromSeed(t, c.CharlieSeed),
-	}
+func NewHelper() *Helper {
+	return &Helper{}
+}
+
+func (h *Helper) setConfig(t *testing.T, c *Config) {
+	h.Config = c
+	h.Alice = fullFromSeed(t, c.AliceSeed)
+	h.Bob = fullFromSeed(t, c.BobSeed)
+	h.Charlie = fullFromSeed(t, c.CharlieSeed)
 }
 
 // SetState changes the directory where the http responses are stored.
@@ -53,6 +55,8 @@ func NewHelper(t *testing.T, c *Config) *Helper {
 func (h *Helper) SetState(t *testing.T, name string) {
 	dir := filepath.Join("testdata", name)
 	os.MkdirAll(dir, 0755)
+
+	conf := loadConfig(t, name)
 
 	if *record {
 		existing, err := filepath.Glob(filepath.Join(dir, "*.vcr"))
@@ -64,6 +68,7 @@ func (h *Helper) SetState(t *testing.T, name string) {
 		}
 	}
 
+	h.setConfig(t, conf)
 	tvcr.SetDir(dir)
 }
 
@@ -85,14 +90,9 @@ func testClient(t *testing.T, live, record bool) (*horizon.Client, *vcr.VCR) {
 	}, v
 }
 
-// Setup is the primary entry point for testclient.  It creates a Helper
-// and the horizon client.
-func Setup(t *testing.T) (*Helper, *horizon.Client, build.Network) {
-	var client *horizon.Client
-	client, tvcr = testClient(t, *live, *record)
-
+func loadConfig(t *testing.T, subdir string) *Config {
 	var conf Config
-	filename := filepath.Join("testdata", "config.json")
+	filename := filepath.Join("testdata", subdir, "config.json")
 
 	if *live || *record {
 		// make new key pairs since this is live or recording new live data
@@ -106,11 +106,13 @@ func Setup(t *testing.T) (*Helper, *horizon.Client, build.Network) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			t.Logf("saving config file %s", filename)
 			if err := ioutil.WriteFile(filename, data, 0644); err != nil {
 				t.Fatal(err)
 			}
 		}
 	} else {
+		t.Logf("loading config file %s", filename)
 		data, err := ioutil.ReadFile(filename)
 		if err != nil {
 			t.Fatal(err)
@@ -120,7 +122,20 @@ func Setup(t *testing.T) (*Helper, *horizon.Client, build.Network) {
 		}
 	}
 
-	return NewHelper(t, &conf), client, build.TestNetwork
+	return &conf
+}
+
+// Setup is the primary entry point for testclient.  It creates a Helper
+// and the horizon client.
+func Setup(t *testing.T) (*Helper, *horizon.Client, build.Network) {
+	var client *horizon.Client
+	client, tvcr = testClient(t, *live, *record)
+
+	h := NewHelper()
+	conf := loadConfig(t, "")
+	h.setConfig(t, conf)
+
+	return h, client, build.TestNetwork
 }
 
 // GetTestLumens will use the friendbot to get some lumens into kp's account.
