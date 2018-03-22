@@ -86,7 +86,7 @@ func TestScenario(t *testing.T) {
 	}
 
 	t.Logf("alice (%s) sending 10 XLM to bob (%s)", helper.Alice.Address(), helper.Bob.Address())
-	if _, err = acctAlice.SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), "10.0"); err != nil {
+	if _, _, err = acctAlice.SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), "10.0"); err != nil {
 		herr, ok := err.(*horizon.Error)
 		if ok {
 			t.Logf("horizon problem: %+v", herr.Problem)
@@ -114,7 +114,7 @@ func TestScenario(t *testing.T) {
 		t.Errorf("bob balance: %s, expected %s", balance, bobExpected)
 	}
 
-	if _, err = acctBob.SendXLM(seedStr(t, helper.Bob), addressStr(t, helper.Alice), "1.0"); err != nil {
+	if _, _, err = acctBob.SendXLM(seedStr(t, helper.Bob), addressStr(t, helper.Alice), "1.0"); err != nil {
 		t.Fatal(err)
 	}
 
