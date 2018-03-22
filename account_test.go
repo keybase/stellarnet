@@ -114,9 +114,11 @@ func TestScenario(t *testing.T) {
 		t.Errorf("bob balance: %s, expected %s", balance, bobExpected)
 	}
 
-	if _, _, err = acctBob.SendXLM(seedStr(t, helper.Bob), addressStr(t, helper.Alice), "1.0"); err != nil {
+	ledger, txid, err := acctBob.SendXLM(seedStr(t, helper.Bob), addressStr(t, helper.Alice), "1.0")
+	if err != nil {
 		t.Fatal(err)
 	}
+	t.Logf("bob sent alice 1.0 XLM: %d, %s", ledger, txid)
 
 	aliceTx, err := acctAlice.RecentTransactions()
 	if err != nil {

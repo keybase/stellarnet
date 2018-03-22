@@ -2,11 +2,11 @@ HTTP/1.1 400 Bad Request
 Content-Length: 902
 Connection: keep-alive
 Content-Type: application/problem+json; charset=utf-8
-Date: Thu, 22 Mar 2018 16:29:36 GMT
+Date: Thu, 22 Mar 2018 21:44:21 GMT
 Vary: Origin
 X-Ratelimit-Limit: 17200
-X-Ratelimit-Remaining: 17173
-X-Ratelimit-Reset: 1302
+X-Ratelimit-Remaining: 17182
+X-Ratelimit-Reset: 3250
 
 {
   "type": "https://stellar.org/horizon-errors/transaction_failed",
@@ -14,7 +14,7 @@ X-Ratelimit-Reset: 1302
   "status": 400,
   "detail": "The transaction failed when submitted to the stellar network. The `extras.result_codes` field on this response contains further details.  Descriptions of each code can be found at: https://www.stellar.org/developers/learn/concepts/list-of-operations.html",
   "extras": {
-    "envelope_xdr": "AAAAAD/5qGrLweqZEkoZGwzgyYF2NhnKb3N6HDKVyjwjfC1uAAAAZAB6yB0AAAABAAAAAAAAAAEAAAALdmlhIGtleWJhc2UAAAAAAQAAAAAAAAABAAAAAETlunDlqU4c6SwGliUmqZDoDTj8Ah+H9k0uK64d/mjtAAAAAAAAAAAF9eEAAAAAAAAAAAEjfC1uAAAAQJQ/TPd+aQopDZLgptIJPsSaLhZDeFpmPGXv+edOoEJsMhNh4NOiix0Deqh0XJEspepJFwXLKria/1xif6qXMAk=",
+    "envelope_xdr": "AAAAAEMC+T/DGk9KPm6eGycUmjsAfhIGvFD+RDDPxToCc6zeAAAAZAB61t4AAAABAAAAAAAAAAEAAAALdmlhIGtleWJhc2UAAAAAAQAAAAAAAAABAAAAABe+/WqG1Hp5IRojy64lrT3Qk+U67Lnheroy8bubWeAmAAAAAAAAAAAF9eEAAAAAAAAAAAECc6zeAAAAQEds/NaaQEinFqtSx6SqbT1hBlOHhbTsQx0IyWJPK6d0C8bbSnjCcK/9J2gG34reID3W1u6ef3ONd5QlTBlcUgI=",
     "result_codes": {
       "transaction": "tx_failed",
       "operations": [

@@ -28,6 +28,7 @@ type Config struct {
 	AliceSeed   string
 	BobSeed     string
 	CharlieSeed string
+	RebeccaSeed string
 }
 
 // Helper makes managing the test users and state easier.
@@ -36,6 +37,7 @@ type Helper struct {
 	Alice   *keypair.Full
 	Bob     *keypair.Full
 	Charlie *keypair.Full
+	Rebecca *keypair.Full
 }
 
 // NewHelper creates a new Helper.
@@ -48,6 +50,7 @@ func (h *Helper) setConfig(t *testing.T, c *Config) {
 	h.Alice = fullFromSeed(t, c.AliceSeed)
 	h.Bob = fullFromSeed(t, c.BobSeed)
 	h.Charlie = fullFromSeed(t, c.CharlieSeed)
+	h.Rebecca = fullFromSeed(t, c.RebeccaSeed)
 }
 
 // SetState changes the directory where the http responses are stored.
@@ -99,6 +102,7 @@ func loadConfig(t *testing.T, subdir string) *Config {
 		conf.AliceSeed = newSeed(t)
 		conf.BobSeed = newSeed(t)
 		conf.CharlieSeed = newSeed(t)
+		conf.RebeccaSeed = newSeed(t)
 
 		if *record {
 			// recording, so save key pairs
