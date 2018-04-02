@@ -193,7 +193,7 @@ func (a *Account) SendXLM(from SeedStr, to AddressStr, amount string) (ledger in
 
 // paymentXLM creates a payment transaction from 'from' to 'to' for 'amount' lumens.
 func (a *Account) paymentXLM(from SeedStr, to AddressStr, amount string) (ledger int32, txid string, err error) {
-	_, signed, err := a.PaymentXLMTransaction(from, to, amount)
+	_, signed, err := a.PaymentXLMTransaction(from, to, amount, client)
 	if err != nil {
 		return 0, "", err
 	}
@@ -202,11 +202,11 @@ func (a *Account) paymentXLM(from SeedStr, to AddressStr, amount string) (ledger
 }
 
 // PaymentXLMTransaction creates a signed transaction to send a payment from 'from' to 'to' for 'amount' lumens.
-func (a *Account) PaymentXLMTransaction(from SeedStr, to AddressStr, amount string) (seqno uint64, signed string, err error) {
+func (a *Account) PaymentXLMTransaction(from SeedStr, to AddressStr, amount string, seqnoProvider build.SequenceProvider) (seqno uint64, signed string, err error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
 		network,
-		build.AutoSequence{SequenceProvider: client},
+		build.AutoSequence{SequenceProvider: seqnoProvider},
 		build.Payment(
 			build.Destination{AddressOrSeed: to.String()},
 			build.NativeAmount{Amount: amount},
@@ -222,7 +222,7 @@ func (a *Account) PaymentXLMTransaction(from SeedStr, to AddressStr, amount stri
 
 // createAccountXLM funds an new account 'to' from 'from' with a starting balance of 'amount'.
 func (a *Account) createAccountXLM(from SeedStr, to AddressStr, amount string) (ledger int32, txid string, err error) {
-	_, signed, err := a.CreateAccountXLMTransaction(from, to, amount)
+	_, signed, err := a.CreateAccountXLMTransaction(from, to, amount, client)
 	if err != nil {
 		return 0, "", err
 	}
@@ -232,11 +232,11 @@ func (a *Account) createAccountXLM(from SeedStr, to AddressStr, amount string) (
 
 // CreateAccountXLMTransaction creates a signed transaction to fund an new account 'to' from 'from'
 // with a starting balance of 'amount'.
-func (a *Account) CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount string) (seqno uint64, signed string, err error) {
+func (a *Account) CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount string, seqnoProvider build.SequenceProvider) (seqno uint64, signed string, err error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
 		network,
-		build.AutoSequence{SequenceProvider: client},
+		build.AutoSequence{SequenceProvider: seqnoProvider},
 		build.CreateAccount(
 			build.Destination{AddressOrSeed: to.String()},
 			build.NativeAmount{Amount: amount},
