@@ -25,6 +25,11 @@ func SetClient(c *horizon.Client, n build.Network) {
 	network = n
 }
 
+// Client returns the horizon client.
+func Client() *horizon.Client {
+	return client
+}
+
 // Account represents a Stellar account.
 type Account struct {
 	address  AddressStr
