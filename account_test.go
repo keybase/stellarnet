@@ -2,9 +2,9 @@ package stellarnet
 
 import (
 	"testing"
+	"time"
 
 	"github.com/keybase/stellarnet/testclient"
-	"github.com/stellar/go/clients/horizon"
 	"github.com/stellar/go/keypair"
 )
 
@@ -74,6 +74,11 @@ func TestScenario(t *testing.T) {
 		t.Fatalf("error: %q, expected %q (ErrAccountNotFound)", err, ErrAccountNotFound)
 	}
 
+	_, err = AccountSeqno(addressStr(t, helper.Alice))
+	if err != ErrAccountNotFound {
+		t.Fatalf("error: %q, expected %q (ErrAccountNotFound)", err, ErrAccountNotFound)
+	}
+
 	testclient.GetTestLumens(t, helper.Alice)
 
 	t.Log("alice account has been funded")
@@ -85,13 +90,16 @@ func TestScenario(t *testing.T) {
 		t.Errorf("balance: %s, expected 10000.0000000", balance)
 	}
 
+	seqno, err := AccountSeqno(addressStr(t, helper.Alice))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if seqno == 0 {
+		t.Fatal("alice seqno: 0, expected non-zero")
+	}
+
 	t.Logf("alice (%s) sending 10 XLM to bob (%s)", helper.Alice.Address(), helper.Bob.Address())
 	if _, _, err = acctAlice.SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), "10.0"); err != nil {
-		herr, ok := err.(*horizon.Error)
-		if ok {
-			t.Logf("horizon problem: %+v", herr.Problem)
-			t.Logf("horizon extras: %s", string(herr.Problem.Extras["result_codes"]))
-		}
 		t.Fatal(err)
 	}
 
@@ -125,7 +133,17 @@ func TestScenario(t *testing.T) {
 		t.Fatal(err)
 	}
 	if len(aliceTx) != 3 {
-		t.Errorf("# alice transactions: %d, expected 3", len(aliceTx))
+		// this is unfortunate
+		t.Logf("retrying alice recent transactions after 1s")
+		time.Sleep(1 * time.Second)
+		aliceTx, err = acctAlice.RecentTransactions()
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(aliceTx) != 3 {
+			t.Errorf("# alice transactions: %d, expected 3", len(aliceTx))
+		}
 	}
 	assertPayment(t, aliceTx[0], "1.0000000", helper.Bob.Address(), helper.Alice.Address())
 	assertCreateAccount(t, aliceTx[1], "10.0000000", helper.Alice.Address(), helper.Bob.Address())
