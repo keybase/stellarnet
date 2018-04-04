@@ -122,7 +122,7 @@ func AccountSeqno(address AddressStr) (uint64, error) {
 }
 
 // RecentPayments returns the account's recent payments.
-// This is a summary of any recent payment transactions (payment or create_account).
+// This is a summary of any recent payment transactions (payment, create_account, or account_merge).
 // It does not contain as much information as RecentTransactions.
 // It is faster as it is only one request to horizon.
 func (a *Account) RecentPayments() ([]horizon.Payment, error) {
