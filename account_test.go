@@ -79,6 +79,14 @@ func TestScenario(t *testing.T) {
 		t.Fatalf("error: %q, expected %q (ErrAccountNotFound)", err, ErrAccountNotFound)
 	}
 
+	active, err := IsMasterKeyActive(addressStr(t, helper.Alice))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !active {
+		t.Fatal("not active")
+	}
+
 	testclient.GetTestLumens(t, helper.Alice)
 
 	t.Log("alice account has been funded")
@@ -173,5 +181,13 @@ func TestScenario(t *testing.T) {
 	}
 	if len(bobPayments) != 2 {
 		t.Fatal("not 2")
+	}
+
+	active, err = IsMasterKeyActive(addressStr(t, helper.Alice))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !active {
+		t.Fatal("not active")
 	}
 }

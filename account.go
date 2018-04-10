@@ -2,6 +2,7 @@ package stellarnet
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -70,6 +71,39 @@ func (a *Account) Balances() ([]horizon.Balance, error) {
 	}
 
 	return a.internal.Balances, nil
+}
+
+// IsMasterKeyActive returns whether the account's master key
+// has any chance of having power to sign transactions that will go through.
+func IsMasterKeyActive(accountID AddressStr) (bool, error) {
+	a := NewAccount(accountID)
+	err := a.load()
+	if err != nil {
+		if err == ErrAccountNotFound {
+			// Accounts with no entries have active master keys.
+			return true, nil
+		}
+		return false, err
+	}
+	minThreshold := int32(minBytes([]byte{a.internal.Thresholds.LowThreshold,
+		a.internal.Thresholds.MedThreshold, a.internal.Thresholds.HighThreshold}, 0))
+	foundMaster := false
+	var masterWeight int32
+	var availableWeight int32
+	for _, signer := range a.internal.Signers {
+		if a.internal.AccountID == signer.PublicKey {
+			masterWeight = signer.Weight
+			foundMaster = true
+		}
+		availableWeight += signer.Weight
+	}
+	if !foundMaster {
+		return false, fmt.Errorf("master key entry not found")
+	}
+	if masterWeight <= 0 {
+		return false, nil
+	}
+	return availableWeight >= minThreshold, nil
 }
 
 // AccountSeqno returns the account sequence number.
@@ -328,4 +362,17 @@ func errMap(err error) error {
 	}
 
 	return err
+}
+
+func minBytes(bs []byte, deflt byte) byte {
+	if len(bs) == 0 {
+		return deflt
+	}
+	res := bs[0]
+	for _, b := range bs[1:] {
+		if b < res {
+			res = b
+		}
+	}
+	return res
 }
