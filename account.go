@@ -73,8 +73,14 @@ func (a *Account) Balances() ([]horizon.Balance, error) {
 	return a.internal.Balances, nil
 }
 
-// IsMasterKeyActive returns whether the account's master key
-// has any chance of having power to sign transactions that will go through.
+// IsMasterKeyActive returns whether the account's master key can sign transactions.
+// The return value is true for normal accounts and multi-sig setups.
+// The return value is false for explicitly disabled accounts.
+// The master key is considered active if both:
+// - The master key signing weight is non-zero.
+// - The combined weight of all signers satisfies
+//   the minimum signing weight required to sign an operation.
+//   (Any operation at all, not necessarily payment)
 func IsMasterKeyActive(accountID AddressStr) (bool, error) {
 	a := NewAccount(accountID)
 	err := a.load()
