@@ -197,7 +197,7 @@ func (a *Account) loadOperations(tx Transaction) ([]Operation, error) {
 // TxPayments returns payment operations in a transaction.
 // Note: may not return all payments as the backing response is paginated.
 func TxPayments(txID string) ([]horizon.Payment, error) {
-	txID, err := canonicalizeTxID(txID)
+	txID, err := CheckTxID(txID)
 	if err != nil {
 		return nil, err
 	}
@@ -214,7 +214,9 @@ func TxPayments(txID string) ([]horizon.Payment, error) {
 	return page.Embedded.Records, nil
 }
 
-func canonicalizeTxID(txID string) (string, error) {
+// CheckTxID validates and canonicalizes a transaction ID
+// Transaction IDs are lowercase hex-encoded 32-byte strings.
+func CheckTxID(txID string) (string, error) {
 	bs, err := hex.DecodeString(txID)
 	if err != nil {
 		return "", fmt.Errorf("error decoding transaction ID: %v", err)
