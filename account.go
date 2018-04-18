@@ -10,6 +10,8 @@ import (
 	samount "github.com/stellar/go/amount"
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/horizon"
+	snetwork "github.com/stellar/go/network"
+	"github.com/stellar/go/xdr"
 )
 
 var client = horizon.DefaultPublicNetClient
@@ -212,6 +214,15 @@ func TxPayments(txID string) ([]horizon.Payment, error) {
 		return nil, err
 	}
 	return page.Embedded.Records, nil
+}
+
+// HashTx returns the hex transaction ID using the active network passphrase.
+func HashTx(tx xdr.Transaction) (string, error) {
+	bs, err := snetwork.HashTransaction(&tx, network.Passphrase)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bs[:]), nil
 }
 
 // CheckTxID validates and canonicalizes a transaction ID

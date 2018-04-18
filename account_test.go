@@ -6,6 +6,7 @@ import (
 
 	"github.com/keybase/stellarnet/testclient"
 	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -204,4 +205,14 @@ func TestScenario(t *testing.T) {
 	_, err = TxPayments(bobTx[0].Internal.ID[:5])
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "error decoding transaction ID")
+
+	txid2, err := CheckTxID(bobTx[0].Internal.ID)
+	require.NoError(t, err)
+	require.Equal(t, bobTx[0].Internal.ID, txid)
+
+	var tx xdr.TransactionEnvelope
+	err = xdr.SafeUnmarshalBase64(bobTx[0].Internal.EnvelopeXdr, &tx)
+	require.NoError(t, err)
+	txid3, err := HashTx(tx.Tx)
+	require.Equal(t, txid2, txid3)
 }
