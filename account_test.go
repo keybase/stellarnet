@@ -6,6 +6,7 @@ import (
 
 	"github.com/keybase/stellarnet/testclient"
 	"github.com/stellar/go/keypair"
+	"github.com/stretchr/testify/require"
 )
 
 func seedStr(t *testing.T, full *keypair.Full) SeedStr {
@@ -190,4 +191,17 @@ func TestScenario(t *testing.T) {
 	if !active {
 		t.Fatal("not active")
 	}
+
+	payments, err := TxPayments(bobTx[0].Internal.ID)
+	require.NoError(t, err)
+	require.Len(t, payments, 1)
+	require.Equal(t, bobTx[0].Internal.ID, payments[0].TransactionHash)
+	require.Equal(t, helper.Bob.Address(), payments[0].SourceAccount)
+	require.Equal(t, payments[0].SourceAccount, payments[0].From)
+	require.Equal(t, helper.Alice.Address(), payments[0].To)
+	require.Equal(t, "native", payments[0].AssetType)
+	require.Equal(t, "1.0000000", payments[0].Amount)
+	_, err = TxPayments(bobTx[0].Internal.ID[:5])
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "error decoding transaction ID")
 }

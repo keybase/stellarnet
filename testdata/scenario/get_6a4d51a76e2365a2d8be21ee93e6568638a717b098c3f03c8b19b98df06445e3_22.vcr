@@ -1,0 +1,60 @@
+HTTP/2.0 200 OK
+Content-Length: 2018
+Cf-Ray: 40d1f6304b7a2138-EWR
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 17 Apr 2018 21:24:59 GMT
+Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+Server: cloudflare
+Set-Cookie: __cfduid=d861d058ae2aef0d651c083bf80393aee1524000299; expires=Wed, 17-Apr-19 21:24:59 GMT; path=/; domain=.stellar.org; HttpOnly
+Vary: Origin
+X-Ratelimit-Limit: 17200
+X-Ratelimit-Remaining: 17139
+X-Ratelimit-Reset: 2543
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/transactions/95264ac83810b824f3f862b2d056f704f9e87c6fe07b091495c7f6ddfc72fb80/operations?cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/transactions/95264ac83810b824f3f862b2d056f704f9e87c6fe07b091495c7f6ddfc72fb80/operations?cursor=36504752409808897\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/transactions/95264ac83810b824f3f862b2d056f704f9e87c6fe07b091495c7f6ddfc72fb80/operations?cursor=36504752409808897\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/36504752409808897"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/95264ac83810b824f3f862b2d056f704f9e87c6fe07b091495c7f6ddfc72fb80"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/36504752409808897/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=36504752409808897"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=36504752409808897"
+          }
+        },
+        "id": "36504752409808897",
+        "paging_token": "36504752409808897",
+        "source_account": "GCBKLGRCYC5ZUBOJMEJBIHOBDQBL6AYQAVKYV6I62EFPRHTXASYYCD42",
+        "type": "create_account",
+        "type_i": 0,
+        "created_at": "2018-04-17T21:24:52Z",
+        "transaction_hash": "95264ac83810b824f3f862b2d056f704f9e87c6fe07b091495c7f6ddfc72fb80",
+        "starting_balance": "10.0000000",
+        "funder": "GCBKLGRCYC5ZUBOJMEJBIHOBDQBL6AYQAVKYV6I62EFPRHTXASYYCD42",
+        "account": "GA7334UNDWALQWL646CCVKLHVGOVIFYOOSJWA4QDIFGUXNF5AGRR7CH5"
+      }
+    ]
+  }
+}

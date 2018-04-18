@@ -1,6 +1,7 @@
 package stellarnet
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -191,6 +192,39 @@ func (a *Account) loadOperations(tx Transaction) ([]Operation, error) {
 		return nil, err
 	}
 	return page.Embedded.Records, nil
+}
+
+// TxPayments returns payment operations in a transaction.
+// Note: may not return all payments as the backing response is paginated.
+func TxPayments(txID string) ([]horizon.Payment, error) {
+	txID, err := CheckTxID(txID)
+	if err != nil {
+		return nil, err
+	}
+	res, err := client.HTTP.Get(client.URL + "/transactions/" + txID + "/payments")
+	if err != nil {
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	var page PaymentsPage
+	if err := json.NewDecoder(res.Body).Decode(&page); err != nil {
+		return nil, err
+	}
+	return page.Embedded.Records, nil
+}
+
+// CheckTxID validates and canonicalizes a transaction ID
+// Transaction IDs are lowercase hex-encoded 32-byte strings.
+func CheckTxID(txID string) (string, error) {
+	bs, err := hex.DecodeString(txID)
+	if err != nil {
+		return "", fmt.Errorf("error decoding transaction ID: %v", err)
+	}
+	if len(bs) != 32 {
+		return "", fmt.Errorf("unexpected transaction ID length: %v bytes", len(bs))
+	}
+	return hex.EncodeToString(bs), nil
 }
 
 func isOpNoDestination(inErr error) bool {
