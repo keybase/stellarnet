@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -131,17 +132,11 @@ func (a *Account) RecentPayments() ([]horizon.Payment, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := client.HTTP.Get(link + "?order=desc&limit=10")
+	var page PaymentsPage
+	err = getDecodeJSONStrict(link+"?order=desc&limit=10", client.HTTP.Get, &page)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Body.Close()
-
-	var page PaymentsPage
-	if err := json.NewDecoder(res.Body).Decode(&page); err != nil {
-		return nil, err
-	}
-
 	return page.Embedded.Records, nil
 }
 
@@ -152,14 +147,9 @@ func (a *Account) RecentTransactions() ([]Transaction, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := client.HTTP.Get(link + "?order=desc&limit=10")
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
 	var page TransactionsPage
-	if err := json.NewDecoder(res.Body).Decode(&page); err != nil {
+	err = getDecodeJSONStrict(link+"?order=desc&limit=10", client.HTTP.Get, &page)
+	if err != nil {
 		return nil, err
 	}
 
@@ -181,14 +171,9 @@ func (a *Account) RecentTransactions() ([]Transaction, error) {
 
 func (a *Account) loadOperations(tx Transaction) ([]Operation, error) {
 	link := a.linkHref(tx.Internal.Links.Operations)
-	res, err := client.HTTP.Get(link)
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
 	var page OperationsPage
-	if err := json.NewDecoder(res.Body).Decode(&page); err != nil {
+	err := getDecodeJSONStrict(link, client.HTTP.Get, &page)
+	if err != nil {
 		return nil, err
 	}
 	return page.Embedded.Records, nil
@@ -201,14 +186,9 @@ func TxPayments(txID string) ([]horizon.Payment, error) {
 	if err != nil {
 		return nil, err
 	}
-	res, err := client.HTTP.Get(client.URL + "/transactions/" + txID + "/payments")
-	if err != nil {
-		return nil, err
-	}
-	defer res.Body.Close()
-
 	var page PaymentsPage
-	if err := json.NewDecoder(res.Body).Decode(&page); err != nil {
+	err = getDecodeJSONStrict(client.URL+"/transactions/"+txID+"/payments", client.HTTP.Get, &page)
+	if err != nil {
 		return nil, err
 	}
 	return page.Embedded.Records, nil
@@ -429,4 +409,27 @@ func minBytes(bs []byte, deflt byte) byte {
 		}
 	}
 	return res
+}
+
+// getDecodeJSONStrict gets from a url and decodes the response.
+// Returns errors on non-200 response codes.
+// Inspired by: https://github.com/stellar/go/blob/4c8cfd0/clients/horizon/internal.go#L16
+func getDecodeJSONStrict(url string, getter func(string) (*http.Response, error), dest interface{}) error {
+	resp, err := getter(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		horizonError := &horizon.Error{
+			Response: resp,
+		}
+		err := json.NewDecoder(resp.Body).Decode(&horizonError.Problem)
+		if err != nil {
+			return fmt.Errorf("horizon http error: %v %v", resp.StatusCode, resp.Status)
+		}
+		return horizonError
+	}
+	err = json.NewDecoder(resp.Body).Decode(dest)
+	return err
 }
