@@ -109,7 +109,7 @@ func TestScenario(t *testing.T) {
 	}
 
 	t.Logf("alice (%s) sending 10 XLM to bob (%s)", helper.Alice.Address(), helper.Bob.Address())
-	if _, _, err = acctAlice.SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), "10.0"); err != nil {
+	if _, _, err = SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), "10.0"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -132,7 +132,7 @@ func TestScenario(t *testing.T) {
 		t.Errorf("bob balance: %s, expected %s", balance, bobExpected)
 	}
 
-	ledger, txid, err := acctBob.SendXLM(seedStr(t, helper.Bob), addressStr(t, helper.Alice), "1.0")
+	ledger, txid, err := SendXLM(seedStr(t, helper.Bob), addressStr(t, helper.Alice), "1.0")
 	if err != nil {
 		t.Fatal(err)
 	}
