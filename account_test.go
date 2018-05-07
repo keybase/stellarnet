@@ -215,4 +215,20 @@ func TestScenario(t *testing.T) {
 	require.NoError(t, err)
 	txid3, err := HashTx(tx.Tx)
 	require.Equal(t, txid2, txid3)
+
+	t.Logf("bob merges account into alice's account")
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client())
+	require.NoError(t, err)
+	_, _, err = Submit(sig.Signed)
+	require.NoError(t, err)
+
+	t.Log("bob's account has been merged away")
+	_, err = acctBob.BalanceXLM()
+	require.Error(t, err)
+	require.Equal(t, ErrAccountNotFound, err)
+
+	t.Log("alice got bob's balance")
+	balance, err = acctAlice.BalanceXLM()
+	require.NoError(t, err)
+	require.Equal(t, "9999.9999600", balance)
 }

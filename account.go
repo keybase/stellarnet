@@ -318,6 +318,24 @@ func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount string,
 	return sign(from, tx)
 }
 
+// AccountMergeTransaction creates a signed transaction to merge the account `from` into `to`.
+func AccountMergeTransaction(from SeedStr, to AddressStr,
+	seqnoProvider build.SequenceProvider) (res SignResult, err error) {
+	tx, err := build.Transaction(
+		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
+		network,
+		build.AutoSequence{SequenceProvider: seqnoProvider},
+		build.AccountMerge(
+			build.Destination{AddressOrSeed: to.String()},
+		),
+		build.MemoText{Value: "via keybase"},
+	)
+	if err != nil {
+		return res, err
+	}
+	return sign(from, tx)
+}
+
 type SignResult struct {
 	Seqno  uint64
 	Signed string // signed transaction (base64)
