@@ -1,15 +1,15 @@
 HTTP/2.0 404 Not Found
 Content-Length: 325
-Cf-Ray: 40d1f5c4dbff2138-EWR
+Cf-Ray: 417e00ccd8999a1c-EWR
 Content-Type: application/problem+json; charset=utf-8
-Date: Tue, 17 Apr 2018 21:24:42 GMT
+Date: Tue, 08 May 2018 18:31:24 GMT
 Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
 Server: cloudflare
-Set-Cookie: __cfduid=d57cbacae3462176aa4aae032b53f44401524000282; expires=Wed, 17-Apr-19 21:24:42 GMT; path=/; domain=.stellar.org; HttpOnly
+Set-Cookie: __cfduid=deccfa2574725aab537f114925a100c671525804284; expires=Wed, 08-May-19 18:31:24 GMT; path=/; domain=.stellar.org; HttpOnly
 Vary: Origin
 X-Ratelimit-Limit: 17200
-X-Ratelimit-Remaining: 17173
-X-Ratelimit-Reset: 2560
+X-Ratelimit-Remaining: 17176
+X-Ratelimit-Reset: 3165
 
 {
   "type": "https://stellar.org/horizon-errors/not_found",

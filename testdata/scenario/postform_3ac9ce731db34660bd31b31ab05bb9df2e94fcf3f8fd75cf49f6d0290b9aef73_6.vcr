@@ -1,15 +1,15 @@
 HTTP/2.0 400 Bad Request
 Content-Length: 902
-Cf-Ray: 40d1f5cae8ea2138-EWR
+Cf-Ray: 417e00e49d3b9a1c-EWR
 Content-Type: application/problem+json; charset=utf-8
-Date: Tue, 17 Apr 2018 21:24:48 GMT
+Date: Tue, 08 May 2018 18:31:33 GMT
 Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
 Server: cloudflare
-Set-Cookie: __cfduid=dab5710ff101e0e28e43afb9ae171d4f11524000283; expires=Wed, 17-Apr-19 21:24:43 GMT; path=/; domain=.stellar.org; HttpOnly
+Set-Cookie: __cfduid=d6698c583f510bc3e99697e6f51110a4f1525804288; expires=Wed, 08-May-19 18:31:28 GMT; path=/; domain=.stellar.org; HttpOnly
 Vary: Origin
 X-Ratelimit-Limit: 17200
-X-Ratelimit-Remaining: 17169
-X-Ratelimit-Reset: 2559
+X-Ratelimit-Remaining: 17172
+X-Ratelimit-Reset: 3161
 
 {
   "type": "https://stellar.org/horizon-errors/transaction_failed",
@@ -17,7 +17,7 @@ X-Ratelimit-Reset: 2559
   "status": 400,
   "detail": "The transaction failed when submitted to the stellar network. The `extras.result_codes` field on this response contains further details.  Descriptions of each code can be found at: https://www.stellar.org/developers/learn/concepts/list-of-operations.html",
   "extras": {
-    "envelope_xdr": "AAAAAIKlmiLAu5oFyWESFB3BHAK/AxAFVYr5HtEK+J53BLGBAAAAZACBsN8AAAABAAAAAAAAAAEAAAALdmlhIGtleWJhc2UAAAAAAQAAAAAAAAABAAAAAD+98o0dgLhZfueEKqlnqZ1UFw50k2ByA0FNS7S9AaMfAAAAAAAAAAAF9eEAAAAAAAAAAAF3BLGBAAAAQBYQtTC9X7YyZwvcJdyHlLCBhZerRGwn3Snq/nYvqUq3qDLk1UzrCn3sKYq7Brlxwf0MhMEwQp1lkX1y0ly+eg8=",
+    "envelope_xdr": "AAAAAP+AC3mqKNBfJfco8CAafe74YhbEC0dbR5U0cy8+yOj9AAAAZACHMjsAAAABAAAAAAAAAAEAAAALdmlhIGtleWJhc2UAAAAAAQAAAAAAAAABAAAAAIam7FEv6MbcUmmAoYrtUdM74+K6H7S96ZL0oU0zGJrKAAAAAAAAAAAF9eEAAAAAAAAAAAE+yOj9AAAAQHYxrDOhuWaQOdKgCheYODCC15pHpmrUeAMzeFODf05y4y6DFpxsNaDE14nyok7kJhzXSFQ2yNxRKmExivPGCwI=",
     "result_codes": {
       "transaction": "tx_failed",
       "operations": [
