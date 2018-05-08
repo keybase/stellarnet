@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/keybase/stellarnet/testclient"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/xdr"
@@ -231,4 +232,12 @@ func TestScenario(t *testing.T) {
 	balance, err = acctAlice.BalanceXLM()
 	require.NoError(t, err)
 	require.Equal(t, "9999.9999600", balance)
+
+	t.Logf("alice merges into an unfunded account")
+	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, Client())
+	require.NoError(t, err)
+	t.Logf("xxx - %v", spew.Sdump(sig))
+	_, _, err = Submit(sig.Signed)
+	require.NoError(t, err)
+
 }
