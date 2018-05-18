@@ -109,6 +109,29 @@ func TestScenario(t *testing.T) {
 		t.Fatal("alice seqno: 0, expected non-zero")
 	}
 
+	details, err := acctAlice.Details()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(details.Seqno) == 0 || details.Seqno == "0" {
+		t.Errorf("details seqno should not be empty")
+	}
+	if details.SubentryCount != 0 {
+		t.Errorf("subentries: %d, expected 0", details.SubentryCount)
+	}
+	if details.Available != "9999.0000000" {
+		t.Errorf("available balance: %q, expected 9999.0000000", details.Available)
+	}
+	if len(details.Balances) != 1 {
+		t.Fatalf("num balances: %d, expected 1", len(details.Balances))
+	}
+	if details.Balances[0].Balance != "10000.0000000" {
+		t.Errorf("balance: %s, expected 10000.0000000", details.Balances[0].Balance)
+	}
+	if details.Balances[0].Type != "native" {
+		t.Errorf("balance type: %s, expected native", details.Balances[0].Type)
+	}
+
 	t.Logf("alice (%s) sending 10 XLM to bob (%s)", helper.Alice.Address(), helper.Bob.Address())
 	if _, _, err = SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), "10.0"); err != nil {
 		t.Fatal(err)
