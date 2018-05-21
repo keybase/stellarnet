@@ -102,15 +102,21 @@ func (a *Account) AvailableBalanceXLM() (string, error) {
 
 // availableBalanceXLMLoaded must be called after a.load().
 func (a *Account) availableBalanceXLMLoaded() (string, error) {
-	total := a.internal.GetNativeBalance()
-	totalInt, err := samount.ParseInt64(total)
+	return AvailableBalance(a.internal.GetNativeBalance(), int(a.internal.SubentryCount))
+}
+
+// AvailableBalance determines the amount of the balance that could
+// be sent to another account (leaving enough XLM in the sender's
+// account to maintain the minimum balance).
+func AvailableBalance(balance string, subentryCount int) (string, error) {
+	balanceInt, err := samount.ParseInt64(balance)
 	if err != nil {
 		return "", err
 	}
 
-	minimum := baseReserve * (2 + int64(a.internal.SubentryCount))
+	minimum := baseReserve * (2 + int64(subentryCount))
 
-	available := totalInt - minimum
+	available := balanceInt - minimum
 	if available < 0 {
 		available = 0
 	}
