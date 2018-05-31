@@ -67,7 +67,7 @@ func assertCreateAccount(t *testing.T, tx Transaction, startingBalance, funder, 
 
 func TestScenario(t *testing.T) {
 	helper, client, network := testclient.Setup(t)
-	SetClient(client, network)
+	SetClientAndNetwork(client, network)
 	helper.SetState(t, "scenario")
 
 	t.Log("alice key pair not an account yet")

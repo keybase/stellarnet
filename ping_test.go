@@ -9,7 +9,7 @@ import (
 
 func TestPing(t *testing.T) {
 	helper, client, network := testclient.Setup(t)
-	SetClient(client, network)
+	SetClientAndNetwork(client, network)
 	helper.SetState(t, "ping")
 
 	ping, err := Ping()
