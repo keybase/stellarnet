@@ -1,15 +1,15 @@
 HTTP/2.0 200 OK
-Cf-Ray: 41d0d99689c19daf-ORD
+Cf-Ray: 4265a7b0cac59d85-ORD
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Fri, 18 May 2018 19:49:56 GMT
+Date: Tue, 05 Jun 2018 21:15:31 GMT
 Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
 Server: cloudflare
-Set-Cookie: __cfduid=dddb8fd5e0053abe016ef97f45ed818921526672996; expires=Sat, 18-May-19 19:49:56 GMT; path=/; domain=.stellar.org; HttpOnly
+Set-Cookie: __cfduid=d2092306b8082305a3949cd38c88e10dc1528233331; expires=Wed, 05-Jun-19 21:15:31 GMT; path=/; domain=.stellar.org; HttpOnly
 Vary: Origin
 X-Ratelimit-Limit: 17200
-X-Ratelimit-Remaining: 17149
-X-Ratelimit-Reset: 886
+X-Ratelimit-Remaining: 17148
+X-Ratelimit-Reset: 3385
 
 {
   "_links": {
@@ -48,11 +48,11 @@ X-Ratelimit-Reset: 886
       "templated": true
     }
   },
-  "horizon_version": "snapshot-snapshots-2-g99e33f0",
+  "horizon_version": "snapshot-1bf713b",
   "core_version": "stellar-core 9.2.0rc6 (b0923f153b86d394a83b2a619db6b23f07ed0700)",
-  "history_latest_ledger": 9033958,
+  "history_latest_ledger": 9346018,
   "history_elder_ledger": 1,
-  "core_latest_ledger": 9033958,
+  "core_latest_ledger": 9346019,
   "network_passphrase": "Test SDF Network ; September 2015",
   "protocol_version": 9
 }

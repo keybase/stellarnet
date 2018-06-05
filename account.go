@@ -23,7 +23,7 @@ var gnetwork = build.PublicNetwork
 const defaultMemo = "via keybase"
 const baseReserve = 5000000
 
-// SetClient sets the horizon client and network. Used by stellarnet/testclient.
+// SetClientAndNetwork sets the horizon client and network. Used by stellarnet/testclient.
 func SetClientAndNetwork(c *horizon.Client, n build.Network) {
 	configLock.Lock()
 	defer configLock.Unlock()
@@ -31,6 +31,7 @@ func SetClientAndNetwork(c *horizon.Client, n build.Network) {
 	gnetwork = n
 }
 
+// SetClientURLAndNetwork sets the horizon client URL and network.
 func SetClientURLAndNetwork(url string, n build.Network) {
 	configLock.Lock()
 	defer configLock.Unlock()
@@ -41,6 +42,7 @@ func SetClientURLAndNetwork(url string, n build.Network) {
 	gnetwork = n
 }
 
+// SetClient sets the horizon client.
 func SetClient(c *horizon.Client) {
 	configLock.Lock()
 	defer configLock.Unlock()
@@ -58,6 +60,7 @@ func SetClientURL(url string) {
 	}
 }
 
+// SetNetwork sets the horizon network.
 func SetNetwork(n build.Network) {
 	configLock.Lock()
 	defer configLock.Unlock()
@@ -355,14 +358,15 @@ func isOpNoDestination(inErr error) bool {
 
 // SendXLM sends 'amount' lumens from 'from' account to 'to' account.
 // If the recipient has no account yet, this will create it.
-func SendXLM(from SeedStr, to AddressStr, amount string) (ledger int32, txid string, err error) {
+// memoText is a public memo.
+func SendXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger int32, txid string, err error) {
 	// this is checked in build.Transaction, but can't hurt to break out early
 	if _, err = samount.Parse(amount); err != nil {
 		return 0, "", err
 	}
 
 	// try payment first
-	ledger, txid, err = paymentXLM(from, to, amount)
+	ledger, txid, err = paymentXLM(from, to, amount, memoText)
 
 	if err != nil {
 		if err != ErrAccountNotFound {
@@ -371,15 +375,15 @@ func SendXLM(from SeedStr, to AddressStr, amount string) (ledger int32, txid str
 
 		// if payment failed due to op_no_destination, then
 		// should try createAccount instead
-		return createAccountXLM(from, to, amount)
+		return createAccountXLM(from, to, amount, memoText)
 	}
 
 	return ledger, txid, nil
 }
 
 // paymentXLM creates a payment transaction from 'from' to 'to' for 'amount' lumens.
-func paymentXLM(from SeedStr, to AddressStr, amount string) (ledger int32, txid string, err error) {
-	sig, err := PaymentXLMTransaction(from, to, amount, Client())
+func paymentXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger int32, txid string, err error) {
+	sig, err := PaymentXLMTransaction(from, to, amount, memoText, Client())
 	if err != nil {
 		return 0, "", err
 	}
@@ -387,7 +391,7 @@ func paymentXLM(from SeedStr, to AddressStr, amount string) (ledger int32, txid 
 }
 
 // PaymentXLMTransaction creates a signed transaction to send a payment from 'from' to 'to' for 'amount' lumens.
-func PaymentXLMTransaction(from SeedStr, to AddressStr, amount string,
+func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	seqnoProvider build.SequenceProvider) (res SignResult, err error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
@@ -397,7 +401,7 @@ func PaymentXLMTransaction(from SeedStr, to AddressStr, amount string,
 			build.Destination{AddressOrSeed: to.String()},
 			build.NativeAmount{Amount: amount},
 		),
-		build.MemoText{Value: defaultMemo},
+		build.MemoText{Value: memoText},
 	)
 	if err != nil {
 		return res, err
@@ -406,8 +410,9 @@ func PaymentXLMTransaction(from SeedStr, to AddressStr, amount string,
 }
 
 // createAccountXLM funds an new account 'to' from 'from' with a starting balance of 'amount'.
-func createAccountXLM(from SeedStr, to AddressStr, amount string) (ledger int32, txid string, err error) {
-	sig, err := CreateAccountXLMTransaction(from, to, amount, Client())
+// memoText is a public memo.
+func createAccountXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger int32, txid string, err error) {
+	sig, err := CreateAccountXLMTransaction(from, to, amount, memoText, Client())
 	if err != nil {
 		return 0, "", err
 	}
@@ -416,7 +421,7 @@ func createAccountXLM(from SeedStr, to AddressStr, amount string) (ledger int32,
 
 // CreateAccountXLMTransaction creates a signed transaction to fund an new account 'to' from 'from'
 // with a starting balance of 'amount'.
-func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount string,
+func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	seqnoProvider build.SequenceProvider) (res SignResult, err error) {
 	tx, err := build.Transaction(
 		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
@@ -426,7 +431,7 @@ func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount string,
 			build.Destination{AddressOrSeed: to.String()},
 			build.NativeAmount{Amount: amount},
 		),
-		build.MemoText{Value: defaultMemo},
+		build.MemoText{Value: memoText},
 	)
 	if err != nil {
 		return res, err

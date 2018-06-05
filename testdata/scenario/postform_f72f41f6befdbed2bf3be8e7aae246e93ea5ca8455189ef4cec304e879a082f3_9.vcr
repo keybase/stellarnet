@@ -1,0 +1,25 @@
+HTTP/2.0 200 OK
+Cf-Ray: 4265a731cf959d85-ORD
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 05 Jun 2018 21:15:16 GMT
+Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+Server: cloudflare
+Set-Cookie: __cfduid=da6d1c06a35bdc90ace69948f4a348af71528233311; expires=Wed, 05-Jun-19 21:15:11 GMT; path=/; domain=.stellar.org; HttpOnly
+Vary: Origin
+X-Ratelimit-Limit: 17200
+X-Ratelimit-Remaining: 17161
+X-Ratelimit-Reset: 3405
+
+{
+  "_links": {
+    "transaction": {
+      "href": "https://horizon-testnet.stellar.org/transactions/9b9037a693b9d6f5a672c98bfd8c89d31ddfb3732f3246f081b44dea10741df2"
+    }
+  },
+  "hash": "9b9037a693b9d6f5a672c98bfd8c89d31ddfb3732f3246f081b44dea10741df2",
+  "ledger": 9346016,
+  "envelope_xdr": "AAAAAC2RFTCQ0Emlk+mfQXWGmBMKAlLfO68bwur8tVLXDxKXAAAAZACOm94AAAACAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAAAAAAAAP5HW+1Mm2llz3OP1c6U/IPU+MZCCs7V5pGwG7Sfg6oQAAAAAAX14QAAAAAAAAAAAdcPEpcAAABAzYNlmHlAac/FYmRd+fqXGAc1ay7qmV4k7Bzkl1yCg+IvQyp/xoRRLDChWLPPVT3MmjSUM4KOz3RNt0MqElp6Dw==",
+  "result_xdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=",
+  "result_meta_xdr": "AAAAAAAAAAEAAAADAAAAAACOm+AAAAAAAAAAAP5HW+1Mm2llz3OP1c6U/IPU+MZCCs7V5pGwG7Sfg6oQAAAAAAX14QAAjpvgAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAwCOm+AAAAAAAAAAAC2RFTCQ0Emlk+mfQXWGmBMKAlLfO68bwur8tVLXDxKXAAAAF0h25zgAjpveAAAAAgAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAQCOm+AAAAAAAAAAAC2RFTCQ0Emlk+mfQXWGmBMKAlLfO68bwur8tVLXDxKXAAAAF0KBBjgAjpveAAAAAgAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAA"
+}
