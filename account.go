@@ -360,6 +360,9 @@ func isOpNoDestination(inErr error) bool {
 // If the recipient has no account yet, this will create it.
 // memoText is a public memo.
 func SendXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger int32, txid string, err error) {
+	if len(memoText) > 28 {
+		return 0, "", errors.New("public memo is too long")
+	}
 	// this is checked in build.Transaction, but can't hurt to break out early
 	if _, err = samount.Parse(amount); err != nil {
 		return 0, "", err
