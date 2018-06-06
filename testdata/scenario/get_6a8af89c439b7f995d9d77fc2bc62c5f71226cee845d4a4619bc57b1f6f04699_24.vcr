@@ -1,0 +1,60 @@
+HTTP/2.0 200 OK
+Cf-Ray: 426bffeb8f1f9daf-ORD
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Wed, 06 Jun 2018 15:44:19 GMT
+Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+Server: cloudflare
+Set-Cookie: __cfduid=dd998576a965b086590e41f6e79dd43081528299859; expires=Thu, 06-Jun-19 15:44:19 GMT; path=/; domain=.stellar.org; HttpOnly
+Vary: Origin
+X-Ratelimit-Limit: 17200
+X-Ratelimit-Remaining: 17096
+X-Ratelimit-Reset: 464
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/transactions/8371d1ad479edee965cf1801abc119a45c3c338dac867557664553089fe4b003/payments?cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/transactions/8371d1ad479edee965cf1801abc119a45c3c338dac867557664553089fe4b003/payments?cursor=40197990492680193\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/transactions/8371d1ad479edee965cf1801abc119a45c3c338dac867557664553089fe4b003/payments?cursor=40197990492680193\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/40197990492680193"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/8371d1ad479edee965cf1801abc119a45c3c338dac867557664553089fe4b003"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/40197990492680193/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=40197990492680193"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=40197990492680193"
+          }
+        },
+        "id": "40197990492680193",
+        "paging_token": "40197990492680193",
+        "source_account": "GD6MPQD6NAU7J75XRREFNPBXJOKT2ZPWK3TUT6FPAFTESRW3MXZ36XJX",
+        "type": "payment",
+        "type_i": 1,
+        "created_at": "2018-06-06T15:44:18Z",
+        "transaction_hash": "8371d1ad479edee965cf1801abc119a45c3c338dac867557664553089fe4b003",
+        "asset_type": "native",
+        "from": "GD6MPQD6NAU7J75XRREFNPBXJOKT2ZPWK3TUT6FPAFTESRW3MXZ36XJX",
+        "to": "GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ",
+        "amount": "1.0000000"
+      }
+    ]
+  }
+}

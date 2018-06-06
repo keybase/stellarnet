@@ -217,8 +217,9 @@ func TestScenario(t *testing.T) {
 		t.Fatal("not active")
 	}
 
-	payments, err := TxPayments(bobTx[0].Internal.ID)
+	plus, err := TxPaymentsPlus(bobTx[0].Internal.ID)
 	require.NoError(t, err)
+	payments := plus.Payments
 	require.Len(t, payments, 1)
 	require.Equal(t, bobTx[0].Internal.ID, payments[0].TransactionHash)
 	require.Equal(t, helper.Bob.Address(), payments[0].SourceAccount)
@@ -226,6 +227,9 @@ func TestScenario(t *testing.T) {
 	require.Equal(t, helper.Alice.Address(), payments[0].To)
 	require.Equal(t, "native", payments[0].AssetType)
 	require.Equal(t, "1.0000000", payments[0].Amount)
+	require.Equal(t, bobTx[0].Internal.ID, plus.TransactionID)
+	require.Equal(t, "a memo", plus.Memo)
+	require.Equal(t, "text", plus.MemoType)
 	_, err = TxPayments(bobTx[0].Internal.ID[:5])
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "error decoding transaction ID")
