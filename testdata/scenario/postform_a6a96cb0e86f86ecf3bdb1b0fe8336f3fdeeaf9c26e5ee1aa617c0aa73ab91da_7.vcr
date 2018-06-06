@@ -1,0 +1,29 @@
+HTTP/2.0 400 Bad Request
+Content-Length: 886
+Cf-Ray: 426bff86bbfd9daf-ORD
+Content-Type: application/problem+json; charset=utf-8
+Date: Wed, 06 Jun 2018 15:44:08 GMT
+Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+Server: cloudflare
+Set-Cookie: __cfduid=d58fe37e882f64d44658c03a5568280fb1528299843; expires=Thu, 06-Jun-19 15:44:03 GMT; path=/; domain=.stellar.org; HttpOnly
+Vary: Origin
+X-Ratelimit-Limit: 17200
+X-Ratelimit-Remaining: 17100
+X-Ratelimit-Reset: 600
+
+{
+  "type": "https://stellar.org/horizon-errors/transaction_failed",
+  "title": "Transaction Failed",
+  "status": 400,
+  "detail": "The transaction failed when submitted to the stellar network. The `extras.result_codes` field on this response contains further details.  Descriptions of each code can be found at: https://www.stellar.org/developers/learn/concepts/list-of-operations.html",
+  "extras": {
+    "envelope_xdr": "AAAAABJYjRt39dY6TS/ZV9biEw+gNBKE3wRs60DKMhKqRca4AAAAZACOz9kAAAABAAAAAAAAAAEAAAAAAAAAAQAAAAAAAAABAAAAAPzHwH5oKfT/t4xIVrw3S5U9ZfZW50n4rwFmSUbbZfO/AAAAAAAAAAAF9eEAAAAAAAAAAAGqRca4AAAAQJfsbQE7XNdHNoIgvY8037twZk61JA+8Si3TYIpFcMs4ekWurNOfYAYNZapJKmtEnF7GezwPO7WcIELy/NX7Oww=",
+    "result_codes": {
+      "transaction": "tx_failed",
+      "operations": [
+        "op_no_destination"
+      ]
+    },
+    "result_xdr": "AAAAAAAAAGT/////AAAAAQAAAAAAAAAB////+wAAAAA="
+  }
+}

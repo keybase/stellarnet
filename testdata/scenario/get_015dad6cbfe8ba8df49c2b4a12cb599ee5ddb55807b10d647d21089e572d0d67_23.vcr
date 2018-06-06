@@ -1,0 +1,77 @@
+HTTP/2.0 200 OK
+Cf-Ray: 426bffeb2eeb9daf-ORD
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Wed, 06 Jun 2018 15:44:19 GMT
+Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+Server: cloudflare
+Set-Cookie: __cfduid=dd998576a965b086590e41f6e79dd43081528299859; expires=Thu, 06-Jun-19 15:44:19 GMT; path=/; domain=.stellar.org; HttpOnly
+Vary: Origin
+X-Ratelimit-Limit: 17200
+X-Ratelimit-Remaining: 17089
+X-Ratelimit-Reset: 584
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ",
+  "paging_token": "",
+  "account_id": "GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ",
+  "sequence": "40197977607766018",
+  "subentry_count": 0,
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false
+  },
+  "balances": [
+    {
+      "balance": "9990.9999800",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "public_key": "GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ",
+      "weight": 1,
+      "key": "GAJFRDI3O725MOSNF7MVPVXCCMH2ANASQTPQI3HLIDFDEEVKIXDLQFPZ",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {}
+}

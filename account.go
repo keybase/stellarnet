@@ -315,6 +315,15 @@ func TxPayments(txID string) ([]horizon.Payment, error) {
 	return page.Embedded.Records, nil
 }
 
+// TxDetails gets a horizon.Transaction for txID.
+func TxDetails(txID string) (horizon.Transaction, error) {
+	var embed TransactionEmbed
+	if err := getDecodeJSONStrict(Client().URL+"/transactions/"+txID, Client().HTTP.Get, &embed); err != nil {
+		return horizon.Transaction{}, err
+	}
+	return embed.Transaction, nil
+}
+
 // HashTx returns the hex transaction ID using the active network passphrase.
 func HashTx(tx xdr.Transaction) (string, error) {
 	bs, err := snetwork.HashTransaction(&tx, Network().Passphrase)
