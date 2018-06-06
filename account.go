@@ -315,44 +315,6 @@ func TxPayments(txID string) ([]horizon.Payment, error) {
 	return page.Embedded.Records, nil
 }
 
-// PaymentsPlus contains the payments in a transaction as well as the memo.
-type PaymentsPlus struct {
-	TransactionID string
-	Payments      []horizon.Payment
-	Memo          string
-	MemoType      string
-	FeePaid       int32
-}
-
-// TxPaymentsPlus gets the payment operations in a transaction as well as
-// some details about the transaction.
-func TxPaymentsPlus(txID string) (*PaymentsPlus, error) {
-	txID, err := CheckTxID(txID)
-	if err != nil {
-		return nil, err
-	}
-
-	payments, err := TxPayments(txID)
-	if err != nil {
-		return nil, err
-	}
-
-	tx, err := TxDetails(txID)
-	if err != nil {
-		return nil, err
-	}
-
-	plus := &PaymentsPlus{
-		TransactionID: tx.ID,
-		Payments:      payments,
-		Memo:          tx.Memo,
-		MemoType:      tx.MemoType,
-		FeePaid:       tx.FeePaid,
-	}
-
-	return plus, nil
-}
-
 // TxDetails gets a horizon.Transaction for txID.
 func TxDetails(txID string) (horizon.Transaction, error) {
 	var embed TransactionEmbed
