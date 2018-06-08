@@ -161,6 +161,21 @@ func GetTestLumens(t *testing.T, kp keypair.KP) {
 	}
 }
 
+// IsPlayback returns true if the vcr is in play mode.
+func IsPlayback() bool {
+	return tvcr.IsPlayback()
+}
+
+// IsRecording returns true if the vcr is in record mode.
+func IsRecording() bool {
+	return tvcr.IsRecording()
+}
+
+// IsLive returns true if the vcr is in live mode.
+func IsLive() bool {
+	return tvcr.IsLive()
+}
+
 func fullFromSeed(t *testing.T, seed string) *keypair.Full {
 	kp, err := keypair.Parse(seed)
 	if err != nil {
