@@ -73,13 +73,13 @@ func TestScenario(t *testing.T) {
 	t.Log("alice key pair not an account yet")
 	acctAlice := NewAccount(addressStr(t, helper.Alice))
 	_, err := acctAlice.BalanceXLM()
-	if err != ErrAccountNotFound {
-		t.Fatalf("error: %q, expected %q (ErrAccountNotFound)", err, ErrAccountNotFound)
+	if err != ErrSourceAccountNotFound {
+		t.Fatalf("error: %q, expected %q (ErrSourceAccountNotFound)", err, ErrSourceAccountNotFound)
 	}
 
 	_, err = AccountSeqno(addressStr(t, helper.Alice))
-	if err != ErrAccountNotFound {
-		t.Fatalf("error: %q, expected %q (ErrAccountNotFound)", err, ErrAccountNotFound)
+	if err != ErrSourceAccountNotFound {
+		t.Fatalf("error: %q, expected %q (ErrSourceAccountNotFound)", err, ErrSourceAccountNotFound)
 	}
 
 	active, err := IsMasterKeyActive(addressStr(t, helper.Alice))
@@ -256,7 +256,7 @@ func TestScenario(t *testing.T) {
 	t.Log("bob's account has been merged away")
 	_, err = acctBob.BalanceXLM()
 	require.Error(t, err)
-	require.Equal(t, ErrAccountNotFound, err)
+	require.Equal(t, ErrSourceAccountNotFound, err)
 
 	t.Log("alice got bob's balance")
 	balance, err = acctAlice.BalanceXLM()

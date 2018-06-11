@@ -2,9 +2,6 @@ package stellarnet
 
 import "errors"
 
-// ErrAccountNotFound is returned if there is no stellar account for an address.
-var ErrAccountNotFound = errors.New("account not found")
-
 // ErrSourceAccountNotFound is returned if there is no stellar account for a source account address.
 var ErrSourceAccountNotFound = errors.New("source account not found")
 

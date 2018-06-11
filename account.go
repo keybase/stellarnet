@@ -208,7 +208,7 @@ func IsMasterKeyActive(accountID AddressStr) (bool, error) {
 	a := NewAccount(accountID)
 	err := a.load()
 	if err != nil {
-		if err == ErrAccountNotFound {
+		if err == ErrSourceAccountNotFound {
 			// Accounts with no entries have active master keys.
 			return true, nil
 		}
@@ -381,7 +381,7 @@ func SendXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger int32
 	ledger, txid, err = paymentXLM(from, to, amount, memoText)
 
 	if err != nil {
-		if err != ErrAccountNotFound {
+		if err != ErrDestinationAccountNotFound {
 			return 0, "", err
 		}
 
@@ -577,12 +577,12 @@ func errMap(err error) error {
 	xerr := errors.Cause(err)
 
 	if isOpNoDestination(xerr) {
-		return ErrAccountNotFound
+		return ErrDestinationAccountNotFound
 	}
 
 	if herr, ok := xerr.(*horizon.Error); ok {
 		if herr.Problem.Status == 404 {
-			return ErrAccountNotFound
+			return ErrSourceAccountNotFound
 		}
 	}
 
