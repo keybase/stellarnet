@@ -557,7 +557,7 @@ func (a *Account) paymentsLink(cursor string, limit int) (string, error) {
 
 	var url string
 	if cursor != "" {
-		url = fmt.Sprintf("%s?cursor=%s&order=desc&limit=%d", cursor, link, limit)
+		url = fmt.Sprintf("%s?cursor=%s&order=desc&limit=%d", link, cursor, limit)
 	} else {
 		url = fmt.Sprintf("%s?order=desc&limit=%d", link, limit)
 	}

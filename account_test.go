@@ -209,6 +209,21 @@ func TestScenario(t *testing.T) {
 		t.Fatal("not 2")
 	}
 
+	// try with a cursor
+	nextPayments, err := acctAlice.RecentPayments(alicePayments[0].PagingToken, 10)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(nextPayments) != 2 {
+		t.Fatal("not 2")
+	}
+	if nextPayments[0].ID != alicePayments[1].ID {
+		t.Fatalf("id: %q, expected: %q", nextPayments[0].ID, alicePayments[1].ID)
+	}
+	if nextPayments[1].ID != alicePayments[2].ID {
+		t.Fatalf("id: %q, expected: %q", nextPayments[1].ID, alicePayments[2].ID)
+	}
+
 	active, err = IsMasterKeyActive(addressStr(t, helper.Alice))
 	if err != nil {
 		t.Fatal(err)
