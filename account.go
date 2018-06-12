@@ -248,13 +248,22 @@ func AccountSeqno(address AddressStr) (uint64, error) {
 // This is a summary of any recent payment transactions (payment, create_account, or account_merge).
 // It does not contain as much information as RecentTransactions.
 // It is faster as it is only one request to horizon.
-func (a *Account) RecentPayments() ([]horizon.Payment, error) {
-	link, err := a.paymentsLink()
+// cursor is optional.  if specified, it is used for pagination.
+// limit is optional.  if not specified, default is 10.  max limit is 100.
+func (a *Account) RecentPayments(cursor string, limit int) ([]horizon.Payment, error) {
+	if limit <= 0 {
+		limit = 10
+	} else if limit > 100 {
+		limit = 100
+	}
+
+	link, err := a.paymentsLink(cursor, limit)
 	if err != nil {
 		return nil, err
 	}
+
 	var page PaymentsPage
-	err = getDecodeJSONStrict(link+"?order=desc&limit=10", Client().HTTP.Get, &page)
+	err = getDecodeJSONStrict(link, Client().HTTP.Get, &page)
 	if err != nil {
 		return nil, err
 	}
@@ -537,14 +546,23 @@ func Submit(signed string) (ledger int32, txid string, err error) {
 }
 
 // paymentsLink returns the horizon endpoint to get payment information.
-func (a *Account) paymentsLink() (string, error) {
+func (a *Account) paymentsLink(cursor string, limit int) (string, error) {
 	if a.internal == nil {
 		if err := a.load(); err != nil {
 			return "", err
 		}
 	}
 
-	return a.linkHref(a.internal.Links.Payments), nil
+	link := a.linkHref(a.internal.Links.Payments)
+
+	var url string
+	if cursor != "" {
+		url = fmt.Sprintf("%s?cursor=%s&order=desc&limit=%d", cursor, link, limit)
+	} else {
+		url = fmt.Sprintf("%s?order=desc&limit=%d", link, limit)
+	}
+
+	return url, nil
 }
 
 // transactionsLink returns the horizon endpoint to get transaction information.

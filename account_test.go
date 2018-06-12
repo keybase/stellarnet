@@ -193,7 +193,7 @@ func TestScenario(t *testing.T) {
 	assertPayment(t, bobTx[0], "1.0000000", helper.Bob.Address(), helper.Alice.Address())
 	assertCreateAccount(t, bobTx[1], "10.0000000", helper.Alice.Address(), helper.Bob.Address())
 
-	alicePayments, err := acctAlice.RecentPayments()
+	alicePayments, err := acctAlice.RecentPayments("", 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +201,7 @@ func TestScenario(t *testing.T) {
 		t.Fatal("not 3")
 	}
 
-	bobPayments, err := acctBob.RecentPayments()
+	bobPayments, err := acctBob.RecentPayments("", 10)
 	if err != nil {
 		t.Fatal(err)
 	}
