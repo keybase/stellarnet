@@ -1,0 +1,91 @@
+HTTP/2.0 200 OK
+Cf-Ray: 436336989f199248-EWR
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Fri, 06 Jul 2018 15:48:02 GMT
+Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+Server: cloudflare
+Set-Cookie: __cfduid=d7b09c283ee5608d298a937de187cf4691530892082; expires=Sat, 06-Jul-19 15:48:02 GMT; path=/; domain=.stellar.org; HttpOnly
+Vary: Origin
+X-Ratelimit-Limit: 17200
+X-Ratelimit-Remaining: 17057
+X-Ratelimit-Reset: 829
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/operations/42416285266485249/effects?cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/operations/42416285266485249/effects?cursor=42416285266485249-3\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/operations/42416285266485249/effects?cursor=42416285266485249-1\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "operation": {
+            "href": "https://horizon-testnet.stellar.org/operations/42416285266485249"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=42416285266485249-1"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=42416285266485249-1"
+          }
+        },
+        "id": "0042416285266485249-0000000001",
+        "paging_token": "42416285266485249-1",
+        "account": "GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP",
+        "type": "account_debited",
+        "type_i": 3,
+        "created_at": "2018-07-06T15:48:00Z",
+        "asset_type": "native",
+        "amount": "123.4559900"
+      },
+      {
+        "_links": {
+          "operation": {
+            "href": "https://horizon-testnet.stellar.org/operations/42416285266485249"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=42416285266485249-2"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=42416285266485249-2"
+          }
+        },
+        "id": "0042416285266485249-0000000002",
+        "paging_token": "42416285266485249-2",
+        "account": "GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW",
+        "type": "account_credited",
+        "type_i": 2,
+        "created_at": "2018-07-06T15:48:00Z",
+        "asset_type": "native",
+        "amount": "123.4559900"
+      },
+      {
+        "_links": {
+          "operation": {
+            "href": "https://horizon-testnet.stellar.org/operations/42416285266485249"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=42416285266485249-3"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=42416285266485249-3"
+          }
+        },
+        "id": "0042416285266485249-0000000003",
+        "paging_token": "42416285266485249-3",
+        "account": "GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP",
+        "type": "account_removed",
+        "type_i": 1,
+        "created_at": "2018-07-06T15:48:00Z"
+      }
+    ]
+  }
+}

@@ -1,0 +1,77 @@
+HTTP/2.0 200 OK
+Cf-Ray: 4363367269e99248-EWR
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Fri, 06 Jul 2018 15:47:55 GMT
+Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+Server: cloudflare
+Set-Cookie: __cfduid=dd5630865f6b59ff1b5472872145e285d1530892075; expires=Sat, 06-Jul-19 15:47:55 GMT; path=/; domain=.stellar.org; HttpOnly
+Vary: Origin
+X-Ratelimit-Limit: 17200
+X-Ratelimit-Remaining: 17162
+X-Ratelimit-Reset: 2972
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP",
+  "paging_token": "",
+  "account_id": "GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP",
+  "sequence": "42416280971509760",
+  "subentry_count": 0,
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false
+  },
+  "balances": [
+    {
+      "balance": "123.4560000",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "public_key": "GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP",
+      "weight": 1,
+      "key": "GCRNPTN5UTUWILKD5S3E26BS4C5NUXALOAIT3KO4HIAH3AR4RZNIASBP",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {}
+}
