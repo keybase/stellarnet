@@ -1,0 +1,77 @@
+HTTP/2.0 200 OK
+Cf-Ray: 43633697dd999248-EWR
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Fri, 06 Jul 2018 15:48:01 GMT
+Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+Server: cloudflare
+Set-Cookie: __cfduid=d948e7c70f69854380b8fc110be386de61530892081; expires=Sat, 06-Jul-19 15:48:01 GMT; path=/; domain=.stellar.org; HttpOnly
+Vary: Origin
+X-Ratelimit-Limit: 17200
+X-Ratelimit-Remaining: 17059
+X-Ratelimit-Reset: 829
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW",
+  "paging_token": "",
+  "account_id": "GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW",
+  "sequence": "42416272381575170",
+  "subentry_count": 0,
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false
+  },
+  "balances": [
+    {
+      "balance": "9999.9999700",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "public_key": "GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW",
+      "weight": 1,
+      "key": "GBPWN66O3TB7E5ZD2KKT6ROYNX4E4MZNBHDQN6C6A65J6WQVEX2SFXLW",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {}
+}
