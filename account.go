@@ -333,6 +333,40 @@ func TxDetails(txID string) (horizon.Transaction, error) {
 	return embed.Transaction, nil
 }
 
+// Get the amount involved in a merge operation.
+// If operationID does not point to a merge operation, the results are undefined.
+func AccountMergeAmount(operationID string) (amount string, err error) {
+	var page EffectsPage
+	if err := getDecodeJSONStrict(Client().URL+"/operations/"+operationID+"/effects", Client().HTTP.Get, &page); err != nil {
+		return "", err
+	}
+	var creditAmount, debitAmount string
+	for _, effect := range page.Embedded.Records {
+		switch effect.Type {
+		case "account_credited":
+			if creditAmount != "" {
+				return "", fmt.Errorf("unexpected multitude of credit effects")
+			}
+			creditAmount = effect.Amount
+		case "account_debited":
+			if debitAmount != "" {
+				return "", fmt.Errorf("unexpected multitude of debit effects")
+			}
+			debitAmount = effect.Amount
+		}
+	}
+	if creditAmount == "" {
+		return "", fmt.Errorf("credit effect not found")
+	}
+	if debitAmount == "" {
+		return "", fmt.Errorf("debit effect not found")
+	}
+	if creditAmount != debitAmount {
+		return "", fmt.Errorf("inequal debit and credit amounts: %v != %v", debitAmount, creditAmount)
+	}
+	return creditAmount, nil
+}
+
 // HashTx returns the hex transaction ID using the active network passphrase.
 func HashTx(tx xdr.Transaction) (string, error) {
 	bs, err := snetwork.HashTransaction(&tx, Network().Passphrase)

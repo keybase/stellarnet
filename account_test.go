@@ -4,7 +4,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/keybase/stellarnet/testclient"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/xdr"
@@ -281,8 +280,43 @@ func TestScenario(t *testing.T) {
 	t.Logf("alice merges into an unfunded account")
 	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, Client())
 	require.NoError(t, err)
-	t.Logf("xxx - %v", spew.Sdump(sig))
 	_, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
 
+}
+
+func TestAccountMergeAmount(t *testing.T) {
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "TestAccountMergeAmount")
+
+	t.Logf("gift -> alice")
+	testclient.GetTestLumens(t, helper.Alice)
+
+	t.Logf("alice -> bob")
+	transferAmount := "123.456"
+	transferAmountMinusMergeFee := "123.4559900"
+	_, _, err := SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), transferAmount, "")
+	require.NoError(t, err)
+
+	t.Logf("bob merges back to alice")
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client())
+	require.NoError(t, err)
+	_, _, err = Submit(sig.Signed)
+	require.NoError(t, err)
+
+	if !testclient.IsPlayback() {
+		t.Logf("wait for the merge transaction to propagate from horizon to itself")
+		time.Sleep(1 * time.Second)
+	}
+
+	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	payments, err := acctAlice.RecentPayments("", 1)
+	require.NoError(t, err)
+	require.Len(t, payments, 1)
+	require.Equal(t, "account_merge", payments[0].Type)
+
+	amount, err := AccountMergeAmount(payments[0].ID)
+	require.NoError(t, err)
+	require.Equal(t, transferAmountMinusMergeFee, amount)
 }
