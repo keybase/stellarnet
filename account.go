@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/pkg/errors"
 	samount "github.com/stellar/go/amount"
@@ -35,10 +36,7 @@ func SetClientAndNetwork(c *horizon.Client, n build.Network) {
 func SetClientURLAndNetwork(url string, n build.Network) {
 	configLock.Lock()
 	defer configLock.Unlock()
-	gclient = &horizon.Client{
-		URL:  url,
-		HTTP: http.DefaultClient,
-	}
+	gclient = MakeClient(url)
 	gnetwork = n
 }
 
@@ -49,15 +47,26 @@ func SetClient(c *horizon.Client) {
 	gclient = c
 }
 
+// MakeClient makes a horizon client.
+// It is used internally for gclient but can be used when the default
+// one in gclient isn't sufficient.
+// For example, stellard uses this func to make clients to check the state
+// of the primary and backup horizon servers.
+// But in general, the gclient one should be used.
+func MakeClient(url string) *horizon.Client {
+	hc := &http.Client{Timeout: 15 * time.Second}
+	return &horizon.Client{
+		URL:  url,
+		HTTP: hc,
+	}
+}
+
 // SetClientURL sets the url for the horizon server this client
 // connects to.
 func SetClientURL(url string) {
 	configLock.Lock()
 	defer configLock.Unlock()
-	gclient = &horizon.Client{
-		URL:  url,
-		HTTP: http.DefaultClient,
-	}
+	gclient = MakeClient(url)
 }
 
 // SetNetwork sets the horizon network.
@@ -333,7 +342,7 @@ func TxDetails(txID string) (horizon.Transaction, error) {
 	return embed.Transaction, nil
 }
 
-// Get the amount involved in a merge operation.
+// AccountMergeAmount returns the amount involved in a merge operation.
 // If operationID does not point to a merge operation, the results are undefined.
 func AccountMergeAmount(operationID string) (amount string, err error) {
 	var page EffectsPage
