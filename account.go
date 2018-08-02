@@ -49,6 +49,17 @@ func SetClient(c *horizon.Client) {
 	gclient = c
 }
 
+// MakeClient makes a horizon client for cases where the default
+// one in gclient isn't sufficient.
+// For example, stellard uses this func to make clients to check the state
+// of the primary and backup horizon servers.
+func MakeClient(url string) *horizon.Client {
+	return &horizon.Client{
+		URL:  url,
+		HTTP: http.DefaultClient,
+	}
+}
+
 // SetClientURL sets the url for the horizon server this client
 // connects to.
 func SetClientURL(url string) {
@@ -333,7 +344,7 @@ func TxDetails(txID string) (horizon.Transaction, error) {
 	return embed.Transaction, nil
 }
 
-// Get the amount involved in a merge operation.
+// AccountMergeAmount returns the amount involved in a merge operation.
 // If operationID does not point to a merge operation, the results are undefined.
 func AccountMergeAmount(operationID string) (amount string, err error) {
 	var page EffectsPage

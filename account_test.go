@@ -259,6 +259,7 @@ func TestScenario(t *testing.T) {
 	err = xdr.SafeUnmarshalBase64(bobTx[0].Internal.EnvelopeXdr, &tx)
 	require.NoError(t, err)
 	txid3, err := HashTx(tx.Tx)
+	require.NoError(t, err)
 	require.Equal(t, txid2, txid3)
 
 	t.Logf("bob merges account into alice's account")
