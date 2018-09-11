@@ -1,0 +1,20 @@
+HTTP/2.0 404 Not Found
+Content-Length: 325
+Cache-Control: no-cache, no-store, max-age=0
+Cf-Ray: 458ccae4b8ab2198-EWR
+Content-Type: application/problem+json; charset=utf-8
+Date: Tue, 11 Sep 2018 20:13:01 GMT
+Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+Server: cloudflare
+Set-Cookie: __cfduid=dfc6c27a11e8d63374c2b51222ce926121536696781; expires=Wed, 11-Sep-19 20:13:01 GMT; path=/; domain=.stellar.org; HttpOnly
+Vary: Origin
+X-Ratelimit-Limit: 17200
+X-Ratelimit-Remaining: 16210
+X-Ratelimit-Reset: 37
+
+{
+  "type": "https://stellar.org/horizon-errors/not_found",
+  "title": "Resource Missing",
+  "status": 404,
+  "detail": "The resource at the url requested was not found.  This is usually occurs for one of two reasons:  The url requested is not valid, or no data in our database could be found with the parameters provided."
+}

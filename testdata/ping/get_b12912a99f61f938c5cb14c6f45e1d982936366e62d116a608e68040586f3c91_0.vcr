@@ -1,15 +1,16 @@
 HTTP/2.0 200 OK
-Cf-Ray: 426c00211a399daf-ORD
+Cache-Control: no-cache, no-store, max-age=0
+Cf-Ray: 458cd1915dd699ec-EWR
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Wed, 06 Jun 2018 15:44:28 GMT
+Date: Tue, 11 Sep 2018 20:17:34 GMT
 Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
 Server: cloudflare
-Set-Cookie: __cfduid=de57360cd5d68bed5263ddcf4b48099d81528299868; expires=Thu, 06-Jun-19 15:44:28 GMT; path=/; domain=.stellar.org; HttpOnly
+Set-Cookie: __cfduid=d7e273479f1d5942c27631b209e22094c1536697054; expires=Wed, 11-Sep-19 20:17:34 GMT; path=/; domain=.stellar.org; HttpOnly
 Vary: Origin
 X-Ratelimit-Limit: 17200
-X-Ratelimit-Remaining: 17083
-X-Ratelimit-Reset: 575
+X-Ratelimit-Remaining: 17142
+X-Ratelimit-Reset: 3367
 
 {
   "_links": {
@@ -26,14 +27,14 @@ X-Ratelimit-Reset: 575
       "templated": true
     },
     "friendbot": {
-      "href": "https://horizon-testnet.stellar.org/friendbot{?addr}",
+      "href": "https://friendbot.stellar.org/{?addr}",
       "templated": true
     },
     "metrics": {
       "href": "https://horizon-testnet.stellar.org/metrics"
     },
     "order_book": {
-      "href": "https://horizon-testnet.stellar.org/order_book{?selling_asset_type,selling_asset_code,selling_issuer,buying_asset_type,buying_asset_code,buying_issuer,limit}",
+      "href": "https://horizon-testnet.stellar.org/order_book{?selling_asset_type,selling_asset_code,selling_asset_issuer,buying_asset_type,buying_asset_code,buying_asset_issuer,limit}",
       "templated": true
     },
     "self": {
@@ -48,11 +49,11 @@ X-Ratelimit-Reset: 575
       "templated": true
     }
   },
-  "horizon_version": "snapshot-1bf713b",
-  "core_version": "stellar-core 9.2.0rc6 (b0923f153b86d394a83b2a619db6b23f07ed0700)",
-  "history_latest_ledger": 9359325,
+  "horizon_version": "0.14.0-81f12a7e313bc469b229cd89c7843a7fc1db9403",
+  "core_version": "stellar-core 10.0.0 (1fc018b4f52e8c7e716b023ccf30600af5b4f66d)",
+  "history_latest_ledger": 11004249,
   "history_elder_ledger": 1,
-  "core_latest_ledger": 9359326,
+  "core_latest_ledger": 11004249,
   "network_passphrase": "Test SDF Network ; September 2015",
-  "protocol_version": 9
+  "protocol_version": 10
 }

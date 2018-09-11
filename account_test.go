@@ -31,9 +31,7 @@ func assertPayment(t *testing.T, tx Transaction, amount, from, to string) {
 		t.Fatal("no operations")
 	}
 	op := tx.Operations[0]
-	if op.Type != "payment" {
-		t.Fatalf("op type: %s, expected payment", op.Type)
-	}
+	require.Equal(t, "payment", op.Type)
 	if op.Amount != amount {
 		t.Fatalf("amount: %s, expected %s", op.Amount, amount)
 	}
@@ -50,9 +48,7 @@ func assertCreateAccount(t *testing.T, tx Transaction, startingBalance, funder, 
 		t.Fatal("no operations")
 	}
 	op := tx.Operations[0]
-	if op.Type != "create_account" {
-		t.Fatalf("op type: %s, expected create_account", op.Type)
-	}
+	require.Equal(t, "create_account", op.Type)
 	if op.StartingBalance != startingBalance {
 		t.Fatalf("starting balance: %s, expected %s", op.StartingBalance, startingBalance)
 	}
@@ -311,6 +307,7 @@ func TestAccountMergeAmount(t *testing.T) {
 		time.Sleep(1 * time.Second)
 	}
 
+	t.Logf("read history of alice")
 	acctAlice := NewAccount(addressStr(t, helper.Alice))
 	payments, err := acctAlice.RecentPayments("", 1)
 	require.NoError(t, err)
@@ -318,6 +315,18 @@ func TestAccountMergeAmount(t *testing.T) {
 	require.Equal(t, "account_merge", payments[0].Type)
 
 	amount, err := AccountMergeAmount(payments[0].ID)
+	require.NoError(t, err)
+	require.Equal(t, transferAmountMinusMergeFee, amount)
+
+	t.Logf("read history of bob")
+	acctBob := NewAccount(addressStr(t, helper.Bob))
+	payments, err = acctBob.RecentPayments("", 50)
+	require.NoError(t, err)
+	require.Len(t, payments, 2)
+	require.Equal(t, "account_merge", payments[0].Type)
+	require.Equal(t, "create_account", payments[1].Type)
+
+	amount, err = AccountMergeAmount(payments[0].ID)
 	require.NoError(t, err)
 	require.Equal(t, transferAmountMinusMergeFee, amount)
 }

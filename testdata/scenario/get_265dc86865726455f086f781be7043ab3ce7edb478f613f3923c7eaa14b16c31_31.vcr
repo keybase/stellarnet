@@ -1,0 +1,80 @@
+HTTP/2.0 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Cf-Ray: 458ccae5492b2198-EWR
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 11 Sep 2018 20:13:01 GMT
+Expect-Ct: max-age=604800, report-uri="https://report-uri.cloudflare.com/cdn-cgi/beacon/expect-ct"
+Server: cloudflare
+Set-Cookie: __cfduid=dfc6c27a11e8d63374c2b51222ce926121536696781; expires=Wed, 11-Sep-19 20:13:01 GMT; path=/; domain=.stellar.org; HttpOnly
+Vary: Origin
+X-Ratelimit-Limit: 17200
+X-Ratelimit-Remaining: 16208
+X-Ratelimit-Reset: 37
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP",
+  "paging_token": "",
+  "account_id": "GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP",
+  "sequence": "47262640463937538",
+  "subentry_count": 0,
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false
+  },
+  "balances": [
+    {
+      "balance": "9999.9999600",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "public_key": "GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP",
+      "weight": 1,
+      "key": "GBM4K55WZVL5ENXXRLYZZLMXMAFAYLDEBRTC5Y5OZ6YSI7RKUDAAGSWP",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {}
+}

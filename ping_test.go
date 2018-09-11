@@ -16,7 +16,7 @@ func TestPing(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	expected := "horizon ver: snapshot"
+	expected := "horizon ver: "
 	if !strings.HasPrefix(ping, expected) {
 		t.Errorf("ping: %q, expected to start with %q", ping, expected)
 	}

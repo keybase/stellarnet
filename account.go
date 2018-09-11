@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"strings"
 	"sync"
 	"time"
 
@@ -282,12 +281,9 @@ func (a *Account) RecentPayments(cursor string, limit int) ([]horizon.Payment, e
 // RecentTransactions returns the account's recent transactions, for
 // all types of transactions.
 func (a *Account) RecentTransactions() ([]Transaction, error) {
-	link, err := a.transactionsLink()
-	if err != nil {
-		return nil, err
-	}
+	link := Client().URL + "/accounts/" + a.address.String() + "/transactions"
 	var page TransactionsPage
-	err = getDecodeJSONStrict(link+"?order=desc&limit=10", Client().HTTP.Get, &page)
+	err := getDecodeJSONStrict(link+"?order=desc&limit=10", Client().HTTP.Get, &page)
 	if err != nil {
 		return nil, err
 	}
@@ -309,7 +305,7 @@ func (a *Account) RecentTransactions() ([]Transaction, error) {
 }
 
 func (a *Account) loadOperations(tx Transaction) ([]Operation, error) {
-	link := a.linkHref(tx.Internal.Links.Operations)
+	link := Client().URL + "/transactions/" + tx.Internal.ID + "/operations"
 	var page OperationsPage
 	err := getDecodeJSONStrict(link, Client().HTTP.Get, &page)
 	if err != nil {
@@ -590,13 +586,7 @@ func Submit(signed string) (ledger int32, txid string, err error) {
 
 // paymentsLink returns the horizon endpoint to get payment information.
 func (a *Account) paymentsLink(cursor string, limit int) (string, error) {
-	if a.internal == nil {
-		if err := a.load(); err != nil {
-			return "", err
-		}
-	}
-
-	link := a.linkHref(a.internal.Links.Payments)
+	link := Client().URL + "/accounts/" + a.address.String() + "/payments"
 
 	var url string
 	if cursor != "" {
@@ -606,26 +596,6 @@ func (a *Account) paymentsLink(cursor string, limit int) (string, error) {
 	}
 
 	return url, nil
-}
-
-// transactionsLink returns the horizon endpoint to get transaction information.
-func (a *Account) transactionsLink() (string, error) {
-	if a.internal == nil {
-		if err := a.load(); err != nil {
-			return "", err
-		}
-	}
-
-	return a.linkHref(a.internal.Links.Transactions), nil
-}
-
-// linkHref gets a usable href out of a horizon.Link.
-func (a *Account) linkHref(link horizon.Link) string {
-	if link.Templated {
-		return strings.Split(link.Href, "{")[0]
-	}
-	return link.Href
-
 }
 
 // errMap maps some horizon errors to stellarnet errors.
