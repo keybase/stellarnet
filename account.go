@@ -273,7 +273,7 @@ func (a *Account) RecentPayments(cursor string, limit int) ([]horizon.Payment, e
 	var page PaymentsPage
 	err = getDecodeJSONStrict(link, Client().HTTP.Get, &page)
 	if err != nil {
-		return nil, err
+		return nil, errMap(err)
 	}
 	return page.Embedded.Records, nil
 }
@@ -285,7 +285,7 @@ func (a *Account) RecentTransactions() ([]Transaction, error) {
 	var page TransactionsPage
 	err := getDecodeJSONStrict(link+"?order=desc&limit=10", Client().HTTP.Get, &page)
 	if err != nil {
-		return nil, err
+		return nil, errMap(err)
 	}
 
 	transactions := make([]Transaction, len(page.Embedded.Records))
@@ -309,7 +309,7 @@ func (a *Account) loadOperations(tx Transaction) ([]Operation, error) {
 	var page OperationsPage
 	err := getDecodeJSONStrict(link, Client().HTTP.Get, &page)
 	if err != nil {
-		return nil, err
+		return nil, errMap(err)
 	}
 	return page.Embedded.Records, nil
 }
