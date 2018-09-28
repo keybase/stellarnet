@@ -254,7 +254,7 @@ func AccountSeqno(address AddressStr) (uint64, error) {
 
 // RecentPayments returns the account's recent payments.
 // This is a summary of any recent payment transactions (payment, create_account, or account_merge).
-// It does not contain as much information as RecentTransactions.
+// It does not contain as much information as RecentTransactionsAndOps.
 // It is faster as it is only one request to horizon.
 // cursor is optional.  if specified, it is used for pagination.
 // limit is optional.  if not specified, default is 10.  max limit is 100.
@@ -278,9 +278,9 @@ func (a *Account) RecentPayments(cursor string, limit int) ([]horizon.Payment, e
 	return page.Embedded.Records, nil
 }
 
-// RecentTransactions returns the account's recent transactions, for
+// RecentTransactionsAndOps returns the account's recent transactions, for
 // all types of transactions.
-func (a *Account) RecentTransactions() ([]Transaction, error) {
+func (a *Account) RecentTransactionsAndOps() ([]Transaction, error) {
 	link := Client().URL + "/accounts/" + a.address.String() + "/transactions"
 	var page TransactionsPage
 	err := getDecodeJSONStrict(link+"?order=desc&limit=10", Client().HTTP.Get, &page)

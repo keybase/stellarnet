@@ -157,7 +157,7 @@ func TestScenario(t *testing.T) {
 	}
 	t.Logf("bob sent alice 1.0 XLM: %d, %s", ledger, txid)
 
-	aliceTx, err := acctAlice.RecentTransactions()
+	aliceTx, err := acctAlice.RecentTransactionsAndOps()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,7 +165,7 @@ func TestScenario(t *testing.T) {
 		// this is unfortunate
 		t.Logf("retrying alice recent transactions after 1s")
 		time.Sleep(1 * time.Second)
-		aliceTx, err = acctAlice.RecentTransactions()
+		aliceTx, err = acctAlice.RecentTransactionsAndOps()
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -178,7 +178,7 @@ func TestScenario(t *testing.T) {
 	assertCreateAccount(t, aliceTx[1], "10.0000000", helper.Alice.Address(), helper.Bob.Address())
 	assertCreateAccount(t, aliceTx[2], "10000.0000000", testclient.FriendbotAddress, helper.Alice.Address())
 
-	bobTx, err := acctBob.RecentTransactions()
+	bobTx, err := acctBob.RecentTransactionsAndOps()
 	if err != nil {
 		t.Fatal(err)
 	}
