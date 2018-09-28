@@ -265,17 +265,40 @@ func (a *Account) RecentPayments(cursor string, limit int) ([]horizon.Payment, e
 		limit = 100
 	}
 
-	link, err := a.paymentsLink(cursor, limit)
-	if err != nil {
-		return nil, err
-	}
+	link := a.paymentsLink(cursor, limit)
 
 	var page PaymentsPage
-	err = getDecodeJSONStrict(link, Client().HTTP.Get, &page)
+	err := getDecodeJSONStrict(link, Client().HTTP.Get, &page)
 	if err != nil {
 		return nil, errMap(err)
 	}
 	return page.Embedded.Records, nil
+}
+
+// Transactions returns some of the account's transactions.
+// cursor is optional. if specified, it is used for pagination.
+// limit is optional. if not specified, default is 10.  max limit is 100.
+func (a *Account) Transactions(cursor string, limit int) (res []horizon.Transaction, finalPage bool, err error) {
+	if limit <= 0 {
+		limit = 10
+	} else if limit > 100 {
+		limit = 100
+	}
+
+	link := a.transactionsLink(cursor, limit)
+
+	var page TransactionsPage
+	err = getDecodeJSONStrict(link, Client().HTTP.Get, &page)
+	if err != nil {
+		return nil, false, errMap(err)
+	}
+
+	finalPage = len(page.Embedded.Records) < limit
+	res = make([]horizon.Transaction, len(page.Embedded.Records))
+	for i, record := range page.Embedded.Records {
+		res[i] = record.Transaction
+	}
+	return res, finalPage, nil
 }
 
 // RecentTransactionsAndOps returns the account's recent transactions, for
@@ -585,17 +608,23 @@ func Submit(signed string) (ledger int32, txid string, err error) {
 }
 
 // paymentsLink returns the horizon endpoint to get payment information.
-func (a *Account) paymentsLink(cursor string, limit int) (string, error) {
+func (a *Account) paymentsLink(cursor string, limit int) string {
 	link := Client().URL + "/accounts/" + a.address.String() + "/payments"
-
-	var url string
 	if cursor != "" {
-		url = fmt.Sprintf("%s?cursor=%s&order=desc&limit=%d", link, cursor, limit)
+		return fmt.Sprintf("%s?cursor=%s&order=desc&limit=%d", link, cursor, limit)
 	} else {
-		url = fmt.Sprintf("%s?order=desc&limit=%d", link, limit)
+		return fmt.Sprintf("%s?order=desc&limit=%d", link, limit)
 	}
+}
 
-	return url, nil
+// transactionsLink returns the horizon endpoint to get payment information.
+func (a *Account) transactionsLink(cursor string, limit int) string {
+	link := Client().URL + "/accounts/" + a.address.String() + "/transactions"
+	if cursor != "" {
+		return fmt.Sprintf("%s?cursor=%s&order=desc&limit=%d", link, cursor, limit)
+	} else {
+		return fmt.Sprintf("%s?order=desc&limit=%d", link, limit)
+	}
 }
 
 // errMap maps some horizon errors to stellarnet errors.
