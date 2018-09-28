@@ -158,7 +158,7 @@ func TestDecimalStrictRegex(t *testing.T) {
 	}
 }
 
-func TestParseDecimalStrict(t *testing.T) {
+func TestParseAmount(t *testing.T) {
 	for i, unit := range decimalUnits {
 		for _, neg := range []bool{false, true} {
 			t.Logf("%v: %#v", i, unit)
@@ -166,7 +166,7 @@ func TestParseDecimalStrict(t *testing.T) {
 			if neg {
 				s = "-" + s
 			}
-			v, err := ParseDecimalStrict(s)
+			v, err := ParseAmount(s)
 			t.Logf("-> (%v, %v)", v, err)
 			require.Equal(t, unit.ok, err == nil, "parsed without error")
 			if unit.ok {
