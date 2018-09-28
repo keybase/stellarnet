@@ -1,6 +1,7 @@
 package stellarnet
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -214,5 +215,59 @@ func TestWithinFactorStellarAmounts(t *testing.T) {
 		t.Logf("-> (%v, %v)", within, err)
 		require.Equal(t, unit.ok, err == nil, "ran without error")
 		require.Equal(t, unit.answer, within, "answer to within")
+	}
+}
+
+var StellarAmountParsingTests = []struct {
+	S     string
+	I     int64
+	valid bool
+}{
+	{"100.0000000", 1000000000, true},
+	{"-100.0000000", -1000000000, true},
+	{"100.0000001", 1000000001, true},
+	{"123.0000001", 1230000001, true},
+	{"123.00000001", 0, false},
+	{"922337203685.4775807", 9223372036854775807, true},
+	{"922337203685.4775808", 0, false},
+	{"922337203686", 0, false},
+	{"-922337203685.4775808", -9223372036854775808, true},
+	{"-922337203685.4775809", 0, false},
+	{"-922337203686", 0, false},
+	{"1000000000000.0000000", 0, false},
+	{"1000000000000", 0, false},
+	{"-0.5000000", -5000000, true},
+	{"0.5000000", 5000000, true},
+	{"0.12345678", 0, false},
+	{"1/2", 0, false},
+	{"2e3", 0, false},
+	{"2E3", 0, false},
+	// Expensive inputs:
+	{strings.Repeat("1", 1000000), 0, false},
+	{"1E9223372036854775807", 0, false},
+	{"1e9223372036854775807", 0, false},
+	{"Inf", 0, false},
+}
+
+func TestParseStellarAmount(t *testing.T) {
+	for _, v := range StellarAmountParsingTests {
+		o, err := ParseStellarAmount(v.S)
+		if v.valid {
+			require.NoError(t, err)
+		} else {
+			require.Error(t, err)
+		}
+		require.Equal(t, o, v.I, "%s parsed to %d, not %d", v.S, o, v.I)
+	}
+}
+
+func TestStringFromStellarAmount(t *testing.T) {
+	for _, v := range StellarAmountParsingTests {
+		if !v.valid {
+			continue
+		}
+
+		o := StringFromStellarAmount(v.I)
+		require.Equal(t, o, v.S, "%d stringified to %s, not %s", v.I, o, v.S)
 	}
 }
