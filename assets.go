@@ -6,6 +6,8 @@ import (
 )
 
 // AssetSummary summarizes the data returned by horizon for an asset.
+// UnverifiedWellKnownLink is a link supplied by the asset issuer that
+// needs verification.
 type AssetSummary struct {
 	UnverifiedWellKnownLink string
 	AssetType               string
