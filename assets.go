@@ -7,12 +7,12 @@ import (
 
 // AssetSummary summarizes the data returned by horizon for an asset.
 type AssetSummary struct {
-	WellKnownLink string
-	AssetType     string
-	AssetCode     string
-	AssetIssuer   string
-	Amount        string
-	NumAccounts   int
+	UnverifiedWellKnownLink string
+	AssetType               string
+	AssetCode               string
+	AssetIssuer             string
+	Amount                  string
+	NumAccounts             int
 }
 
 // Asset returns details about an asset that matches assetCode
@@ -44,12 +44,12 @@ func Asset(assetCode string, issuerID AddressStr) (*AssetSummary, error) {
 	r := page.Embedded.Records[0]
 
 	summary := AssetSummary{
-		WellKnownLink: r.Links.WellKnown.Href,
-		AssetType:     r.AssetType,
-		AssetCode:     r.AssetCode,
-		AssetIssuer:   r.AssetIssuer,
-		Amount:        r.Amount,
-		NumAccounts:   r.NumAccounts,
+		UnverifiedWellKnownLink: r.Links.WellKnown.Href,
+		AssetType:               r.AssetType,
+		AssetCode:               r.AssetCode,
+		AssetIssuer:             r.AssetIssuer,
+		Amount:                  r.Amount,
+		NumAccounts:             r.NumAccounts,
 	}
 
 	return &summary, nil
