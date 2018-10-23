@@ -1,6 +1,8 @@
 package testclient
 
 import (
+	"crypto/hmac"
+	"crypto/sha256"
 	"encoding/json"
 	"flag"
 	"io/ioutil"
@@ -73,6 +75,29 @@ func (h *Helper) SetState(t *testing.T, name string) {
 
 	h.setConfig(t, conf)
 	tvcr.SetDir(dir)
+}
+
+// Get a keypair deterministically generated from `name` and the config state.
+func (h *Helper) Keypair(t *testing.T, name string) *keypair.Full {
+	// raw seed = HMAC(key: Alice.SecretKey, message: name)
+	mac := hmac.New(sha256.New, []byte(h.Alice.Seed()))
+	_, err := mac.Write([]byte(name))
+	if err != nil {
+		t.Fatal(err)
+		return nil
+	}
+	out := mac.Sum(nil)
+	var outFixed [32]byte
+	if copy(outFixed[:], out) != 32 {
+		t.Fatal("whoops")
+		return nil
+	}
+	kp, err := keypair.FromRawSeed(outFixed)
+	if err != nil {
+		t.Fatal(err)
+		return nil
+	}
+	return kp
 }
 
 func testClient(t *testing.T, live, record bool) (*horizon.Client, *vcr.VCR) {
