@@ -245,7 +245,7 @@ func TestScenario(t *testing.T) {
 
 	_, err = TxPayments(bobTx[0].Internal.ID[:5])
 	require.Error(t, err)
-	require.Contains(t, err.Error(), "error decoding transaction ID")
+	require.Contains(t, err.Error(), "invalid transaction ID")
 
 	txid2, err := CheckTxID(bobTx[0].Internal.ID)
 	require.NoError(t, err)
