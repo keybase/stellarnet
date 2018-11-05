@@ -1,0 +1,58 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Mon, 05 Nov 2018 19:25:21 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 89
+X-Ratelimit-Reset: 6
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/transactions/242d920cfc1bcb52ec1e3416c75523e3138583562cb20430c57af1ff53a42ddd/payments?cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/transactions/242d920cfc1bcb52ec1e3416c75523e3138583562cb20430c57af1ff53a42ddd/payments?cursor=2327515792154625\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/transactions/242d920cfc1bcb52ec1e3416c75523e3138583562cb20430c57af1ff53a42ddd/payments?cursor=2327515792154625\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/2327515792154625"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/242d920cfc1bcb52ec1e3416c75523e3138583562cb20430c57af1ff53a42ddd"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/2327515792154625/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=2327515792154625"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=2327515792154625"
+          }
+        },
+        "id": "2327515792154625",
+        "paging_token": "2327515792154625",
+        "source_account": "GAQHAZRF6X2W3LUHNDLR4WMHMMDVTMI7SAZQ6JS2PNGVKD6LRTN6SR4I",
+        "type": "payment",
+        "type_i": 1,
+        "created_at": "2018-11-05T19:25:20Z",
+        "transaction_hash": "242d920cfc1bcb52ec1e3416c75523e3138583562cb20430c57af1ff53a42ddd",
+        "asset_type": "native",
+        "from": "GAQHAZRF6X2W3LUHNDLR4WMHMMDVTMI7SAZQ6JS2PNGVKD6LRTN6SR4I",
+        "to": "GBZRI6BDBU74NAD7LDR2IR3D4VDGAE55NQIG5VHTHKCMPUYMPER4H3SM",
+        "amount": "1.0000000"
+      }
+    ]
+  }
+}
