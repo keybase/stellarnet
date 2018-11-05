@@ -544,11 +544,11 @@ func AccountMergeTransaction(from SeedStr, to AddressStr,
 // If `toIsFunded` then this is just an account merge transaction.
 // Otherwise the transaction is two operations: [create_account, account_merge].
 func RelocateTransaction(from SeedStr, to AddressStr, toIsFunded bool,
-	memo string, seqnoProvider build.SequenceProvider) (res SignResult, err error) {
+	memoID *uint64, seqnoProvider build.SequenceProvider) (res SignResult, err error) {
 	if toIsFunded {
 		return AccountMergeTransaction(from, to, seqnoProvider)
 	}
-	tx, err := build.Transaction(
+	muts := []build.TransactionMutator{
 		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
 		Network(),
 		build.AutoSequence{SequenceProvider: seqnoProvider},
@@ -559,8 +559,11 @@ func RelocateTransaction(from SeedStr, to AddressStr, toIsFunded bool,
 		build.AccountMerge(
 			build.Destination{AddressOrSeed: to.String()},
 		),
-		build.MemoText{Value: memo},
-	)
+	}
+	if memoID != nil {
+		muts = append(muts, build.MemoID{Value: *memoID})
+	}
+	tx, err := build.Transaction(muts...)
 	if err != nil {
 		return res, err
 	}
