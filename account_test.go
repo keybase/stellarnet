@@ -280,6 +280,12 @@ func TestScenario(t *testing.T) {
 	require.NoError(t, err)
 	_, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
+
+	t.Logf("charlie merges into a funded account")
+	lip := helper.Keypair(t, "Lip")
+	testclient.GetTestLumens(t, lip)
+	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client())
+	require.NoError(t, err)
 }
 
 func TestAccountMergeAmount(t *testing.T) {
