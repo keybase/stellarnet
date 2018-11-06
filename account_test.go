@@ -275,11 +275,17 @@ func TestScenario(t *testing.T) {
 	require.Equal(t, "9999.9999600", balance)
 
 	t.Logf("alice merges into an unfunded account")
-	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, Client())
+	var nines uint64 = 999
+	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client())
 	require.NoError(t, err)
 	_, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
 
+	t.Logf("charlie merges into a funded account")
+	lip := helper.Keypair(t, "Lip")
+	testclient.GetTestLumens(t, lip)
+	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client())
+	require.NoError(t, err)
 }
 
 func TestAccountMergeAmount(t *testing.T) {
