@@ -34,8 +34,9 @@ var ErrAssetNotFound = errors.New("asset not found")
 // Error provides a hopefully user-friendly default in Error()
 // but with some details that might actually help debug in Verbose().
 type Error struct {
-	Display string
-	Details string
+	Display      string
+	Details      string
+	HorizonError *horizon.Error
 }
 
 // Error implements the error interface.
@@ -71,8 +72,9 @@ func errMap(err error) error {
 
 		// catch-all
 		return Error{
-			Display: "stellar network error",
-			Details: fmt.Sprintf("horizon Problem: %+v", xerr.Problem),
+			Display:      "stellar network error",
+			Details:      fmt.Sprintf("horizon Problem: %+v", xerr.Problem),
+			HorizonError: xerr,
 		}
 	default:
 		return err

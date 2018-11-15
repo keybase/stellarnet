@@ -638,8 +638,9 @@ func getDecodeJSONStrict(url string, getter func(string) (*http.Response, error)
 		err := json.NewDecoder(resp.Body).Decode(&horizonError.Problem)
 		if err != nil {
 			return Error{
-				Display: "stellar network error",
-				Details: fmt.Sprintf("horizon http error: %v %v, decode body error: %s", resp.StatusCode, resp.Status, err),
+				Display:      "stellar network error",
+				Details:      fmt.Sprintf("horizon http error: %v %v, decode body error: %s", resp.StatusCode, resp.Status, err),
+				HorizonError: horizonError,
 			}
 		}
 		return errMap(horizonError)
