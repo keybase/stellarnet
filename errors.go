@@ -3,11 +3,15 @@ package stellarnet
 import (
 	"errors"
 	"fmt"
+	"net/url"
 
 	perrors "github.com/pkg/errors"
 
 	"github.com/stellar/go/clients/horizon"
 )
+
+// TimeoutHandler will be called whenever a timeout error happens.
+var TimeoutHandler func()
 
 // ErrResourceNotFound is returned if there is no stellar resource found.
 // It is a generic not found error.
@@ -76,6 +80,18 @@ func errMap(err error) error {
 			Details:      fmt.Sprintf("horizon Problem: %+v", xerr.Problem),
 			HorizonError: xerr,
 		}
+	case *url.Error:
+		if xerr.Timeout() {
+			if TimeoutHandler != nil {
+				TimeoutHandler()
+			}
+			return Error{
+				Display: "stellar network timeout",
+				Details: fmt.Sprintf("stellar network timeout, url: %s, error: %s", xerr.URL, xerr.Error()),
+			}
+		}
+
+		return xerr
 	default:
 		return err
 	}
