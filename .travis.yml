@@ -1,4 +1,13 @@
 language: go
 
 go:
-  - "1.9"
+  - 1.10.x
+  - 1.11.x
+
+script: 
+  - go vet .
+  - go get -u github.com/golang/lint/golint
+  - golint -set_exit_status .
+  - go get -u honnef.co/go/tools/cmd/megacheck
+  - megacheck .
+  - go test -v -race .
