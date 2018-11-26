@@ -52,7 +52,9 @@ func SetClient(c *horizon.Client) {
 // of the primary and backup horizon servers.
 // But in general, the gclient one should be used.
 func MakeClient(url string) *horizon.Client {
-	hc := &http.Client{Timeout: 15 * time.Second}
+	// Note: we are experimenting with a longer timeout here
+	// while we investigate the cause of these horizon timeouts
+	hc := &http.Client{Timeout: 30 * time.Second}
 	return &horizon.Client{
 		URL:  url,
 		HTTP: hc,
