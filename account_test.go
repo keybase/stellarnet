@@ -340,7 +340,7 @@ func TestAccountMergeAmount(t *testing.T) {
 func TestSetInflationDestination(t *testing.T) {
 	helper, client, network := testclient.Setup(t)
 	SetClientAndNetwork(client, network)
-	helper.SetState(t, "scenario")
+	helper.SetState(t, "inflation")
 
 	t.Log("alice key pair not an account yet")
 	acctAlice := NewAccount(addressStr(t, helper.Alice))
