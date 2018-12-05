@@ -336,3 +336,51 @@ func TestAccountMergeAmount(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, transferAmountMinusMergeFee, amount)
 }
+
+func TestSetInflationDestination(t *testing.T) {
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "inflation")
+
+	t.Log("alice key pair not an account yet")
+	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	_, err := acctAlice.BalanceXLM()
+	if err != ErrSourceAccountNotFound {
+		t.Fatalf("error: %q, expected %q (ErrSourceAccountNotFound)", err, ErrSourceAccountNotFound)
+	}
+
+	_, err = AccountSeqno(addressStr(t, helper.Alice))
+	if err != ErrSourceAccountNotFound {
+		t.Fatalf("error: %q, expected %q (ErrSourceAccountNotFound)", err, ErrSourceAccountNotFound)
+	}
+
+	active, err := IsMasterKeyActive(addressStr(t, helper.Alice))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !active {
+		t.Fatal("not active")
+	}
+
+	_, _, err = setInflationDestination(seedStr(t, helper.Alice), addressStr(t, helper.Alice))
+	if err == nil {
+		t.Fatal("expected error setting inflation destination on an empty account")
+	}
+
+	testclient.GetTestLumens(t, helper.Alice)
+
+	t.Log("alice account has been funded")
+
+	_, _, err = setInflationDestination(seedStr(t, helper.Alice), addressStr(t, helper.Alice))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	balance, err := acctAlice.BalanceXLM()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if balance != "9999.9999900" {
+		t.Errorf("balance: %s, expected 9999.9999900", balance)
+	}
+}
