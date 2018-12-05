@@ -522,6 +522,31 @@ func AccountMergeTransaction(from SeedStr, to AddressStr,
 	return sign(from, tx)
 }
 
+// SetInflationDestinationTransaction creates a "set options" transaction that will set the
+// inflation destination for the `from` account to the `to` account.
+func SetInflationDestinationTransaction(from SeedStr, to AddressStr, seqnoProvider build.SequenceProvider) (SignResult, error) {
+	tx, err := build.Transaction(
+		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
+		Network(),
+		build.AutoSequence{SequenceProvider: seqnoProvider},
+		build.SetOptions(
+			build.InflationDest(to.String()),
+		),
+	)
+	if err != nil {
+		return SignResult{}, errMap(err)
+	}
+	return sign(from, tx)
+}
+
+func setInflationDestination(from SeedStr, to AddressStr) (ledger int32, txid string, err error) {
+	sig, err := SetInflationDestinationTransaction(from, to, Client())
+	if err != nil {
+		return 0, "", errMap(err)
+	}
+	return Submit(sig.Signed)
+}
+
 // RelocateTransaction creates a signed transaction to merge the account `from` into `to`.
 // Works even if `to` is not funded but in that case requires 2 XLM temporary reserve.
 // If `toIsFunded` then this is just an account merge transaction.
