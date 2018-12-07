@@ -575,7 +575,7 @@ func setInflationDestination(from SeedStr, to AddressStr) (ledger int32, txid st
 // If `toIsFunded` then this is just an account merge transaction.
 // Otherwise the transaction is two operations: [create_account, account_merge].
 func RelocateTransaction(from SeedStr, to AddressStr, toIsFunded bool,
-	memoID *uint64, seqnoProvider build.SequenceProvider) (res SignResult, err error) {
+	memoID *uint64, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds) (res SignResult, err error) {
 	muts := []build.TransactionMutator{
 		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
 		Network(),
@@ -587,13 +587,14 @@ func RelocateTransaction(from SeedStr, to AddressStr, toIsFunded bool,
 			build.NativeAmount{Amount: "1"},
 		))
 	}
-	muts = append(muts, []build.TransactionMutator{
-		build.AccountMerge(
-			build.Destination{AddressOrSeed: to.String()},
-		),
-	}...)
+	muts = append(muts, build.AccountMerge(
+		build.Destination{AddressOrSeed: to.String()},
+	))
 	if memoID != nil {
 		muts = append(muts, build.MemoID{Value: *memoID})
+	}
+	if timeBounds != nil {
+		muts = append(muts, timeBounds)
 	}
 	tx, err := build.Transaction(muts...)
 	if err != nil {

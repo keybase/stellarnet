@@ -313,7 +313,7 @@ func TestScenario(t *testing.T) {
 
 	t.Logf("alice merges into an unfunded account")
 	var nines uint64 = 999
-	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client())
+	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client(), nil /* timeBounds */)
 	require.NoError(t, err)
 	_, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -321,7 +321,7 @@ func TestScenario(t *testing.T) {
 	t.Logf("charlie merges into a funded account")
 	lip := helper.Keypair(t, "Lip")
 	testclient.GetTestLumens(t, lip)
-	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client())
+	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client(), nil /* timeBounds */)
 	require.NoError(t, err)
 }
 
@@ -488,5 +488,15 @@ func TestTimeBounds(t *testing.T) {
 	}
 	if balance != "25.0000000" {
 		t.Errorf("balance: %s, expected 25.0000000", balance)
+	}
+
+	for _, tc := range badTbs {
+		tx, err := RelocateTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice),
+			true, nil, Client(), &tc.tb)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, err = Submit(tx.Signed)
+		assertHorizonError(t, err, tc.txError)
 	}
 }
