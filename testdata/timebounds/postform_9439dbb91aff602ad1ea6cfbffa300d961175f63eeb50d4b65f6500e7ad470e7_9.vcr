@@ -1,9 +1,9 @@
 HTTP/1.1 400 Bad Request
-Content-Length: 829
+Content-Length: 830
 Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Type: application/problem+json; charset=utf-8
-Date: Fri, 07 Dec 2018 12:18:52 GMT
+Date: Fri, 07 Dec 2018 13:37:20 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 99
@@ -15,10 +15,10 @@ X-Ratelimit-Reset: 1
   "status": 400,
   "detail": "The transaction failed when submitted to the stellar network. The `extras.result_codes` field on this response contains further details.  Descriptions of each code can be found at: https://www.stellar.org/developers/learn/concepts/list-of-operations.html",
   "extras": {
-    "envelope_xdr": "AAAAAJRlL5ulYcCN4VPgt5sGsR0uXtzp7+QFPPzNHsWB30QkAAAAZAAQU+0AAAACAAAAAQAAAAAAAAAAAAAAAEr58HAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAACFgi2UoTE5e5jponA4i/lhJq8W5YL3D3jOeE5FBaQN1wAAAAAAAAAACPDRgAAAAAAAAAABgd9EJAAAAEAtgwu84zrqyA+izo2xRG/S+WccglE49aatOlCCCAkZLv4NbgHbQA0X65qNRGtWa48oARLjGbS8xcDv0CBgV7EN",
+    "envelope_xdr": "AAAAAHljgM5bISv9BLSsxSiKbFfOVQmmEd22o5IRoy5k/F4RAAAAZAAQV5cAAAACAAAAAQAAAAByecFwAAAAAHKhTnAAAAABAAAAAAAAAAEAAAAAAAAAAQAAAADNmkvqd2+SSthRAsQChfkV+yKFrzpoWCvY/Z6Mt9utVgAAAAAAAAAACPDRgAAAAAAAAAABZPxeEQAAAEAiJpig6eAvoiOv7/GktNVBqeGxcxbgpKzyXMWrRM0k9Xzo43ssXWwfAEdx8klh9ylPAEdJ04y1Ix7pDmAGcwgF",
     "result_codes": {
-      "transaction": "tx_too_late"
+      "transaction": "tx_too_early"
     },
-    "result_xdr": "AAAAAAAAAGT////9AAAAAA=="
+    "result_xdr": "AAAAAAAAAGT////+AAAAAA=="
   }
 }
