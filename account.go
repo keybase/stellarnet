@@ -453,7 +453,7 @@ func MakeTimeboundsFromTime(minTime time.Time, maxTime time.Time) build.Timeboun
 	}
 }
 
-func MakeTimeboundsMaxTime(maxTime time.Time) build.Timebounds {
+func MakeTimeboundsWithMaxTime(maxTime time.Time) build.Timebounds {
 	return build.Timebounds{
 		MaxTime: uint64(maxTime.Unix()),
 	}

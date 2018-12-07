@@ -7,6 +7,7 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/keybase/stellarnet/testclient"
+	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/horizon"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/xdr"
@@ -87,6 +88,7 @@ func assertHorizonError(t *testing.T, err error, transactionCode string) {
 		if xerr != nil {
 			t.Fatalf("Failed when inspecting error, ResultCodes() -> %s", xerr)
 		}
+		t.Logf("assertHorizonError: horizon error: %q with codes: %+v", herr, resultCodes)
 		if resultCodes.TransactionCode != transactionCode {
 			t.Fatalf("Unexpected transaction code %s != %s", resultCodes.TransactionCode, transactionCode)
 		}
@@ -427,12 +429,64 @@ func TestTimeBounds(t *testing.T) {
 
 	testclient.GetTestLumens(t, helper.Alice)
 
-	tb := MakeTimeboundsMaxTime(time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC))
+	type TimeBoundTest struct {
+		tb      build.Timebounds
+		txError string
+	}
+	badTbs := []TimeBoundTest{
+		{MakeTimeboundsWithMaxTime(time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)), "tx_too_late"},
+		{MakeTimeboundsFromTime(
+			time.Date(2030, time.November, 10, 23, 0, 0, 0, time.UTC),
+			time.Date(2030, time.December, 10, 23, 0, 0, 0, time.UTC)), "tx_too_early"},
+	}
+
+	for _, tc := range badTbs {
+		tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
+			"10.0", "", Client(), &tc.tb)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, err = Submit(tx.Signed)
+		assertHorizonError(t, err, tc.txError)
+	}
+
+	tb := MakeTimeboundsWithMaxTime(time.Date(2030, time.November, 10, 23, 0, 0, 0, time.UTC))
 	tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
 		"10.0", "", Client(), &tb)
 	if err != nil {
 		t.Fatal(err)
 	}
 	_, _, err = Submit(tx.Signed)
-	assertHorizonError(t, err, "tx_too_late")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range badTbs {
+		tx, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
+			"15.0", "", Client(), &tc.tb)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, err = Submit(tx.Signed)
+		assertHorizonError(t, err, tc.txError)
+	}
+
+	tx, err = PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
+		"15.0", "", Client(), &tb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = Submit(tx.Signed)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	acctBob := NewAccount(addressStr(t, helper.Bob))
+	balance, err := acctBob.BalanceXLM()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if balance != "25.0000000" {
+		t.Errorf("balance: %s, expected 25.0000000", balance)
+	}
 }
