@@ -446,9 +446,22 @@ func SendXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger int32
 	return ledger, txid, nil
 }
 
+func MakeTimeboundsFromTime(minTime time.Time, maxTime time.Time) build.Timebounds {
+	return build.Timebounds{
+		MinTime: uint64(minTime.Unix()),
+		MaxTime: uint64(maxTime.Unix()),
+	}
+}
+
+func MakeTimeboundsMaxTime(maxTime time.Time) build.Timebounds {
+	return build.Timebounds{
+		MaxTime: uint64(maxTime.Unix()),
+	}
+}
+
 // paymentXLM creates a payment transaction from 'from' to 'to' for 'amount' lumens.
 func paymentXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger int32, txid string, err error) {
-	sig, err := PaymentXLMTransaction(from, to, amount, memoText, Client())
+	sig, err := PaymentXLMTransaction(from, to, amount, memoText, Client(), nil /* timeBounds */)
 	if err != nil {
 		return 0, "", errMap(err)
 	}
@@ -457,8 +470,8 @@ func paymentXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger in
 
 // PaymentXLMTransaction creates a signed transaction to send a payment from 'from' to 'to' for 'amount' lumens.
 func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
-	seqnoProvider build.SequenceProvider) (res SignResult, err error) {
-	tx, err := build.Transaction(
+	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds) (res SignResult, err error) {
+	muts := []build.TransactionMutator{
 		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
 		Network(),
 		build.AutoSequence{SequenceProvider: seqnoProvider},
@@ -467,7 +480,11 @@ func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 			build.NativeAmount{Amount: amount},
 		),
 		build.MemoText{Value: memoText},
-	)
+	}
+	if timeBounds != nil {
+		muts = append(muts, timeBounds)
+	}
+	tx, err := build.Transaction(muts...)
 	if err != nil {
 		return res, errMap(err)
 	}
@@ -477,7 +494,7 @@ func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 // createAccountXLM funds an new account 'to' from 'from' with a starting balance of 'amount'.
 // memoText is a public memo.
 func createAccountXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger int32, txid string, err error) {
-	sig, err := CreateAccountXLMTransaction(from, to, amount, memoText, Client())
+	sig, err := CreateAccountXLMTransaction(from, to, amount, memoText, Client(), nil /* timeBounds */)
 	if err != nil {
 		return 0, "", errMap(err)
 	}
@@ -487,8 +504,8 @@ func createAccountXLM(from SeedStr, to AddressStr, amount, memoText string) (led
 // CreateAccountXLMTransaction creates a signed transaction to fund an new account 'to' from 'from'
 // with a starting balance of 'amount'.
 func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
-	seqnoProvider build.SequenceProvider) (res SignResult, err error) {
-	tx, err := build.Transaction(
+	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds) (res SignResult, err error) {
+	muts := []build.TransactionMutator{
 		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
 		Network(),
 		build.AutoSequence{SequenceProvider: seqnoProvider},
@@ -497,7 +514,11 @@ func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount, memoText s
 			build.NativeAmount{Amount: amount},
 		),
 		build.MemoText{Value: memoText},
-	)
+	}
+	if timeBounds != nil {
+		muts = append(muts, timeBounds)
+	}
+	tx, err := build.Transaction(muts...)
 	if err != nil {
 		return res, errMap(err)
 	}
