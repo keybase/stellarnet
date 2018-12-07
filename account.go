@@ -446,6 +446,7 @@ func SendXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger int32
 	return ledger, txid, nil
 }
 
+// MakeTimeboundsFromTime creates Timebounds from time.Time values.
 func MakeTimeboundsFromTime(minTime time.Time, maxTime time.Time) build.Timebounds {
 	return build.Timebounds{
 		MinTime: uint64(minTime.Unix()),
@@ -453,6 +454,7 @@ func MakeTimeboundsFromTime(minTime time.Time, maxTime time.Time) build.Timeboun
 	}
 }
 
+// MakeTimeboundsWithMaxTime creates Timebounds with maxTime of type time.Time.
 func MakeTimeboundsWithMaxTime(maxTime time.Time) build.Timebounds {
 	return build.Timebounds{
 		MaxTime: uint64(maxTime.Unix()),
