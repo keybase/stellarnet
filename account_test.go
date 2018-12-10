@@ -4,7 +4,11 @@ import (
 	"testing"
 	"time"
 
+	perrors "github.com/pkg/errors"
+
 	"github.com/keybase/stellarnet/testclient"
+	"github.com/stellar/go/build"
+	"github.com/stellar/go/clients/horizon"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/require"
@@ -57,6 +61,39 @@ func assertCreateAccount(t *testing.T, tx Transaction, startingBalance, funder, 
 	}
 	if op.Account != account {
 		t.Fatalf("account: %s, expected %s", op.Account, account)
+	}
+}
+
+// getHorizonError tries to find a horizon.Error buried in a stellarnet error
+func getHorizonError(err error) *horizon.Error {
+	err = perrors.Cause(err)
+	if zerr, ok := err.(Error); ok {
+		if zerr.HorizonError != nil {
+			err = zerr.HorizonError
+		}
+	}
+	err = perrors.Cause(err)
+	if herr, ok := err.(*horizon.Error); ok {
+		return herr
+	}
+	return nil
+}
+
+func assertHorizonError(t *testing.T, err error, transactionCode string) {
+	if err == nil {
+		t.Fatalf("Expected %q horizon error but got nil", transactionCode)
+	}
+	if herr := getHorizonError(err); herr != nil {
+		resultCodes, xerr := herr.ResultCodes()
+		if xerr != nil {
+			t.Fatalf("Failed when inspecting error, ResultCodes() -> %s", xerr)
+		}
+		t.Logf("assertHorizonError: horizon error: %q with codes: %+v", herr, resultCodes)
+		if resultCodes.TransactionCode != transactionCode {
+			t.Fatalf("Unexpected transaction code %s != %s", resultCodes.TransactionCode, transactionCode)
+		}
+	} else {
+		t.Fatalf("Error was not a horizon error, but: %s", err)
 	}
 }
 
@@ -276,7 +313,7 @@ func TestScenario(t *testing.T) {
 
 	t.Logf("alice merges into an unfunded account")
 	var nines uint64 = 999
-	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client())
+	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client(), nil /* timeBounds */)
 	require.NoError(t, err)
 	_, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -284,7 +321,7 @@ func TestScenario(t *testing.T) {
 	t.Logf("charlie merges into a funded account")
 	lip := helper.Keypair(t, "Lip")
 	testclient.GetTestLumens(t, lip)
-	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client())
+	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client(), nil /* timeBounds */)
 	require.NoError(t, err)
 }
 
@@ -382,5 +419,84 @@ func TestSetInflationDestination(t *testing.T) {
 	}
 	if balance != "9999.9999900" {
 		t.Errorf("balance: %s, expected 9999.9999900", balance)
+	}
+}
+
+func TestTimeBounds(t *testing.T) {
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "timebounds")
+
+	testclient.GetTestLumens(t, helper.Alice)
+
+	type TimeBoundTest struct {
+		tb      build.Timebounds
+		txError string
+	}
+	badTbs := []TimeBoundTest{
+		{MakeTimeboundsWithMaxTime(time.Date(2009, time.November, 10, 23, 0, 0, 0, time.UTC)), "tx_too_late"},
+		{MakeTimeboundsFromTime(
+			time.Date(2030, time.November, 10, 23, 0, 0, 0, time.UTC),
+			time.Date(2030, time.December, 10, 23, 0, 0, 0, time.UTC)), "tx_too_early"},
+	}
+
+	for _, tc := range badTbs {
+		tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
+			"10.0", "", Client(), &tc.tb)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, err = Submit(tx.Signed)
+		assertHorizonError(t, err, tc.txError)
+	}
+
+	tb := MakeTimeboundsWithMaxTime(time.Date(2030, time.November, 10, 23, 0, 0, 0, time.UTC))
+	tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
+		"10.0", "", Client(), &tb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = Submit(tx.Signed)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	for _, tc := range badTbs {
+		tx, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
+			"15.0", "", Client(), &tc.tb)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, err = Submit(tx.Signed)
+		assertHorizonError(t, err, tc.txError)
+	}
+
+	tx, err = PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
+		"15.0", "", Client(), &tb)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, _, err = Submit(tx.Signed)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	acctBob := NewAccount(addressStr(t, helper.Bob))
+	balance, err := acctBob.BalanceXLM()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if balance != "25.0000000" {
+		t.Errorf("balance: %s, expected 25.0000000", balance)
+	}
+
+	for _, tc := range badTbs {
+		tx, err := RelocateTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice),
+			true, nil, Client(), &tc.tb)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, _, err = Submit(tx.Signed)
+		assertHorizonError(t, err, tc.txError)
 	}
 }
