@@ -382,44 +382,39 @@ func TestSetInflationDestination(t *testing.T) {
 	t.Log("alice key pair not an account yet")
 	acctAlice := NewAccount(addressStr(t, helper.Alice))
 	_, err := acctAlice.BalanceXLM()
-	if err != ErrSourceAccountNotFound {
-		t.Fatalf("error: %q, expected %q (ErrSourceAccountNotFound)", err, ErrSourceAccountNotFound)
-	}
+	require.Error(t, err)
+	require.Equal(t, ErrSourceAccountNotFound, err)
 
 	_, err = AccountSeqno(addressStr(t, helper.Alice))
-	if err != ErrSourceAccountNotFound {
-		t.Fatalf("error: %q, expected %q (ErrSourceAccountNotFound)", err, ErrSourceAccountNotFound)
-	}
+	require.Error(t, err)
+	require.Equal(t, ErrSourceAccountNotFound, err)
 
 	active, err := IsMasterKeyActive(addressStr(t, helper.Alice))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !active {
-		t.Fatal("not active")
-	}
+	require.NoError(t, err)
+	require.True(t, active)
 
 	_, _, err = setInflationDestination(seedStr(t, helper.Alice), addressStr(t, helper.Alice))
-	if err == nil {
-		t.Fatal("expected error setting inflation destination on an empty account")
-	}
+	require.Error(t, err)
+	require.Equal(t, ErrResourceNotFound, err)
 
 	testclient.GetTestLumens(t, helper.Alice)
 
 	t.Log("alice account has been funded")
 
+	details, err := acctAlice.Details()
+	require.NoError(t, err)
+	require.Equal(t, "", details.InflationDestination)
+
 	_, _, err = setInflationDestination(seedStr(t, helper.Alice), addressStr(t, helper.Alice))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	balance, err := acctAlice.BalanceXLM()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if balance != "9999.9999900" {
-		t.Errorf("balance: %s, expected 9999.9999900", balance)
-	}
+	require.NoError(t, err)
+	require.Equal(t, "9999.9999900", balance)
+
+	details, err = acctAlice.Details()
+	require.NoError(t, err)
+	require.Equal(t, addressStr(t, helper.Alice).String(), details.InflationDestination)
 }
 
 func TestTimeBounds(t *testing.T) {

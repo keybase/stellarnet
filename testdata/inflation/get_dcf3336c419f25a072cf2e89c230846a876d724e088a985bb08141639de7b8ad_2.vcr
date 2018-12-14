@@ -3,11 +3,11 @@ Content-Length: 325
 Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Type: application/problem+json; charset=utf-8
-Date: Wed, 05 Dec 2018 18:50:06 GMT
+Date: Fri, 14 Dec 2018 19:14:37 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 94
-X-Ratelimit-Reset: 2
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
 
 {
   "type": "https://stellar.org/horizon-errors/not_found",
