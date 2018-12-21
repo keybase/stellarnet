@@ -165,7 +165,7 @@ func TestScenario(t *testing.T) {
 	}
 
 	t.Logf("alice (%s) sending 10 XLM to bob (%s)", helper.Alice.Address(), helper.Bob.Address())
-	if _, _, err = SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), "10.0", "" /* empty memo */); err != nil {
+	if _, _, _, err = SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), "10.0", "" /* empty memo */); err != nil {
 		t.Fatal(err)
 	}
 
@@ -188,11 +188,11 @@ func TestScenario(t *testing.T) {
 		t.Errorf("bob balance: %s, expected %s", balance, bobExpected)
 	}
 
-	ledger, txid, err := SendXLM(seedStr(t, helper.Bob), addressStr(t, helper.Alice), "1.0", "a memo")
+	ledger, txid, attempt, err := SendXLM(seedStr(t, helper.Bob), addressStr(t, helper.Alice), "1.0", "a memo")
 	if err != nil {
 		t.Fatal(err)
 	}
-	t.Logf("bob sent alice 1.0 XLM: %d, %s", ledger, txid)
+	t.Logf("bob sent alice 1.0 XLM: %d, %s (attempt: %d)", ledger, txid, attempt)
 
 	aliceTx, err := acctAlice.RecentTransactionsAndOps()
 	if err != nil {
@@ -298,7 +298,7 @@ func TestScenario(t *testing.T) {
 	t.Logf("bob merges account into alice's account")
 	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client())
 	require.NoError(t, err)
-	_, _, err = Submit(sig.Signed)
+	_, _, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
 
 	t.Log("bob's account has been merged away")
@@ -315,7 +315,7 @@ func TestScenario(t *testing.T) {
 	var nines uint64 = 999
 	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client(), nil /* timeBounds */)
 	require.NoError(t, err)
-	_, _, err = Submit(sig.Signed)
+	_, _, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
 
 	t.Logf("charlie merges into a funded account")
@@ -336,13 +336,13 @@ func TestAccountMergeAmount(t *testing.T) {
 	t.Logf("alice -> bob")
 	transferAmount := "123.456"
 	transferAmountMinusMergeFee := "123.4559900"
-	_, _, err := SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), transferAmount, "")
+	_, _, _, err := SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), transferAmount, "")
 	require.NoError(t, err)
 
 	t.Logf("bob merges back to alice")
 	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client())
 	require.NoError(t, err)
-	_, _, err = Submit(sig.Signed)
+	_, _, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
 
 	if !testclient.IsPlayback() {
@@ -393,7 +393,7 @@ func TestSetInflationDestination(t *testing.T) {
 	require.NoError(t, err)
 	require.True(t, active)
 
-	_, _, err = setInflationDestination(seedStr(t, helper.Alice), addressStr(t, helper.Alice))
+	_, _, _, err = setInflationDestination(seedStr(t, helper.Alice), addressStr(t, helper.Alice))
 	require.Error(t, err)
 	require.Equal(t, ErrResourceNotFound, err)
 
@@ -405,7 +405,7 @@ func TestSetInflationDestination(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "", details.InflationDestination)
 
-	_, _, err = setInflationDestination(seedStr(t, helper.Alice), addressStr(t, helper.Alice))
+	_, _, _, err = setInflationDestination(seedStr(t, helper.Alice), addressStr(t, helper.Alice))
 	require.NoError(t, err)
 
 	balance, err := acctAlice.BalanceXLM()
@@ -441,7 +441,7 @@ func TestTimeBounds(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _, err = Submit(tx.Signed)
+		_, _, _, err = Submit(tx.Signed)
 		assertHorizonError(t, err, tc.txError)
 	}
 
@@ -451,7 +451,7 @@ func TestTimeBounds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, err = Submit(tx.Signed)
+	_, _, _, err = Submit(tx.Signed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -462,7 +462,7 @@ func TestTimeBounds(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _, err = Submit(tx.Signed)
+		_, _, _, err = Submit(tx.Signed)
 		assertHorizonError(t, err, tc.txError)
 	}
 
@@ -471,7 +471,7 @@ func TestTimeBounds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, err = Submit(tx.Signed)
+	_, _, _, err = Submit(tx.Signed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -491,7 +491,7 @@ func TestTimeBounds(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _, err = Submit(tx.Signed)
+		_, _, _, err = Submit(tx.Signed)
 		assertHorizonError(t, err, tc.txError)
 	}
 }
