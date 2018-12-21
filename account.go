@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	perrors "github.com/pkg/errors"
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/horizon"
 	snetwork "github.com/stellar/go/network"
@@ -642,8 +643,11 @@ func Submit(signed string) (ledger int32, txid string, attempt int, err error) {
 	for i := 0; i < submitAttempts; i++ {
 		resp, err = Client().SubmitTransaction(signed)
 		if err != nil {
+			// the error might be wrapped, so get the unwrapped error
+			xerr := perrors.Cause(err)
+
 			// if error was a timeout, then keep trying
-			urlErr, ok := err.(*url.Error)
+			urlErr, ok := xerr.(*url.Error)
 			if ok && urlErr.Timeout() {
 				continue
 			}
