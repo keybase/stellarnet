@@ -164,6 +164,17 @@ func (a *Account) availableBalanceXLMLoaded() (string, error) {
 // be sent to another account (leaving enough XLM in the sender's
 // account to maintain the minimum balance).
 func AvailableBalance(balance string, subentryCount int) (string, error) {
+	// There seem to be situations where this is called with an
+	// empty string instead of "0", so this will fix that.
+	// (Perhaps in relation to relay payments when claimed, but not
+	// 100% sure)
+	// It could be a bug that has since been fixed, we will upgrade
+	// horizon libraries in the future, but this should patch it up
+	// for now.  (CORE-10043)
+	if balance == "" {
+		balance = "0"
+	}
+
 	balanceInt, err := ParseStellarAmount(balance)
 	if err != nil {
 		return "", err
