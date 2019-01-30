@@ -123,7 +123,26 @@ func (a *Account) BalanceXLM() (string, error) {
 		return "", err
 	}
 
-	return a.internal.GetNativeBalance(), nil
+	return a.internalNativeBalance(), nil
+}
+
+func (a *Account) internalNativeBalance() string {
+	if a.internal == nil {
+		return "0"
+	}
+
+	balance := a.internal.GetNativeBalance()
+	if balance == "" {
+		// There seem to be situations where this returns an
+		// empty string instead of "0", so this will fix that.
+		// (Perhaps in relation to relay payments when claimed, but not
+		// 100% sure)
+		// It could be a bug that has since been fixed, we will upgrade
+		// horizon libraries in the future, but this should patch it up
+		// for now.  (CORE-10043)
+		balance = "0"
+	}
+	return balance
 }
 
 // Balances returns all the balances for an account.
@@ -157,7 +176,7 @@ func (a *Account) AvailableBalanceXLM() (string, error) {
 
 // availableBalanceXLMLoaded must be called after a.load().
 func (a *Account) availableBalanceXLMLoaded() (string, error) {
-	return AvailableBalance(a.internal.GetNativeBalance(), int(a.internal.SubentryCount))
+	return AvailableBalance(a.internalNativeBalance(), int(a.internal.SubentryCount))
 }
 
 // AvailableBalance determines the amount of the balance that could
