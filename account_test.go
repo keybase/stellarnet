@@ -1,6 +1,8 @@
 package stellarnet
 
 import (
+	"fmt"
+	"sync"
 	"testing"
 	"time"
 
@@ -494,4 +496,81 @@ func TestTimeBounds(t *testing.T) {
 		_, _, _, err = Submit(tx.Signed)
 		assertHorizonError(t, err, tc.txError)
 	}
+}
+
+type sres struct {
+	Index   int
+	Attempt int
+	Ledger  int32
+	TxID    string
+	Error   error
+}
+
+// TestConcurrentSubmit gets rate limited very quickly on testnet (rate limit is 100 operations
+// per hour?).  It is skipped, but can be useful locally.
+func TestConcurrentSubmit(t *testing.T) {
+	t.Skip("this only works with -live")
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "concurrent")
+
+	testclient.GetTestLumens(t, helper.Alice)
+	testclient.GetTestLumens(t, helper.Bob)
+
+	aliceSeqno, err := AccountSeqno(addressStr(t, helper.Alice))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sprov := &testSeqnoProv{seqno: aliceSeqno}
+
+	n := 20
+	prepared := make([]SignResult, n)
+	for i := 0; i < n; i++ {
+		sig, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), fmt.Sprintf("%d", i+1), "", sprov, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		prepared[i] = sig
+	}
+
+	results := make(chan sres, n)
+	for i := 0; i < n; i++ {
+		go func(index int) {
+			ledger, txid, attempt, err := Submit(prepared[index].Signed)
+			fmt.Printf("index: %d, ledger: %d, txid: %s, attempt: %d, err: %v\n", index, ledger, txid, attempt, err)
+			if xerr, ok := err.(Error); ok {
+				resultCodes, zerr := xerr.HorizonError.ResultCodes()
+				if zerr == nil {
+					fmt.Printf("index: %d, horizon error transaction code: %s\n", index, resultCodes.TransactionCode)
+				} else {
+					fmt.Printf("index: %d, zerr: %s (%s)\n", index, zerr, xerr.Details)
+				}
+			}
+			results <- sres{Index: index, Attempt: attempt, Ledger: ledger, TxID: txid, Error: err}
+		}(i)
+	}
+
+	for i := 0; i < n; i++ {
+		r := <-results
+		if r.Error != nil {
+			t.Errorf("payment %d failed (attempt = %d), err: %s", r.Index, r.Attempt, r.Error)
+		} else {
+			t.Logf("payment %d success (attempt = %d)", r.Index, r.Attempt)
+			fmt.Printf("payment %d success (attempt = %d) ledger: %d\ttx id: %s\n", r.Index, r.Attempt, r.Ledger, r.TxID)
+		}
+	}
+}
+
+type testSeqnoProv struct {
+	seqno uint64
+	sync.Mutex
+}
+
+func (x *testSeqnoProv) SequenceForAccount(s string) (xdr.SequenceNumber, error) {
+	x.Lock()
+	defer x.Unlock()
+	result := xdr.SequenceNumber(x.seqno)
+	x.seqno++
+	return result, nil
 }

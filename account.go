@@ -676,6 +676,15 @@ func Submit(signed string) (ledger int32, txid string, attempt int, err error) {
 				continue
 			}
 
+			// try resubmitting when seqno err
+			hznErr, ok := xerr.(*horizon.Error)
+			if ok {
+				resultCodes, zerr := hznErr.ResultCodes()
+				if zerr == nil && resultCodes.TransactionCode == "tx_bad_seq" {
+					continue
+				}
+			}
+
 			return 0, "", i, errMap(err)
 		}
 
