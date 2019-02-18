@@ -298,7 +298,7 @@ func TestScenario(t *testing.T) {
 	require.Equal(t, txid2, txid3)
 
 	t.Logf("bob merges account into alice's account")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client())
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), build.DefaultBaseFee)
 	require.NoError(t, err)
 	_, _, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -315,7 +315,7 @@ func TestScenario(t *testing.T) {
 
 	t.Logf("alice merges into an unfunded account")
 	var nines uint64 = 999
-	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client(), nil /* timeBounds */)
+	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.NoError(t, err)
 	_, _, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -323,7 +323,7 @@ func TestScenario(t *testing.T) {
 	t.Logf("charlie merges into a funded account")
 	lip := helper.Keypair(t, "Lip")
 	testclient.GetTestLumens(t, lip)
-	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client(), nil /* timeBounds */)
+	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.NoError(t, err)
 }
 
@@ -342,7 +342,7 @@ func TestAccountMergeAmount(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Logf("bob merges back to alice")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client())
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), build.DefaultBaseFee)
 	require.NoError(t, err)
 	_, _, _, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -439,7 +439,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-			"10.0", "", Client(), &tc.tb)
+			"10.0", "", Client(), &tc.tb, build.DefaultBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -449,7 +449,7 @@ func TestTimeBounds(t *testing.T) {
 
 	tb := MakeTimeboundsWithMaxTime(time.Date(2030, time.November, 10, 23, 0, 0, 0, time.UTC))
 	tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-		"10.0", "", Client(), &tb)
+		"10.0", "", Client(), &tb, build.DefaultBaseFee)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -460,7 +460,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-			"15.0", "", Client(), &tc.tb)
+			"15.0", "", Client(), &tc.tb, build.DefaultBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -469,7 +469,7 @@ func TestTimeBounds(t *testing.T) {
 	}
 
 	tx, err = PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-		"15.0", "", Client(), &tb)
+		"15.0", "", Client(), &tb, build.DefaultBaseFee)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -489,7 +489,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := RelocateTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice),
-			true, nil, Client(), &tc.tb)
+			true, nil, Client(), &tc.tb, build.DefaultBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -527,7 +527,7 @@ func TestConcurrentSubmit(t *testing.T) {
 	n := 20
 	prepared := make([]SignResult, n)
 	for i := 0; i < n; i++ {
-		sig, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), fmt.Sprintf("%d", i+1), "", sprov, nil)
+		sig, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), fmt.Sprintf("%d", i+1), "", sprov, nil, build.DefaultBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
