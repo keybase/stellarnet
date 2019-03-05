@@ -59,7 +59,9 @@ func (h *Helper) setConfig(t *testing.T, c *Config) {
 // If record is on, it will clear out any existing files in the directory.
 func (h *Helper) SetState(t *testing.T, name string) {
 	dir := filepath.Join("testdata", name)
-	os.MkdirAll(dir, 0755)
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
 
 	conf := loadConfig(t, name)
 
@@ -77,7 +79,8 @@ func (h *Helper) SetState(t *testing.T, name string) {
 	tvcr.SetDir(dir)
 }
 
-// Get a keypair deterministically generated from `name` and the config state.
+// Keypair deterministically generates keypair.Full from `name`
+// and the config state.
 func (h *Helper) Keypair(t *testing.T, name string) *keypair.Full {
 	// raw seed = HMAC(key: Alice.SecretKey, message: name)
 	mac := hmac.New(sha256.New, []byte(h.Alice.Seed()))
@@ -102,13 +105,14 @@ func (h *Helper) Keypair(t *testing.T, name string) *keypair.Full {
 
 func testClient(t *testing.T, live, record bool) (*horizon.Client, *vcr.VCR) {
 	v := vcr.New("testdata")
-	if record {
+	switch {
+	case record:
 		t.Logf("recording http requests")
 		v.Record()
-	} else if live {
+	case live:
 		t.Logf("live http requests")
 		v.Live()
-	} else {
+	default:
 		t.Logf("playing recorded http requests")
 	}
 
