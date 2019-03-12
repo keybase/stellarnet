@@ -1,0 +1,29 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 12 Mar 2019 16:01:37 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "last_ledger": "223447",
+  "last_ledger_base_fee": "100",
+  "ledger_capacity_usage": "0.23",
+  "min_accepted_fee": "100",
+  "mode_accepted_fee": "100",
+  "p10_accepted_fee": "100",
+  "p20_accepted_fee": "100",
+  "p30_accepted_fee": "100",
+  "p40_accepted_fee": "100",
+  "p50_accepted_fee": "100",
+  "p60_accepted_fee": "100",
+  "p70_accepted_fee": "100",
+  "p80_accepted_fee": "100",
+  "p90_accepted_fee": "100",
+  "p95_accepted_fee": "100",
+  "p99_accepted_fee": "100"
+}
