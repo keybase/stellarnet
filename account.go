@@ -253,7 +253,7 @@ func IsMasterKeyActive(accountID AddressStr) (bool, error) {
 	var masterWeight int32
 	var availableWeight int32
 	for _, signer := range a.internal.Signers {
-		if a.internal.AccountID == signer.PublicKey {
+		if a.internal.AccountID == signer.Key {
 			masterWeight = signer.Weight
 			foundMaster = true
 		}
@@ -569,35 +569,6 @@ func RelocateTransaction(from SeedStr, to AddressStr, toIsFunded bool,
 	t.AddMemoID(memoID)
 	t.AddBuiltTimebounds(timeBounds)
 	return t.Sign()
-}
-
-// SignResult contains the result of signing a transaction.
-type SignResult struct {
-	Seqno  uint64
-	Signed string // signed transaction (base64)
-	TxHash string // transaction hash (hex)
-}
-
-// sign signs and base64-encodes a transaction.
-func sign(from SeedStr, tx *build.TransactionBuilder) (res SignResult, err error) {
-	txe, err := tx.Sign(from.SecureNoLogString())
-	if err != nil {
-		return res, errMap(err)
-	}
-	seqno := uint64(txe.E.Tx.SeqNum)
-	signed, err := txe.Base64()
-	if err != nil {
-		return res, errMap(err)
-	}
-	txHashHex, err := tx.HashHex()
-	if err != nil {
-		return res, errMap(err)
-	}
-	return SignResult{
-		Seqno:  seqno,
-		Signed: signed,
-		TxHash: txHashHex,
-	}, nil
 }
 
 // Submit submits a signed transaction to horizon.

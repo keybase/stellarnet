@@ -154,12 +154,16 @@ func (t *Tx) AddBuiltTimebounds(bt *build.Timebounds) {
 	}
 
 	t.muts = append(t.muts, *bt)
+	t.haveTimebounds = true
 }
 
 // Sign builds the transaction and signs it.
 func (t *Tx) Sign() (SignResult, error) {
 	if t.err != nil {
 		return SignResult{}, errMap(t.err)
+	}
+	if t.opCount == 0 {
+		return SignResult{}, errMap(ErrNoOps)
 	}
 	b, err := t.builder()
 	if err != nil {
@@ -179,4 +183,33 @@ func (t *Tx) builder() (*build.TransactionBuilder, error) {
 		return nil, errMap(err)
 	}
 	return b, nil
+}
+
+// SignResult contains the result of signing a transaction.
+type SignResult struct {
+	Seqno  uint64
+	Signed string // signed transaction (base64)
+	TxHash string // transaction hash (hex)
+}
+
+// sign signs and base64-encodes a transaction.
+func sign(from SeedStr, tx *build.TransactionBuilder) (res SignResult, err error) {
+	txe, err := tx.Sign(from.SecureNoLogString())
+	if err != nil {
+		return res, errMap(err)
+	}
+	seqno := uint64(txe.E.Tx.SeqNum)
+	signed, err := txe.Base64()
+	if err != nil {
+		return res, errMap(err)
+	}
+	txHashHex, err := tx.HashHex()
+	if err != nil {
+		return res, errMap(err)
+	}
+	return SignResult{
+		Seqno:  seqno,
+		Signed: signed,
+		TxHash: txHashHex,
+	}, nil
 }

@@ -44,6 +44,9 @@ var ErrTimeboundsExist = errors.New("time bounds already exist in this tx")
 // ErrTxOpFull is returned if an operation is added to a Tx that has 100 ops in it.
 var ErrTxOpFull = errors.New("tx cannot hold more operations")
 
+// ErrNoOps means a Tx has no operations.
+var ErrNoOps = errors.New("no operations in tx")
+
 // Error provides a hopefully user-friendly default in Error()
 // but with some details that might actually help debug in Verbose().
 type Error struct {
