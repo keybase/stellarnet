@@ -2,6 +2,16 @@ package stellarnet
 
 import "github.com/stellar/go/build"
 
+// Tx is a data structure used for making a Stellar transaction.
+// After creating one with NewBaseTx(), add to it with the various
+// Add* functions, and finally, Sign() it.
+//
+// Any errors that occur during Add* functions are delayed to return
+// when the Sign() function is called in order to make the transaction
+// building code cleaner.
+//
+// Since this struct contains the secret seed, it should be disposed of
+// and not held in memory for any longer than necessary.
 type Tx struct {
 	from           SeedStr
 	muts           []build.TransactionMutator
