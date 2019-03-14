@@ -497,7 +497,10 @@ func paymentXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger in
 // PaymentXLMTransaction creates a signed transaction to send a payment from 'from' to 'to' for 'amount' lumens.
 func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
-	t := NewBaseTx(from, seqnoProvider, baseFee)
+	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
+	if err != nil {
+		return res, err
+	}
 	t.AddPaymentOp(to, amount)
 	t.AddMemoText(memoText)
 	t.AddBuiltTimebounds(timeBounds)
@@ -518,7 +521,10 @@ func createAccountXLM(from SeedStr, to AddressStr, amount, memoText string) (led
 // with a starting balance of 'amount'.
 func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
-	t := NewBaseTx(from, seqnoProvider, baseFee)
+	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
+	if err != nil {
+		return res, err
+	}
 	t.AddCreateAccountOp(to, amount)
 	t.AddMemoText(memoText)
 	t.AddBuiltTimebounds(timeBounds)
@@ -528,7 +534,10 @@ func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount, memoText s
 // AccountMergeTransaction creates a signed transaction to merge the account `from` into `to`.
 func AccountMergeTransaction(from SeedStr, to AddressStr,
 	seqnoProvider build.SequenceProvider, baseFee uint64) (res SignResult, err error) {
-	t := NewBaseTx(from, seqnoProvider, baseFee)
+	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
+	if err != nil {
+		return res, err
+	}
 	t.AddAccountMergeOp(to)
 	t.AddMemoText(defaultMemo)
 
@@ -539,7 +548,10 @@ func AccountMergeTransaction(from SeedStr, to AddressStr,
 // inflation destination for the `from` account to the `to` account.
 func SetInflationDestinationTransaction(from SeedStr, to AddressStr, seqnoProvider build.SequenceProvider,
 	timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
-	t := NewBaseTx(from, seqnoProvider, baseFee)
+	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
+	if err != nil {
+		return SignResult{}, err
+	}
 	t.AddInflationDestinationOp(to)
 	t.AddBuiltTimebounds(timeBounds)
 
@@ -560,8 +572,10 @@ func setInflationDestination(from SeedStr, to AddressStr) (ledger int32, txid st
 // Otherwise the transaction is two operations: [create_account, account_merge].
 func RelocateTransaction(from SeedStr, to AddressStr, toIsFunded bool,
 	memoID *uint64, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
-
-	t := NewBaseTx(from, seqnoProvider, baseFee)
+	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
+	if err != nil {
+		return SignResult{}, err
+	}
 	if !toIsFunded {
 		t.AddCreateAccountOp(to, "1")
 	}

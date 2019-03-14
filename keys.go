@@ -41,6 +41,14 @@ func (s SeedStr) SecureNoLogString() string {
 	return string(s)
 }
 
+func (s SeedStr) Address() (AddressStr, error) {
+	kp, err := keypair.Parse(s.SecureNoLogString())
+	if err != nil {
+		return "", err
+	}
+	return AddressStr(kp.Address()), nil
+}
+
 // NewAddressStr ensures that s is a valid stellar address.
 func NewAddressStr(s string) (AddressStr, error) {
 	// parse s to make sure it is a valid address
