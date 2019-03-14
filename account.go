@@ -497,28 +497,11 @@ func paymentXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger in
 // PaymentXLMTransaction creates a signed transaction to send a payment from 'from' to 'to' for 'amount' lumens.
 func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
-	if baseFee < build.DefaultBaseFee {
-		baseFee = build.DefaultBaseFee
-	}
-	muts := []build.TransactionMutator{
-		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
-		Network(),
-		build.AutoSequence{SequenceProvider: seqnoProvider},
-		build.Payment(
-			build.Destination{AddressOrSeed: to.String()},
-			build.NativeAmount{Amount: amount},
-		),
-		build.MemoText{Value: memoText},
-		build.BaseFee{Amount: baseFee},
-	}
-	if timeBounds != nil {
-		muts = append(muts, timeBounds)
-	}
-	tx, err := build.Transaction(muts...)
-	if err != nil {
-		return res, errMap(err)
-	}
-	return sign(from, tx)
+	t := NewBaseTx(from, seqnoProvider, baseFee)
+	t.AddPaymentOp(to, amount)
+	t.AddMemoText(memoText)
+	t.AddBuiltTimebounds(timeBounds)
+	return t.Sign()
 }
 
 // createAccountXLM funds an new account 'to' from 'from' with a starting balance of 'amount'.
@@ -535,73 +518,32 @@ func createAccountXLM(from SeedStr, to AddressStr, amount, memoText string) (led
 // with a starting balance of 'amount'.
 func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
-	if baseFee < build.DefaultBaseFee {
-		baseFee = build.DefaultBaseFee
-	}
-	muts := []build.TransactionMutator{
-		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
-		Network(),
-		build.AutoSequence{SequenceProvider: seqnoProvider},
-		build.CreateAccount(
-			build.Destination{AddressOrSeed: to.String()},
-			build.NativeAmount{Amount: amount},
-		),
-		build.MemoText{Value: memoText},
-		build.BaseFee{Amount: baseFee},
-	}
-	if timeBounds != nil {
-		muts = append(muts, timeBounds)
-	}
-	tx, err := build.Transaction(muts...)
-	if err != nil {
-		return res, errMap(err)
-	}
-	return sign(from, tx)
+	t := NewBaseTx(from, seqnoProvider, baseFee)
+	t.AddCreateAccountOp(to, amount)
+	t.AddMemoText(memoText)
+	t.AddBuiltTimebounds(timeBounds)
+	return t.Sign()
 }
 
 // AccountMergeTransaction creates a signed transaction to merge the account `from` into `to`.
 func AccountMergeTransaction(from SeedStr, to AddressStr,
 	seqnoProvider build.SequenceProvider, baseFee uint64) (res SignResult, err error) {
-	if baseFee < build.DefaultBaseFee {
-		baseFee = build.DefaultBaseFee
-	}
-	tx, err := build.Transaction(
-		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
-		Network(),
-		build.AutoSequence{SequenceProvider: seqnoProvider},
-		build.AccountMerge(
-			build.Destination{AddressOrSeed: to.String()},
-		),
-		build.MemoText{Value: defaultMemo},
-		build.BaseFee{Amount: baseFee},
-	)
-	if err != nil {
-		return res, errMap(err)
-	}
-	return sign(from, tx)
+	t := NewBaseTx(from, seqnoProvider, baseFee)
+	t.AddAccountMergeOp(to)
+	t.AddMemoText(defaultMemo)
+
+	return t.Sign()
 }
 
 // SetInflationDestinationTransaction creates a "set options" transaction that will set the
 // inflation destination for the `from` account to the `to` account.
 func SetInflationDestinationTransaction(from SeedStr, to AddressStr, seqnoProvider build.SequenceProvider,
 	timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
-	muts := []build.TransactionMutator{
-		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
-		Network(),
-		build.AutoSequence{SequenceProvider: seqnoProvider},
-		build.SetOptions(
-			build.InflationDest(to.String()),
-		),
-		build.BaseFee{Amount: baseFee},
-	}
-	if timeBounds != nil {
-		muts = append(muts, timeBounds)
-	}
-	tx, err := build.Transaction(muts...)
-	if err != nil {
-		return SignResult{}, errMap(err)
-	}
-	return sign(from, tx)
+	t := NewBaseTx(from, seqnoProvider, baseFee)
+	t.AddInflationDestinationOp(to)
+	t.AddBuiltTimebounds(timeBounds)
+
+	return t.Sign()
 }
 
 func setInflationDestination(from SeedStr, to AddressStr) (ledger int32, txid string, attempt int, err error) {
@@ -618,35 +560,15 @@ func setInflationDestination(from SeedStr, to AddressStr) (ledger int32, txid st
 // Otherwise the transaction is two operations: [create_account, account_merge].
 func RelocateTransaction(from SeedStr, to AddressStr, toIsFunded bool,
 	memoID *uint64, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
-	if baseFee < build.DefaultBaseFee {
-		baseFee = build.DefaultBaseFee
-	}
-	muts := []build.TransactionMutator{
-		build.SourceAccount{AddressOrSeed: from.SecureNoLogString()},
-		Network(),
-		build.AutoSequence{SequenceProvider: seqnoProvider},
-		build.BaseFee{Amount: baseFee},
-	}
+
+	t := NewBaseTx(from, seqnoProvider, baseFee)
 	if !toIsFunded {
-		muts = append(muts, build.CreateAccount(
-			build.Destination{AddressOrSeed: to.String()},
-			build.NativeAmount{Amount: "1"},
-		))
+		t.AddCreateAccountOp(to, "1")
 	}
-	muts = append(muts, build.AccountMerge(
-		build.Destination{AddressOrSeed: to.String()},
-	))
-	if memoID != nil {
-		muts = append(muts, build.MemoID{Value: *memoID})
-	}
-	if timeBounds != nil {
-		muts = append(muts, timeBounds)
-	}
-	tx, err := build.Transaction(muts...)
-	if err != nil {
-		return res, errMap(err)
-	}
-	return sign(from, tx)
+	t.AddAccountMergeOp(to)
+	t.AddMemoID(memoID)
+	t.AddBuiltTimebounds(timeBounds)
+	return t.Sign()
 }
 
 // SignResult contains the result of signing a transaction.
