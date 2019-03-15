@@ -38,8 +38,8 @@ var ErrAssetNotFound = errors.New("asset not found")
 // ErrMemoExists is returned if more than one memo is added to a Tx.
 var ErrMemoExists = errors.New("memo already exists in this tx")
 
-// ErrTimeboundsExist is returned if more than one time bounds is added to a Tx.
-var ErrTimeboundsExist = errors.New("time bounds already exist in this tx")
+// ErrTimeBoundsExist is returned if more than one time bounds is added to a Tx.
+var ErrTimeBoundsExist = errors.New("time bounds already exist in this tx")
 
 // ErrTxOpFull is returned if an operation is added to a Tx that has 100 ops in it.
 var ErrTxOpFull = errors.New("tx cannot hold more operations")

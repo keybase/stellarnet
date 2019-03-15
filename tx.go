@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/hex"
-	"fmt"
 
 	"github.com/stellar/go/amount"
 	"github.com/stellar/go/build"
@@ -24,31 +23,29 @@ import (
 // Since this struct contains the secret seed, it should be disposed of
 // and not held in memory for any longer than necessary.
 type Tx struct {
-	err error
-
-	accountID AddressStr
 	internal  xdr.Transaction
+	source    AddressStr
 	seqnoProv build.SequenceProvider
 	netPass   string
 	baseFee   uint64
+	err       error
 }
 
 // NewBaseTx creates a Tx with the common transaction elements.
-func NewBaseTx(from AddressStr, seqnoProvider build.SequenceProvider, baseFee uint64) *Tx {
+func NewBaseTx(source AddressStr, seqnoProvider build.SequenceProvider, baseFee uint64) *Tx {
 	if baseFee < build.DefaultBaseFee {
 		baseFee = build.DefaultBaseFee
 	}
 	t := &Tx{
-		accountID: from,
+		source:    source,
 		baseFee:   baseFee,
 		seqnoProv: seqnoProvider,
 		netPass:   NetworkPassphrase(),
 	}
-	t.internal.SourceAccount.SetAddress(from.String())
 	return t
 }
 
-// newBaseTxSeed is a convenience function to get the address out of from before
+// newBaseTxSeed is a convenience function to get the address out of `from` before
 // calling NewBaseTx.
 func newBaseTxSeed(from SeedStr, seqnoProvider build.SequenceProvider, baseFee uint64) (*Tx, error) {
 	fromAddress, err := from.Address()
@@ -60,11 +57,7 @@ func newBaseTxSeed(from SeedStr, seqnoProvider build.SequenceProvider, baseFee u
 
 // AddPaymentOp adds a payment operation to the transaction.
 func (t *Tx) AddPaymentOp(to AddressStr, amt string) {
-	if t.err != nil {
-		return
-	}
-	if t.IsFull() {
-		t.err = ErrTxOpFull
+	if t.skipAddOp() {
 		return
 	}
 
@@ -73,26 +66,17 @@ func (t *Tx) AddPaymentOp(to AddressStr, amt string) {
 	if t.err != nil {
 		return
 	}
-	op.Destination.SetAddress(to.String())
-
-	body, err := xdr.NewOperationBody(xdr.OperationTypePayment, op)
-	if err != nil {
-		t.err = err
+	op.Destination, t.err = to.AccountID()
+	if t.err != nil {
 		return
 	}
-	wop := xdr.Operation{
-		Body: body,
-	}
-	t.internal.Operations = append(t.internal.Operations, wop)
+
+	t.addOp(xdr.OperationTypePayment, op)
 }
 
 // AddCreateAccountOp adds a create_account operation to the transaction.
 func (t *Tx) AddCreateAccountOp(to AddressStr, amt string) {
-	if t.err != nil {
-		return
-	}
-	if t.IsFull() {
-		t.err = ErrTxOpFull
+	if t.skipAddOp() {
 		return
 	}
 
@@ -101,56 +85,49 @@ func (t *Tx) AddCreateAccountOp(to AddressStr, amt string) {
 	if t.err != nil {
 		return
 	}
-	op.Destination.SetAddress(to.String())
-
-	body, err := xdr.NewOperationBody(xdr.OperationTypeCreateAccount, op)
-	if err != nil {
-		t.err = err
+	op.Destination, t.err = to.AccountID()
+	if t.err != nil {
 		return
 	}
-	wop := xdr.Operation{
-		Body: body,
-	}
-	t.internal.Operations = append(t.internal.Operations, wop)
+
+	t.addOp(xdr.OperationTypeCreateAccount, op)
 }
 
 // AddAccountMergeOp adds an account_merge operation to the transaction.
 func (t *Tx) AddAccountMergeOp(to AddressStr) {
-	if t.err != nil {
-		return
-	}
-	if t.IsFull() {
-		t.err = ErrTxOpFull
+	if t.skipAddOp() {
 		return
 	}
 
-	var accountID xdr.AccountId
-	accountID.SetAddress(to.String())
-	body, err := xdr.NewOperationBody(xdr.OperationTypeAccountMerge, accountID)
+	accountID, err := to.AccountID()
 	if err != nil {
 		t.err = err
 		return
 	}
-	wop := xdr.Operation{
-		Body: body,
-	}
-	t.internal.Operations = append(t.internal.Operations, wop)
+
+	t.addOp(xdr.OperationTypeAccountMerge, accountID)
 }
 
 // AddInflationDestinationOp adds a set_options operation for the inflation
 // destination to the transaction.
 func (t *Tx) AddInflationDestinationOp(to AddressStr) {
-	if t.err != nil {
+	if t.skipAddOp() {
 		return
 	}
-	if t.IsFull() {
-		t.err = ErrTxOpFull
+
+	accountID, err := to.AccountID()
+	if err != nil {
+		t.err = err
 		return
 	}
-	var accountID xdr.AccountId
-	accountID.SetAddress(to.String())
 	op := xdr.SetOptionsOp{InflationDest: &accountID}
-	body, err := xdr.NewOperationBody(xdr.OperationTypeSetOptions, op)
+
+	t.addOp(xdr.OperationTypeSetOptions, op)
+}
+
+// addOp adds an operation to the internal transaction.
+func (t *Tx) addOp(opType xdr.OperationType, op interface{}) {
+	body, err := xdr.NewOperationBody(opType, op)
 	if err != nil {
 		t.err = err
 		return
@@ -159,22 +136,47 @@ func (t *Tx) AddInflationDestinationOp(to AddressStr) {
 		Body: body,
 	}
 	t.internal.Operations = append(t.internal.Operations, wop)
+}
+
+// skipAddOp returns true if there is already a condition that
+// prevents any further Add* operations.
+func (t *Tx) skipAddOp() bool {
+	if t.err != nil {
+		return true
+	}
+	if t.IsFull() {
+		t.err = ErrTxOpFull
+		return true
+	}
+
+	return false
 }
 
 func (t *Tx) haveMemo() bool {
 	return t.internal.Memo.Type != xdr.MemoTypeMemoNone
 }
 
-// AddMemoText adds a text memo to the transaction.  There can only
-// be one memo.
-func (t *Tx) AddMemoText(memo string) {
+// skipAddMemo returns true if there is already a condition that
+// prevents any further AddMemo* calls.
+func (t *Tx) skipAddMemo() bool {
 	if t.err != nil {
-		return
+		return true
 	}
 	if t.haveMemo() {
 		t.err = ErrMemoExists
+		return true
+	}
+
+	return false
+}
+
+// AddMemoText adds a text memo to the transaction.  There can only
+// be one memo.
+func (t *Tx) AddMemoText(memo string) {
+	if t.skipAddMemo() {
 		return
 	}
+
 	m, err := xdr.NewMemo(xdr.MemoTypeMemoText, memo)
 	if err != nil {
 		t.err = err
@@ -187,14 +189,10 @@ func (t *Tx) AddMemoText(memo string) {
 // AddMemoID adds an ID memo to the transaction.  There can only
 // be one memo.
 func (t *Tx) AddMemoID(id *uint64) {
-	if t.err != nil {
-		return
-	}
 	if id == nil {
 		return
 	}
-	if t.haveMemo() {
-		t.err = ErrMemoExists
+	if t.skipAddMemo() {
 		return
 	}
 
@@ -206,39 +204,28 @@ func (t *Tx) AddMemoID(id *uint64) {
 	t.internal.Memo = m
 }
 
-// AddTimebounds adds time bounds to the transaction.
-func (t *Tx) AddTimebounds(min, max uint64) {
-	t.AddBuiltTimebounds(&build.Timebounds{MinTime: min, MaxTime: max})
-}
-
-// AddBuiltTimebounds adds time bounds to the transaction with a *build.Timebounds.
-func (t *Tx) AddBuiltTimebounds(bt *build.Timebounds) {
+// AddTimeBounds adds time bounds to the transaction.
+func (t *Tx) AddTimeBounds(min, max uint64) {
 	if t.err != nil {
 		return
 	}
-	if bt == nil {
-		return
-	}
 	if t.internal.TimeBounds != nil {
-		t.err = ErrTimeboundsExist
+		t.err = ErrTimeBoundsExist
 		return
 	}
 
 	t.internal.TimeBounds = &xdr.TimeBounds{
-		MinTime: xdr.Uint64(bt.MinTime),
-		MaxTime: xdr.Uint64(bt.MaxTime),
+		MinTime: xdr.Uint64(min),
+		MaxTime: xdr.Uint64(max),
 	}
 }
 
-// Sign builds the transaction and signs it.
-func (t *Tx) Sign(from SeedStr) (SignResult, error) {
-	if t.err != nil {
-		return SignResult{}, errMap(t.err)
+// AddBuiltTimeBounds adds time bounds to the transaction with a *build.Timebounds.
+func (t *Tx) AddBuiltTimeBounds(bt *build.Timebounds) {
+	if bt == nil {
+		return
 	}
-	if len(t.internal.Operations) == 0 {
-		return SignResult{}, errMap(ErrNoOps)
-	}
-	return t.sign(from)
+	t.AddTimeBounds(bt.MinTime, bt.MaxTime)
 }
 
 // IsFull returns true if there are already 100 operations in the transaction.
@@ -253,30 +240,48 @@ type SignResult struct {
 	TxHash string // transaction hash (hex)
 }
 
-func (t *Tx) sign(from SeedStr) (SignResult, error) {
-	// XXX check that from matches accountid
-	seqno, err := t.seqnoProv.SequenceForAccount(t.accountID.String())
+// Sign builds the transaction and signs it.
+func (t *Tx) Sign(from SeedStr) (SignResult, error) {
+	if t.err != nil {
+		return SignResult{}, errMap(t.err)
+	}
+	if len(t.internal.Operations) == 0 {
+		return SignResult{}, errMap(ErrNoOps)
+	}
+	return t.sign(from)
+}
+
+func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
+	seqno, err := t.seqnoProv.SequenceForAccount(t.source.String())
 	if err != nil {
 		return SignResult{}, err
 	}
 	t.internal.SeqNum = seqno + 1
 	t.internal.Fee = xdr.Uint32(t.baseFee * uint64(len(t.internal.Operations)))
-	fmt.Printf("transaction: %+v\n", t.internal)
-	envelope := xdr.TransactionEnvelope{Tx: t.internal}
+	t.internal.SourceAccount, err = t.source.AccountID()
+	if err != nil {
+		return SignResult{}, err
+	}
+
 	hash, err := network.HashTransaction(&t.internal, t.netPass)
 	if err != nil {
 		return SignResult{}, err
 	}
 
-	kp, err := keypair.Parse(from.SecureNoLogString())
-	if err != nil {
-		return SignResult{}, err
+	envelope := xdr.TransactionEnvelope{Tx: t.internal}
+
+	for _, signer := range signers {
+		kp, err := keypair.Parse(signer.SecureNoLogString())
+		if err != nil {
+			return SignResult{}, err
+		}
+		sig, err := kp.SignDecorated(hash[:])
+		if err != nil {
+			return SignResult{}, err
+		}
+
+		envelope.Signatures = append(envelope.Signatures, sig)
 	}
-	sig, err := kp.SignDecorated(hash[:])
-	if err != nil {
-		return SignResult{}, err
-	}
-	envelope.Signatures = append(envelope.Signatures, sig)
 
 	var buf bytes.Buffer
 	_, err = xdr.Marshal(&buf, envelope)
@@ -292,26 +297,4 @@ func (t *Tx) sign(from SeedStr) (SignResult, error) {
 		TxHash: txHashHex,
 	}, nil
 
-}
-
-// sign signs and base64-encodes a transaction.
-func sign(from SeedStr, tx *build.TransactionBuilder) (res SignResult, err error) {
-	txe, err := tx.Sign(from.SecureNoLogString())
-	if err != nil {
-		return res, errMap(err)
-	}
-	seqno := uint64(txe.E.Tx.SeqNum)
-	signed, err := txe.Base64()
-	if err != nil {
-		return res, errMap(err)
-	}
-	txHashHex, err := tx.HashHex()
-	if err != nil {
-		return res, errMap(err)
-	}
-	return SignResult{
-		Seqno:  seqno,
-		Signed: signed,
-		TxHash: txHashHex,
-	}, nil
 }

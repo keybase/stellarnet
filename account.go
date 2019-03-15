@@ -510,7 +510,7 @@ func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	}
 	t.AddPaymentOp(to, amount)
 	t.AddMemoText(memoText)
-	t.AddBuiltTimebounds(timeBounds)
+	t.AddBuiltTimeBounds(timeBounds)
 	return t.Sign(from)
 }
 
@@ -534,7 +534,7 @@ func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount, memoText s
 	}
 	t.AddCreateAccountOp(to, amount)
 	t.AddMemoText(memoText)
-	t.AddBuiltTimebounds(timeBounds)
+	t.AddBuiltTimeBounds(timeBounds)
 	return t.Sign(from)
 }
 
@@ -560,7 +560,7 @@ func SetInflationDestinationTransaction(from SeedStr, to AddressStr, seqnoProvid
 		return SignResult{}, err
 	}
 	t.AddInflationDestinationOp(to)
-	t.AddBuiltTimebounds(timeBounds)
+	t.AddBuiltTimeBounds(timeBounds)
 
 	return t.Sign(from)
 }
@@ -588,7 +588,7 @@ func RelocateTransaction(from SeedStr, to AddressStr, toIsFunded bool,
 	}
 	t.AddAccountMergeOp(to)
 	t.AddMemoID(memoID)
-	t.AddBuiltTimebounds(timeBounds)
+	t.AddBuiltTimeBounds(timeBounds)
 	return t.Sign(from)
 }
 

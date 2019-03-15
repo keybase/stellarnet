@@ -85,14 +85,14 @@ func TestMultipleOps(t *testing.T) {
 	require.Equal(t, ErrMemoExists, err)
 
 	tx = NewBaseTx(addressStr(t, helper.Alice), Client(), build.DefaultBaseFee*2)
-	tx.AddTimebounds(1000, 5000)
-	tx.AddTimebounds(4000, 5000)
+	tx.AddTimeBounds(1000, 5000)
+	tx.AddTimeBounds(4000, 5000)
 	_, err = tx.Sign(seedStr(t, helper.Alice))
 	require.Error(t, err)
-	require.Equal(t, ErrTimeboundsExist, err)
+	require.Equal(t, ErrTimeBoundsExist, err)
 
 	tx = NewBaseTx(addressStr(t, helper.Alice), Client(), build.DefaultBaseFee*2)
-	tx.AddTimebounds(1000, 5000)
+	tx.AddTimeBounds(1000, 5000)
 	tx.AddMemoText("memo 1")
 	_, err = tx.Sign(seedStr(t, helper.Alice))
 	require.Error(t, err)
