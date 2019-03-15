@@ -21,12 +21,12 @@ func TestAsset(t *testing.T) {
 	//
 	// will show a list of EUR assets.  Pick one.
 	//
-	summary, err := Asset("EUR", "GA7WFJJU6OX2366QUCN54JXCSXHIR4E3N6TFFDSQSALLU5ZOHWXIQBQ6")
+	summary, err := Asset("EUR", "GAJVD2WOS7QXLSGFUQ3VIDEFG5I7S3VWL4X3V5FEFN4N2OC5CQDMHHZS")
 	require.NoError(t, err)
 
 	require.Equal(t, "credit_alphanum4", summary.AssetType)
 	require.Equal(t, "EUR", summary.AssetCode)
 	require.Equal(t, "EUR", summary.AssetCode)
-	require.Equal(t, "GA7WFJJU6OX2366QUCN54JXCSXHIR4E3N6TFFDSQSALLU5ZOHWXIQBQ6", summary.AssetIssuer)
+	require.Equal(t, "GAJVD2WOS7QXLSGFUQ3VIDEFG5I7S3VWL4X3V5FEFN4N2OC5CQDMHHZS", summary.AssetIssuer)
 	require.Empty(t, summary.UnverifiedWellKnownLink)
 }
