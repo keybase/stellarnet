@@ -1,7 +1,10 @@
 package stellarnet
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/hex"
+	"fmt"
 
 	"github.com/stellar/go/amount"
 	"github.com/stellar/go/build"
@@ -21,13 +24,13 @@ import (
 // Since this struct contains the secret seed, it should be disposed of
 // and not held in memory for any longer than necessary.
 type Tx struct {
-	from SeedStr
-	muts []build.TransactionMutator
-	err  error
+	err error
 
 	accountID AddressStr
 	internal  xdr.Transaction
 	seqnoProv build.SequenceProvider
+	netPass   string
+	baseFee   uint64
 }
 
 // NewBaseTx creates a Tx with the common transaction elements.
@@ -37,10 +40,9 @@ func NewBaseTx(from AddressStr, seqnoProvider build.SequenceProvider, baseFee ui
 	}
 	t := &Tx{
 		accountID: from,
-		internal: xdr.Transaction{
-			Fee: xdr.Uint32(baseFee),
-		},
+		baseFee:   baseFee,
 		seqnoProv: seqnoProvider,
+		netPass:   NetworkPassphrase(),
 	}
 	t.internal.SourceAccount.SetAddress(from.String())
 	return t
@@ -122,9 +124,17 @@ func (t *Tx) AddAccountMergeOp(to AddressStr) {
 		return
 	}
 
-	t.muts = append(t.muts, build.AccountMerge(
-		build.Destination{AddressOrSeed: to.String()},
-	))
+	var accountID xdr.AccountId
+	accountID.SetAddress(to.String())
+	body, err := xdr.NewOperationBody(xdr.OperationTypeAccountMerge, accountID)
+	if err != nil {
+		t.err = err
+		return
+	}
+	wop := xdr.Operation{
+		Body: body,
+	}
+	t.internal.Operations = append(t.internal.Operations, wop)
 }
 
 // AddInflationDestinationOp adds a set_options operation for the inflation
@@ -137,8 +147,18 @@ func (t *Tx) AddInflationDestinationOp(to AddressStr) {
 		t.err = ErrTxOpFull
 		return
 	}
-
-	t.muts = append(t.muts, build.SetOptions(build.InflationDest(to.String())))
+	var accountID xdr.AccountId
+	accountID.SetAddress(to.String())
+	op := xdr.SetOptionsOp{InflationDest: &accountID}
+	body, err := xdr.NewOperationBody(xdr.OperationTypeSetOptions, op)
+	if err != nil {
+		t.err = err
+		return
+	}
+	wop := xdr.Operation{
+		Body: body,
+	}
+	t.internal.Operations = append(t.internal.Operations, wop)
 }
 
 func (t *Tx) haveMemo() bool {
@@ -155,8 +175,13 @@ func (t *Tx) AddMemoText(memo string) {
 		t.err = ErrMemoExists
 		return
 	}
+	m, err := xdr.NewMemo(xdr.MemoTypeMemoText, memo)
+	if err != nil {
+		t.err = err
+		return
+	}
 
-	t.muts = append(t.muts, build.MemoText{Value: memo})
+	t.internal.Memo = m
 }
 
 // AddMemoID adds an ID memo to the transaction.  There can only
@@ -173,7 +198,12 @@ func (t *Tx) AddMemoID(id *uint64) {
 		return
 	}
 
-	t.muts = append(t.muts, build.MemoID{Value: *id})
+	m, err := xdr.NewMemo(xdr.MemoTypeMemoId, xdr.Uint64(*id))
+	if err != nil {
+		t.err = err
+		return
+	}
+	t.internal.Memo = m
 }
 
 // AddTimebounds adds time bounds to the transaction.
@@ -194,35 +224,26 @@ func (t *Tx) AddBuiltTimebounds(bt *build.Timebounds) {
 		return
 	}
 
-	t.muts = append(t.muts, *bt)
+	t.internal.TimeBounds = &xdr.TimeBounds{
+		MinTime: xdr.Uint64(bt.MinTime),
+		MaxTime: xdr.Uint64(bt.MaxTime),
+	}
 }
 
 // Sign builds the transaction and signs it.
-func (t *Tx) Sign() (SignResult, error) {
+func (t *Tx) Sign(from SeedStr) (SignResult, error) {
 	if t.err != nil {
 		return SignResult{}, errMap(t.err)
 	}
 	if len(t.internal.Operations) == 0 {
 		return SignResult{}, errMap(ErrNoOps)
 	}
-	b, err := t.builder()
-	if err != nil {
-		return SignResult{}, errMap(err)
-	}
-	return sign(t.from, b)
+	return t.sign(from)
 }
 
 // IsFull returns true if there are already 100 operations in the transaction.
 func (t *Tx) IsFull() bool {
 	return len(t.internal.Operations) >= 100
-}
-
-func (t *Tx) builder() (*build.TransactionBuilder, error) {
-	b, err := build.Transaction(t.muts...)
-	if err != nil {
-		return nil, errMap(err)
-	}
-	return b, nil
 }
 
 // SignResult contains the result of signing a transaction.
@@ -233,13 +254,16 @@ type SignResult struct {
 }
 
 func (t *Tx) sign(from SeedStr) (SignResult, error) {
-	var err error
-	t.internal.SeqNum, err = t.seqnoProv.SequenceForAccount(t.accountID.String())
+	// XXX check that from matches accountid
+	seqno, err := t.seqnoProv.SequenceForAccount(t.accountID.String())
 	if err != nil {
 		return SignResult{}, err
 	}
+	t.internal.SeqNum = seqno + 1
+	t.internal.Fee = xdr.Uint32(t.baseFee * uint64(len(t.internal.Operations)))
+	fmt.Printf("transaction: %+v\n", t.internal)
 	envelope := xdr.TransactionEnvelope{Tx: t.internal}
-	hash, err := network.HashTransaction(&t.internal, t.NetworkPassphrase)
+	hash, err := network.HashTransaction(&t.internal, t.netPass)
 	if err != nil {
 		return SignResult{}, err
 	}
@@ -254,14 +278,16 @@ func (t *Tx) sign(from SeedStr) (SignResult, error) {
 	}
 	envelope.Signatures = append(envelope.Signatures, sig)
 
-	signed, err := envelope.Base64()
+	var buf bytes.Buffer
+	_, err = xdr.Marshal(&buf, envelope)
 	if err != nil {
 		return SignResult{}, err
 	}
+	signed := base64.StdEncoding.EncodeToString(buf.Bytes())
 	txHashHex := hex.EncodeToString(hash[:])
 
 	return SignResult{
-		Seqno:  seqno,
+		Seqno:  uint64(t.internal.SeqNum),
 		Signed: signed,
 		TxHash: txHashHex,
 	}, nil

@@ -318,6 +318,15 @@ func TestScenario(t *testing.T) {
 	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.NoError(t, err)
 	_, _, _, err = Submit(sig.Signed)
+	if err != nil {
+		if e, ok := err.(Error); ok {
+			t.Logf("error details: %s", e.Details)
+			t.Logf("horizon error: %+v", e.HorizonError)
+			t.Logf("horizon error problem: %+v", e.HorizonError.Problem)
+			t.Logf("horizon error problem extras: %+v", string(e.HorizonError.Problem.Extras["result_codes"]))
+			t.Logf("original error: %+v", e.OriginalError)
+		}
+	}
 	require.NoError(t, err)
 
 	t.Logf("charlie merges into a funded account")

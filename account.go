@@ -93,6 +93,13 @@ func Network() build.Network {
 	return gnetwork
 }
 
+// NetworkPassphrase returns the horizon network "passphrase"
+func NetworkPassphrase() string {
+	configLock.Lock()
+	defer configLock.Unlock()
+	return gnetwork.Passphrase
+}
+
 // Account represents a Stellar account.
 type Account struct {
 	address  AddressStr
@@ -504,7 +511,7 @@ func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	t.AddPaymentOp(to, amount)
 	t.AddMemoText(memoText)
 	t.AddBuiltTimebounds(timeBounds)
-	return t.Sign()
+	return t.Sign(from)
 }
 
 // createAccountXLM funds an new account 'to' from 'from' with a starting balance of 'amount'.
@@ -528,7 +535,7 @@ func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount, memoText s
 	t.AddCreateAccountOp(to, amount)
 	t.AddMemoText(memoText)
 	t.AddBuiltTimebounds(timeBounds)
-	return t.Sign()
+	return t.Sign(from)
 }
 
 // AccountMergeTransaction creates a signed transaction to merge the account `from` into `to`.
@@ -541,7 +548,7 @@ func AccountMergeTransaction(from SeedStr, to AddressStr,
 	t.AddAccountMergeOp(to)
 	t.AddMemoText(defaultMemo)
 
-	return t.Sign()
+	return t.Sign(from)
 }
 
 // SetInflationDestinationTransaction creates a "set options" transaction that will set the
@@ -555,7 +562,7 @@ func SetInflationDestinationTransaction(from SeedStr, to AddressStr, seqnoProvid
 	t.AddInflationDestinationOp(to)
 	t.AddBuiltTimebounds(timeBounds)
 
-	return t.Sign()
+	return t.Sign(from)
 }
 
 func setInflationDestination(from SeedStr, to AddressStr) (ledger int32, txid string, attempt int, err error) {
@@ -582,7 +589,7 @@ func RelocateTransaction(from SeedStr, to AddressStr, toIsFunded bool,
 	t.AddAccountMergeOp(to)
 	t.AddMemoID(memoID)
 	t.AddBuiltTimebounds(timeBounds)
-	return t.Sign()
+	return t.Sign(from)
 }
 
 // Submit submits a signed transaction to horizon.
