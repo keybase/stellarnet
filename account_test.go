@@ -562,6 +562,37 @@ func TestConcurrentSubmit(t *testing.T) {
 	}
 }
 
+func TestTrustlines(t *testing.T) {
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "trustlines")
+
+	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	tlines, err := acctAlice.Trustlines()
+	if err == nil {
+		t.Errorf("expected an error getting trustlines on unestablished account")
+	}
+
+	testclient.GetTestLumens(t, helper.Alice)
+
+	tlines, err = acctAlice.Trustlines()
+	if err != nil {
+		t.Errorf("Trustlines error: %s, expected no error getting trustlines on established account", err)
+	}
+
+	if len(tlines) != 1 {
+		t.Errorf("num trustlines: %d, expected 1", len(tlines))
+	}
+	if tlines[0].Type != "native" {
+		t.Errorf("trustline type: %q, expected native", tlines[0].Type)
+	}
+
+	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, assetIssuer, 10000, 200)
+	if err != nil {
+		t.Errorf("error creating trustline: %s, expected none", err)
+	}
+}
+
 type testSeqnoProv struct {
 	seqno uint64
 	sync.Mutex
@@ -573,4 +604,24 @@ func (x *testSeqnoProv) SequenceForAccount(s string) (xdr.SequenceNumber, error)
 	result := xdr.SequenceNumber(x.seqno)
 	x.seqno++
 	return result, nil
+}
+
+func findBestAsset(t *testing.T, code string) AssetSummary {
+	assets, err := AssetsWithCode(code)
+	if err != nil {
+		t.Fatal(err)
+	}
+	maxAccounts := -1
+	var best *AssetSummary
+	for _, a := range assets {
+		if a.NumAccounts > maxAccounts {
+			maxAccounts = a.NumAccounts
+			best = &a
+		}
+	}
+	if best == nil {
+		t.Fatalf("no suitable assets found for %q", code)
+	}
+
+	return *best
 }
