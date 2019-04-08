@@ -587,9 +587,23 @@ func TestTrustlines(t *testing.T) {
 		t.Errorf("trustline type: %q, expected native", tlines[0].Type)
 	}
 
-	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, assetIssuer, 10000, 200)
+	asset := findBestAsset(t, "USD")
+	issuer, err := NewAddressStr(asset.AssetIssuer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = CreateTrustline(seedStr(t, helper.Alice), asset.AssetCode, issuer, 10000, 200)
 	if err != nil {
 		t.Errorf("error creating trustline: %s, expected none", err)
+	}
+
+	tlines, err = acctAlice.Trustlines()
+	if err != nil {
+		t.Errorf("Trustlines error: %s, expected no error getting trustlines on established account", err)
+	}
+
+	if len(tlines) != 2 {
+		t.Errorf("num trustlines: %d, expected 2", len(tlines))
 	}
 }
 
