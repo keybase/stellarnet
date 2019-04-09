@@ -641,6 +641,17 @@ func CreateTrustlineTransaction(from SeedStr, assetCode string, assetIssuer Addr
 	return t.Sign(from)
 }
 
+// DeleteTrustline submits a transaction to the stellar network to remove a trustline
+// from an account.
+func DeleteTrustline(from SeedStr, assetCode string, assetIssuer AddressStr, baseFee uint64) (txID string, err error) {
+	sig, err := DeleteTrustlineTransaction(from, assetCode, assetIssuer, Client(), nil /* timeBounds */, baseFee)
+	if err != nil {
+		return "", err
+	}
+	_, txID, _, err = Submit(sig.Signed)
+	return txID, err
+}
+
 // DeleteTrustlineTransaction create a signed transaction to remove a trustline from
 // the `from` account to assetCode/assetIssuer.
 func DeleteTrustlineTransaction(from SeedStr, assetCode string, assetIssuer AddressStr, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {

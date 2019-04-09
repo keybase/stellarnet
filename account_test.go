@@ -605,6 +605,19 @@ func TestTrustlines(t *testing.T) {
 	if len(tlines) != 2 {
 		t.Errorf("num trustlines: %d, expected 2", len(tlines))
 	}
+
+	_, err = DeleteTrustline(seedStr(t, helper.Alice), asset.AssetCode, issuer, 200)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tlines, err = acctAlice.Trustlines()
+	if err != nil {
+		t.Errorf("Trustlines error: %s, expected no error getting trustlines on established account", err)
+	}
+
+	if len(tlines) != 1 {
+		t.Errorf("num trustlines: %d, expected 1", len(tlines))
+	}
 }
 
 type testSeqnoProv struct {
