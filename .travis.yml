@@ -8,9 +8,6 @@ script:
   - go vet .
   - go get -u github.com/golang/lint/golint
   - golint -set_exit_status .
-    # staticcheck no longer supports go 1.10.x
-    # - go get -u honnef.co/go/tools/cmd/staticcheck
-    #- staticcheck .
   - curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.16.0
   - golangci-lint run
   - go test -v -race .
