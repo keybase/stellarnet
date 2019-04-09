@@ -183,11 +183,6 @@ func (a *Account) Trustlines() ([]Trustline, error) {
 	return tlines, nil
 }
 
-// CreateTrustline creates a trustline for an account.
-func (a *Account) CreateTrustline() error {
-	return nil
-}
-
 // SubentryCount returns the number of subentries in the account's ledger.
 // Subentries affect the minimum balance.
 func (a *Account) SubentryCount() (int, error) {
