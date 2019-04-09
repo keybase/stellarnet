@@ -568,14 +568,14 @@ func TestTrustlines(t *testing.T) {
 	helper.SetState(t, "trustlines")
 
 	acctAlice := NewAccount(addressStr(t, helper.Alice))
-	tlines, err := acctAlice.Trustlines()
+	_, err := acctAlice.Trustlines()
 	if err == nil {
 		t.Errorf("expected an error getting trustlines on unestablished account")
 	}
 
 	testclient.GetTestLumens(t, helper.Alice)
 
-	tlines, err = acctAlice.Trustlines()
+	tlines, err := acctAlice.Trustlines()
 	if err != nil {
 		t.Errorf("Trustlines error: %s, expected no error getting trustlines on established account", err)
 	}
@@ -630,6 +630,7 @@ func findBestAsset(t *testing.T, code string) AssetSummary {
 	for _, a := range assets {
 		if a.NumAccounts > maxAccounts {
 			maxAccounts = a.NumAccounts
+			a := a
 			best = &a
 		}
 	}
