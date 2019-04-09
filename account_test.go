@@ -620,6 +620,33 @@ func TestTrustlines(t *testing.T) {
 	}
 }
 
+func TestPathPayments(t *testing.T) {
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "pathpayments")
+
+	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	testclient.GetTestLumens(t, helper.Alice)
+
+	asset := findBestAsset(t, "USD")
+	issuer, err := NewAddressStr(asset.AssetIssuer)
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = CreateTrustline(seedStr(t, helper.Alice), asset.AssetCode, issuer, 10000, 200)
+	if err != nil {
+		t.Errorf("error creating trustline: %s, expected none", err)
+	}
+
+	// alice is going to do a path payment to herself to acquire some of this asset
+	paths, err := acctAlice.FindPaymentPaths(acctAlice.address, asset.AssetCode, issuer, "10")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	fmt.Printf("paths: %+v\n", paths)
+}
+
 type testSeqnoProv struct {
 	seqno uint64
 	sync.Mutex

@@ -691,6 +691,25 @@ func Submit(signed string) (ledger int32, txid string, attempt int, err error) {
 	return 0, "", submitAttempts, errMap(err)
 }
 
+// FindPaymentPaths searches for path payments from the account object ownere and `to`, for a specific
+// destination asset.
+// It will return an error if the `to` recipient does not have a trustline for the destination asset.
+// It will return paths using any of the `from` account's assets as the source asset.
+func (a *Account) FindPaymentPaths(to AddressStr, assetCode string, assetIssuer AddressStr, amount string) ([]FullPath, error) {
+	assetType, err := assetCodeToType(assetCode)
+	if err != nil {
+		return nil, err
+	}
+	values := fmt.Sprintf("source_account=%s&destination_account=%s&destination_asset_type=%s&destination_asset_code=%s&destination_asset_issuer=%s&destination_amount=%s", a.address, to, assetType, assetCode, assetIssuer, amount)
+	link := Client().URL + "/paths?" + values
+
+	var page PathsPage
+	if err := getDecodeJSONStrict(link, Client().HTTP.Get, &page); err != nil {
+		return nil, errMap(err)
+	}
+	return page.Embedded.Records, nil
+}
+
 // paymentsLink returns the horizon endpoint to get payment information.
 func (a *Account) paymentsLink(cursor string, limit int) string {
 	link := Client().URL + "/accounts/" + a.address.String() + "/payments"

@@ -141,3 +141,15 @@ func makeXDRAsset(assetCode string, issuerID AddressStr) (xdr.Asset, error) {
 		return xdr.Asset{}, errors.New("invalid assetCode length")
 	}
 }
+
+func assetCodeToType(code string) (string, error) {
+	x := len(code)
+	switch {
+	case x >= 1 && x <= 4:
+		return "credit_alphanum4", nil
+	case x >= 5 && x <= 12:
+		return "credit_alphanum12", nil
+	default:
+		return "", errors.New("invalid assetCode length")
+	}
+}

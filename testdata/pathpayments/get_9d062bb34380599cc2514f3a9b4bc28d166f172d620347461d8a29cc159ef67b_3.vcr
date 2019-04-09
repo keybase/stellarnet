@@ -1,0 +1,28 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 09 Apr 2019 20:32:57 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_embedded": {
+    "records": [
+      {
+        "source_asset_type": "credit_alphanum4",
+        "source_asset_code": "USD",
+        "source_asset_issuer": "GA2WHUVE6D3WHFZEUYRJJEBLSCZTFMX2MFVVUCTV5UPS3UQXHSO56XCE",
+        "source_amount": "10.0000000",
+        "destination_asset_type": "credit_alphanum4",
+        "destination_asset_code": "USD",
+        "destination_asset_issuer": "GA2WHUVE6D3WHFZEUYRJJEBLSCZTFMX2MFVVUCTV5UPS3UQXHSO56XCE",
+        "destination_amount": "10.0000000",
+        "path": []
+      }
+    ]
+  }
+}
