@@ -10,6 +10,7 @@ import (
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/network"
+	"github.com/stellar/go/price"
 	"github.com/stellar/go/xdr"
 )
 
@@ -72,6 +73,26 @@ func (t *Tx) AddPaymentOp(to AddressStr, amt string) {
 	t.addOp(xdr.OperationTypePayment, op)
 }
 
+// AddAssetPaymentOp adds a payment operation for a custom asset to the transaction.
+func (t *Tx) AddAssetPaymentOp(to AddressStr, asset xdr.Asset, amt string) {
+	if t.skipAddOp() {
+		return
+	}
+
+	var op xdr.PaymentOp
+	op.Amount, t.err = amount.Parse(amt)
+	if t.err != nil {
+		return
+	}
+	op.Destination, t.err = to.AccountID()
+	if t.err != nil {
+		return
+	}
+	op.Asset = asset
+
+	t.addOp(xdr.OperationTypePayment, op)
+}
+
 // AddCreateAccountOp adds a create_account operation to the transaction.
 func (t *Tx) AddCreateAccountOp(to AddressStr, amt string) {
 	if t.skipAddOp() {
@@ -121,6 +142,47 @@ func (t *Tx) AddInflationDestinationOp(to AddressStr) {
 	op := xdr.SetOptionsOp{InflationDest: &accountID}
 
 	t.addOp(xdr.OperationTypeSetOptions, op)
+}
+
+// AddHomeDomainOp adds a set_options operation for setting the
+// home domain for an account.
+func (t *Tx) AddHomeDomainOp(domain string) {
+	if t.skipAddOp() {
+		return
+	}
+
+	if len(domain) > 32 {
+		t.err = errors.New("domain must be less than 32 characters long")
+		return
+	}
+
+	d32 := xdr.String32(domain)
+	op := xdr.SetOptionsOp{HomeDomain: &d32}
+
+	t.addOp(xdr.OperationTypeSetOptions, op)
+}
+
+// AddOfferOp adds a new manage_offer operation to the transaction.
+func (t *Tx) AddOfferOp(selling, buying xdr.Asset, amount int64, priceIn string) {
+	if t.skipAddOp() {
+		return
+	}
+
+	priceXDR, err := price.Parse(priceIn)
+	if err != nil {
+		t.err = err
+		return
+	}
+
+	op := xdr.ManageOfferOp{
+		Selling: selling,
+		Buying:  buying,
+		Amount:  xdr.Int64(amount),
+		Price:   priceXDR,
+		OfferId: 0, // for a new offer
+	}
+
+	t.addOp(xdr.OperationTypeManageOffer, op)
 }
 
 // AddCreateTrustlineOp adds a change_trust operation that will establish

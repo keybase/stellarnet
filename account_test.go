@@ -628,18 +628,29 @@ func TestPathPayments(t *testing.T) {
 	acctAlice := NewAccount(addressStr(t, helper.Alice))
 	testclient.GetTestLumens(t, helper.Alice)
 
-	asset := findBestAsset(t, "USD")
-	issuer, err := NewAddressStr(asset.AssetIssuer)
+	acctBob := NewAccount(addressStr(t, helper.Bob))
+	testclient.GetTestLumens(t, helper.Bob)
+
+	// alice is going to make a new asset
+	assetCode := "BLUE"
+	issuer, distributor, err := CreateCustomAsset(seedStr(t, helper.Alice), assetCode, 10000, "keybase.io/blueasset", "2.3", 200)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = CreateTrustline(seedStr(t, helper.Alice), asset.AssetCode, issuer, 10000, 200)
+	issuerAddr, err := issuer.Address()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = distributor
+
+	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, 10000, 200)
 	if err != nil {
 		t.Errorf("error creating trustline: %s, expected none", err)
 	}
 
-	// alice is going to do a path payment to herself to acquire some of this asset
-	paths, err := acctAlice.FindPaymentPaths(acctAlice.address, asset.AssetCode, issuer, "10")
+	// bob is going to do a path payment to alice with this asset as the destination
+	// asset
+	paths, err := acctBob.FindPaymentPaths(acctAlice.address, assetCode, issuerAddr, "10")
 	if err != nil {
 		t.Fatal(err)
 	}

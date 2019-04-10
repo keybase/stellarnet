@@ -523,6 +523,14 @@ func paymentXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger in
 	return Submit(sig.Signed)
 }
 
+func payment(from SeedStr, to AddressStr, assetCode string, assetIssuer AddressStr, amount, memoText string) (ledger int32, txid string, attempt int, err error) {
+	sig, err := PaymentTransaction(from, to, assetCode, assetIssuer, amount, memoText, Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	if err != nil {
+		return 0, "", 0, errMap(err)
+	}
+	return Submit(sig.Signed)
+}
+
 // PaymentXLMTransaction creates a signed transaction to send a payment from 'from' to 'to' for 'amount' lumens.
 func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
@@ -531,6 +539,23 @@ func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 		return res, err
 	}
 	t.AddPaymentOp(to, amount)
+	t.AddMemoText(memoText)
+	t.AddBuiltTimeBounds(timeBounds)
+	return t.Sign(from)
+}
+
+// PaymentTransaction creates a signed transaction to send a payment from 'from' to 'to' for a custom asset.
+func PaymentTransaction(from SeedStr, to AddressStr, assetCode string, issuerID AddressStr, amount, memoText string,
+	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
+	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
+	if err != nil {
+		return res, err
+	}
+	asset, err := makeXDRAsset(assetCode, issuerID)
+	if err != nil {
+		return res, err
+	}
+	t.AddAssetPaymentOp(to, asset, amount)
 	t.AddMemoText(memoText)
 	t.AddBuiltTimeBounds(timeBounds)
 	return t.Sign(from)
@@ -589,6 +614,47 @@ func SetInflationDestinationTransaction(from SeedStr, to AddressStr, seqnoProvid
 
 func setInflationDestination(from SeedStr, to AddressStr) (ledger int32, txid string, attempt int, err error) {
 	sig, err := SetInflationDestinationTransaction(from, to, Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	if err != nil {
+		return 0, "", 0, errMap(err)
+	}
+	return Submit(sig.Signed)
+}
+
+// SetHomeDomainTransaction creates a "set options" transaction that will set the
+// home domain for the `from` account.
+func SetHomeDomainTransaction(from SeedStr, domain string, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
+	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
+	if err != nil {
+		return SignResult{}, err
+	}
+	t.AddHomeDomainOp(domain)
+	t.AddBuiltTimeBounds(timeBounds)
+
+	return t.Sign(from)
+}
+
+func setHomeDomain(from SeedStr, domain string) (ledger int32, txid string, attempt int, err error) {
+	sig, err := SetHomeDomainTransaction(from, domain, Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	if err != nil {
+		return 0, "", 0, errMap(err)
+	}
+	return Submit(sig.Signed)
+}
+
+// MakeOfferTransaction creates a new offer transaction.
+func MakeOfferTransaction(from SeedStr, selling, buying xdr.Asset, amount int64, price string, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
+	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
+	if err != nil {
+		return SignResult{}, err
+	}
+	t.AddOfferOp(selling, buying, amount, price)
+	t.AddBuiltTimeBounds(timeBounds)
+
+	return t.Sign(from)
+}
+
+func makeOffer(from SeedStr, selling, buying xdr.Asset, amount int64, price string) (ledger int32, txid string, attempt int, err error) {
+	sig, err := MakeOfferTransaction(from, selling, buying, amount, price, Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	if err != nil {
 		return 0, "", 0, errMap(err)
 	}
@@ -708,6 +774,81 @@ func (a *Account) FindPaymentPaths(to AddressStr, assetCode string, assetIssuer 
 		return nil, errMap(err)
 	}
 	return page.Embedded.Records, nil
+}
+
+// CreateCustomAsset will create a new asset on the network.  It will
+// return two new account seeds:  one for the issuing account, one for
+// the distribution account.
+//
+// If an error occurs after the issuer and distributor are funded,
+// the issuer and distributor seeds will be returned along with any
+// error so you can reclaim your funds.
+func CreateCustomAsset(source SeedStr, assetCode string, limit int64, homeDomain string, xlmPrice string, baseFee uint64) (issuer, distributor SeedStr, err error) {
+	// 1. create issuer
+	issuerPair, err := NewKeyPair()
+	if err != nil {
+		return "", "", err
+	}
+	issuer, err = NewSeedStr(issuerPair.Seed())
+	if err != nil {
+		return "", "", err
+	}
+	issuerAddr, err := NewAddressStr(issuerPair.Address())
+	if err != nil {
+		return "", "", err
+	}
+	_, _, _, err = createAccountXLM(source, issuerAddr, "5", "")
+	if err != nil {
+		return "", "", err
+	}
+
+	// 2. create distributor
+	distPair, err := NewKeyPair()
+	if err != nil {
+		return issuer, "", err
+	}
+	distributor, err = NewSeedStr(distPair.Seed())
+	if err != nil {
+		return issuer, "", err
+	}
+	distributorAddr, err := NewAddressStr(distPair.Address())
+	if err != nil {
+		return issuer, "", err
+	}
+	_, _, _, err = createAccountXLM(source, distributorAddr, "5", "")
+	if err != nil {
+		return issuer, "", err
+	}
+
+	// 3. create distributor trustline
+	_, err = CreateTrustline(distributor, assetCode, issuerAddr, limit, baseFee)
+	if err != nil {
+		return issuer, distributor, err
+	}
+
+	// 4. create the asset by paying the distributor
+	_, _, _, err = payment(issuer, distributorAddr, assetCode, issuerAddr, StringFromStellarAmount(limit), "")
+	if err != nil {
+		return issuer, distributor, err
+	}
+
+	// 5. set the home domain
+	_, _, _, err = setHomeDomain(issuer, homeDomain)
+	if err != nil {
+		return issuer, distributor, err
+	}
+
+	// 6. make an offer to sell the new asset
+	selling, err := makeXDRAsset(assetCode, issuerAddr)
+	if err != nil {
+		return issuer, distributor, err
+	}
+	buying := xdr.Asset{
+		Type: xdr.AssetTypeAssetTypeNative,
+	}
+	_, _, _, err = makeOffer(distributor, selling, buying, limit, xlmPrice)
+
+	return issuer, distributor, nil
 }
 
 // paymentsLink returns the horizon endpoint to get payment information.
