@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/keybase/stellarnet/testclient"
+	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -126,4 +127,24 @@ func TestAssetSearch(t *testing.T) {
 		NumAccounts:             7,
 	}
 	require.Contains(t, res, expectedMatch)
+}
+
+func TestMakeXDRAsset(t *testing.T) {
+	a, err := makeXDRAsset("", "")
+	require.NoError(t, err)
+	require.Equal(t, a.Type, xdr.AssetTypeAssetTypeNative)
+
+	a, err = makeXDRAsset("", "GAJVD2WOS7QXLSGFUQ3VIDEFG5I7S3VWL4X3V5FEFN4N2OC5CQDMHHZS")
+	require.Error(t, err)
+
+	a, err = makeXDRAsset("EUR", "GAJVD2WOS7QXLSGFUQ3VIDEFG5I7S3VWL4X3V5FEFN4N2OC5CQDMHHZS")
+	require.NoError(t, err)
+	require.Equal(t, a.Type, xdr.AssetTypeAssetTypeCreditAlphanum4)
+
+	a, err = makeXDRAsset("EUREUREUREUR", "GAJVD2WOS7QXLSGFUQ3VIDEFG5I7S3VWL4X3V5FEFN4N2OC5CQDMHHZS")
+	require.NoError(t, err)
+	require.Equal(t, a.Type, xdr.AssetTypeAssetTypeCreditAlphanum12)
+
+	a, err = makeXDRAsset("THIRTEENCHARS", "GAJVD2WOS7QXLSGFUQ3VIDEFG5I7S3VWL4X3V5FEFN4N2OC5CQDMHHZS")
+	require.Error(t, err)
 }

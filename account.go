@@ -562,6 +562,28 @@ func PaymentTransaction(from SeedStr, to AddressStr, assetCode string, issuerID 
 	return t.Sign(from)
 }
 
+// PathPaymentTransaction creates a signed transaction for a path payment.
+func PathPaymentTransaction(from SeedStr, to AddressStr, sendAssetCode string, sendAssetIssuer AddressStr, sendAmountMax string, destAssetCode string, destAssetIssuer AddressStr, destAmount string, path []xdr.Asset, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
+	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
+	if err != nil {
+		return SignResult{}, err
+	}
+
+	sendAssetXDR, err := makeXDRAsset(sendAssetCode, sendAssetIssuer)
+	if err != nil {
+		return SignResult{}, err
+	}
+	destAssetXDR, err := makeXDRAsset(destAssetCode, destAssetIssuer)
+	if err != nil {
+		return SignResult{}, err
+	}
+
+	t.AddPathPaymentOp(to, sendAssetXDR, sendAmountMax, destAssetXDR, destAmount, path)
+	t.AddBuiltTimeBounds(timeBounds)
+
+	return t.Sign(from)
+}
+
 // createAccountXLM funds an new account 'to' from 'from' with a starting balance of 'amount'.
 // memoText is a public memo.
 func createAccountXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger int32, txid string, attempt int, err error) {

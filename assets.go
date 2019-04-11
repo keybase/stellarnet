@@ -123,6 +123,10 @@ func AssetSearch(arg AssetSearchArg) (res []AssetSummary, err error) {
 }
 
 func makeXDRAsset(assetCode string, issuerID AddressStr) (xdr.Asset, error) {
+	if len(assetCode) == 0 && len(issuerID) == 0 {
+		return xdr.NewAsset(xdr.AssetTypeAssetTypeNative, nil)
+	}
+
 	issuer, err := issuerID.AccountID()
 	if err != nil {
 		return xdr.Asset{}, err
@@ -136,7 +140,7 @@ func makeXDRAsset(assetCode string, issuerID AddressStr) (xdr.Asset, error) {
 	case x >= 5 && x <= 12:
 		asset := xdr.AssetAlphaNum12{Issuer: issuer}
 		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
-		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
+		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
 	default:
 		return xdr.Asset{}, errors.New("invalid assetCode length")
 	}

@@ -683,12 +683,19 @@ func TestPathPayments(t *testing.T) {
 
 	// bob is going to do a path payment to alice with this asset as the destination
 	// asset
+
+	// first bob finds the paths available
 	paths, err := acctBob.FindPaymentPaths(acctAlice.address, assetCode, issuerAddr, "10")
 	if err != nil {
 		t.Fatal(err)
 	}
+	if len(paths) == 0 {
+		t.Fatalf("no paths available from bob to alice for %s/%s", assetCode, issuerAddr)
+	}
 
 	fmt.Printf("paths: %+v\n", paths)
+
+	// then bob makes the path payment
 }
 
 type testSeqnoProv struct {

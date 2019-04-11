@@ -93,6 +93,34 @@ func (t *Tx) AddAssetPaymentOp(to AddressStr, asset xdr.Asset, amt string) {
 	t.addOp(xdr.OperationTypePayment, op)
 }
 
+// AddPathPaymentOp adds a path payment operation to the transaction.
+func (t *Tx) AddPathPaymentOp(to AddressStr, sendAsset xdr.Asset, sendAmountMax string, destAsset xdr.Asset, destAmount string, path []xdr.Asset) {
+	if t.skipAddOp() {
+		return
+	}
+
+	op := xdr.PathPaymentOp{
+		SendAsset: sendAsset,
+		DestAsset: destAsset,
+		Path:      path,
+	}
+
+	op.SendMax, t.err = amount.Parse(sendAmountMax)
+	if t.err != nil {
+		return
+	}
+	op.Destination, t.err = to.AccountID()
+	if t.err != nil {
+		return
+	}
+	op.DestAmount, t.err = amount.Parse(destAmount)
+	if t.err != nil {
+		return
+	}
+
+	t.addOp(xdr.OperationTypePathPayment, op)
+}
+
 // AddCreateAccountOp adds a create_account operation to the transaction.
 func (t *Tx) AddCreateAccountOp(to AddressStr, amt string) {
 	if t.skipAddOp() {
