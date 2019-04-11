@@ -1,0 +1,24 @@
+HTTP/1.1 400 Bad Request
+Content-Length: 810
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Type: application/problem+json; charset=utf-8
+Date: Thu, 11 Apr 2019 17:05:18 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 96
+X-Ratelimit-Reset: 1
+
+{
+  "type": "https://stellar.org/horizon-errors/transaction_failed",
+  "title": "Transaction Failed",
+  "status": 400,
+  "detail": "The transaction failed when submitted to the stellar network. The `extras.result_codes` field on this response contains further details.  Descriptions of each code can be found at: https://www.stellar.org/developers/learn/concepts/list-of-operations.html",
+  "extras": {
+    "envelope_xdr": "AAAAAGu/kCHV1mfhw9CJVZkBixVPnrmtjoYndQrbgqv6KBW0AAAAZAALHXYAAAABAAAAAQAAAAByecFwAAAAAHKhTnAAAAAAAAAAAQAAAAAAAAAIAAAAAPGGw69JvReJdF0cz9Rf5GurJsDjgKCHumBO/bq9XTJGAAAAAAAAAAH6KBW0AAAAQMBQaU+r5lmCFh9leqwf1P7bGKclQ06nlV2rhVZDfR3HbahKOSX3DSxSI1PDYjstFwv1aAgVEX//dq8pb9lQLAw=",
+    "result_codes": {
+      "transaction": "tx_too_early"
+    },
+    "result_xdr": "AAAAAAAAAGT////+AAAAAA=="
+  }
+}

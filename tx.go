@@ -175,6 +175,10 @@ func (t *Tx) AddOfferOp(selling, buying xdr.Asset, amountToSell, priceIn string)
 	}
 
 	amountXDR, err := amount.Parse(amountToSell)
+	if err != nil {
+		t.err = err
+		return
+	}
 
 	op := xdr.ManageOfferOp{
 		Selling: selling,

@@ -853,6 +853,11 @@ func createCustomAssetWithKPs(source SeedStr, issuerPair, distPair *keypair.Full
 		Type: xdr.AssetTypeAssetTypeNative,
 	}
 	_, _, _, err = makeOffer(distributor, selling, buying, limit, xlmPrice)
+	if err != nil {
+		return issuer, distributor, err
+	}
+
+	// 7. everything good...asset created.
 
 	return issuer, distributor, nil
 }

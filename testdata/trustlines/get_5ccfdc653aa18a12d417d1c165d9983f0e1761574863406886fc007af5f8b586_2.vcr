@@ -3,7 +3,7 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Tue, 09 Apr 2019 16:35:52 GMT
+Date: Thu, 11 Apr 2019 17:05:23 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 99
@@ -106,7 +106,7 @@ X-Ratelimit-Reset: 1
         "asset_issuer": "GA2WHUVE6D3WHFZEUYRJJEBLSCZTFMX2MFVVUCTV5UPS3UQXHSO56XCE",
         "paging_token": "USD_GA2WHUVE6D3WHFZEUYRJJEBLSCZTFMX2MFVVUCTV5UPS3UQXHSO56XCE_credit_alphanum4",
         "amount": "320.0000000",
-        "num_accounts": 29,
+        "num_accounts": 32,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -142,7 +142,7 @@ X-Ratelimit-Reset: 1
         "asset_issuer": "GA35PL6OTEWOVUZGW36TYVSWFQFT2FHNLE7S5YVZ4OLGJEWEM5ON2CJU",
         "paging_token": "USD_GA35PL6OTEWOVUZGW36TYVSWFQFT2FHNLE7S5YVZ4OLGJEWEM5ON2CJU_credit_alphanum4",
         "amount": "21000000.0000000",
-        "num_accounts": 11,
+        "num_accounts": 14,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
