@@ -27,19 +27,23 @@ var tvcr *vcr.VCR
 
 // Config contains the account seeds for the test users.
 type Config struct {
-	AliceSeed   string
-	BobSeed     string
-	CharlieSeed string
-	RebeccaSeed string
+	AliceSeed       string
+	BobSeed         string
+	CharlieSeed     string
+	RebeccaSeed     string
+	IssuerSeed      string
+	DistributorSeed string
 }
 
 // Helper makes managing the test users and state easier.
 type Helper struct {
-	Config  *Config
-	Alice   *keypair.Full
-	Bob     *keypair.Full
-	Charlie *keypair.Full
-	Rebecca *keypair.Full
+	Config      *Config
+	Alice       *keypair.Full
+	Bob         *keypair.Full
+	Charlie     *keypair.Full
+	Rebecca     *keypair.Full
+	Issuer      *keypair.Full
+	Distributor *keypair.Full
 }
 
 // NewHelper creates a new Helper.
@@ -53,6 +57,8 @@ func (h *Helper) setConfig(t *testing.T, c *Config) {
 	h.Bob = fullFromSeed(t, c.BobSeed)
 	h.Charlie = fullFromSeed(t, c.CharlieSeed)
 	h.Rebecca = fullFromSeed(t, c.RebeccaSeed)
+	h.Issuer = fullFromSeed(t, c.IssuerSeed)
+	h.Distributor = fullFromSeed(t, c.DistributorSeed)
 }
 
 // SetState changes the directory where the http responses are stored.
@@ -132,6 +138,8 @@ func loadConfig(t *testing.T, subdir string) *Config {
 		conf.BobSeed = newSeed(t)
 		conf.CharlieSeed = newSeed(t)
 		conf.RebeccaSeed = newSeed(t)
+		conf.IssuerSeed = newSeed(t)
+		conf.DistributorSeed = newSeed(t)
 
 		if *record {
 			// recording, so save key pairs

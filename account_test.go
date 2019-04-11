@@ -632,9 +632,20 @@ func TestPathPayments(t *testing.T) {
 	testclient.GetTestLumens(t, helper.Bob)
 
 	// alice is going to make a new asset
-	assetCode := "BLUE"
-	issuer, distributor, err := CreateCustomAsset(seedStr(t, helper.Alice), assetCode, 10000, "keybase.io/blueasset", "2.3", 200)
+	t.Logf("issuer address: %s", helper.Issuer.Address())
+	t.Logf("distributor address: %s", helper.Distributor.Address())
+	assetCode := "EULB"
+	issuer, distributor, err := createCustomAssetWithKPs(seedStr(t, helper.Alice), helper.Issuer, helper.Distributor, assetCode, 10000, "keybase.io/blueasset", "2.3", 200)
 	if err != nil {
+		t.Logf("CreateCustomAsset error type: %T", err)
+		if serr, ok := err.(Error); ok {
+			t.Logf(serr.Verbose())
+			if serr.HorizonError != nil {
+				t.Logf("horizon error: %+v", serr.HorizonError)
+				t.Logf("horizon error problem: %+v", serr.HorizonError.Problem)
+				t.Logf("horizon error extras %s", serr.HorizonError.Problem.Extras["result_codes"])
+			}
+		}
 		t.Fatal(err)
 	}
 	issuerAddr, err := issuer.Address()
@@ -642,6 +653,28 @@ func TestPathPayments(t *testing.T) {
 		t.Fatal(err)
 	}
 	_ = distributor
+
+	t.Logf("returned issuer address: %s", issuerAddr)
+	if issuerAddr.String() != helper.Issuer.Address() {
+		t.Errorf("issuerAddr returned by CreateCustomAsset did not match address in helper.Issuer (%q != %q)", issuerAddr, helper.Issuer.Address())
+	}
+
+	// check that the asset is available
+	assets, err := AssetsWithCode(assetCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%d assets with code %q", len(assets), assetCode)
+	match := false
+	for _, a := range assets {
+		t.Logf("asset: %+v", a)
+		if a.AssetIssuer == issuerAddr.String() {
+			match = true
+		}
+	}
+	if !match {
+		t.Fatalf("no asset with code %q and issuer %q found", assetCode, issuerAddr)
+	}
 
 	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, 10000, 200)
 	if err != nil {

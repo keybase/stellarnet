@@ -3,7 +3,7 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Tue, 09 Apr 2019 20:32:57 GMT
+Date: Thu, 11 Apr 2019 01:40:11 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 100
@@ -13,13 +13,11 @@ X-Ratelimit-Reset: 1
   "_embedded": {
     "records": [
       {
-        "source_asset_type": "credit_alphanum4",
-        "source_asset_code": "USD",
-        "source_asset_issuer": "GA2WHUVE6D3WHFZEUYRJJEBLSCZTFMX2MFVVUCTV5UPS3UQXHSO56XCE",
-        "source_amount": "10.0000000",
+        "source_asset_type": "native",
+        "source_amount": "23.0000000",
         "destination_asset_type": "credit_alphanum4",
-        "destination_asset_code": "USD",
-        "destination_asset_issuer": "GA2WHUVE6D3WHFZEUYRJJEBLSCZTFMX2MFVVUCTV5UPS3UQXHSO56XCE",
+        "destination_asset_code": "EULB",
+        "destination_asset_issuer": "GB3XCCXZCNTYIU4CBA6GEGCEHJLMYN57KKGGDUM3MQ3TSDB75AZEHKG2",
         "destination_amount": "10.0000000",
         "path": []
       }

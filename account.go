@@ -7,12 +7,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 	"sync"
 	"time"
 
 	perrors "github.com/pkg/errors"
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/keypair"
 	snetwork "github.com/stellar/go/network"
 	"github.com/stellar/go/xdr"
 )
@@ -647,7 +649,7 @@ func MakeOfferTransaction(from SeedStr, selling, buying xdr.Asset, amount int64,
 	if err != nil {
 		return SignResult{}, err
 	}
-	t.AddOfferOp(selling, buying, amount, price)
+	t.AddOfferOp(selling, buying, amount*StroopsPerLumen, price)
 	t.AddBuiltTimeBounds(timeBounds)
 
 	return t.Sign(from)
@@ -784,11 +786,20 @@ func (a *Account) FindPaymentPaths(to AddressStr, assetCode string, assetIssuer 
 // the issuer and distributor seeds will be returned along with any
 // error so you can reclaim your funds.
 func CreateCustomAsset(source SeedStr, assetCode string, limit int64, homeDomain string, xlmPrice string, baseFee uint64) (issuer, distributor SeedStr, err error) {
-	// 1. create issuer
 	issuerPair, err := NewKeyPair()
 	if err != nil {
 		return "", "", err
 	}
+	distPair, err := NewKeyPair()
+	if err != nil {
+		return "", "", err
+	}
+
+	return createCustomAssetWithKPs(source, issuerPair, distPair, assetCode, limit, homeDomain, xlmPrice, baseFee)
+}
+
+func createCustomAssetWithKPs(source SeedStr, issuerPair, distPair *keypair.Full, assetCode string, limit int64, homeDomain string, xlmPrice string, baseFee uint64) (issuer, distributor SeedStr, err error) {
+	// 1. create issuer
 	issuer, err = NewSeedStr(issuerPair.Seed())
 	if err != nil {
 		return "", "", err
@@ -803,10 +814,6 @@ func CreateCustomAsset(source SeedStr, assetCode string, limit int64, homeDomain
 	}
 
 	// 2. create distributor
-	distPair, err := NewKeyPair()
-	if err != nil {
-		return issuer, "", err
-	}
 	distributor, err = NewSeedStr(distPair.Seed())
 	if err != nil {
 		return issuer, "", err
@@ -827,7 +834,8 @@ func CreateCustomAsset(source SeedStr, assetCode string, limit int64, homeDomain
 	}
 
 	// 4. create the asset by paying the distributor
-	_, _, _, err = payment(issuer, distributorAddr, assetCode, issuerAddr, StringFromStellarAmount(limit), "")
+	amount := strconv.FormatInt(limit, 10)
+	_, _, _, err = payment(issuer, distributorAddr, assetCode, issuerAddr, amount, "")
 	if err != nil {
 		return issuer, distributor, err
 	}

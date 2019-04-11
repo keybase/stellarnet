@@ -203,9 +203,11 @@ func (t *Tx) AddCreateTrustlineOp(assetCode string, assetIssuer AddressStr, limi
 		return
 	}
 
+	// it's undocumented, but a limit of 100 is actually 100 / StroopsPerLument
+
 	op := xdr.ChangeTrustOp{
 		Line:  asset,
-		Limit: xdr.Int64(limit),
+		Limit: xdr.Int64(limit * StroopsPerLumen),
 	}
 
 	t.addOp(xdr.OperationTypeChangeTrust, op)
