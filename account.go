@@ -524,14 +524,6 @@ func paymentXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger in
 	return Submit(sig.Signed)
 }
 
-func payment(from SeedStr, to AddressStr, assetCode string, assetIssuer AddressStr, amount, memoText string) (ledger int32, txid string, attempt int, err error) {
-	sig, err := PaymentTransaction(from, to, assetCode, assetIssuer, amount, memoText, Client(), nil /* timeBounds */, build.DefaultBaseFee)
-	if err != nil {
-		return 0, "", 0, errMap(err)
-	}
-	return Submit(sig.Signed)
-}
-
 // PaymentXLMTransaction creates a signed transaction to send a payment from 'from' to 'to' for 'amount' lumens.
 func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
@@ -543,6 +535,15 @@ func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	t.AddMemoText(memoText)
 	t.AddBuiltTimeBounds(timeBounds)
 	return t.Sign(from)
+}
+
+// payment creates a payment transaction for a custom asset and sends it to the network.
+func payment(from SeedStr, to AddressStr, assetCode string, assetIssuer AddressStr, amount, memoText string) (ledger int32, txid string, attempt int, err error) {
+	sig, err := PaymentTransaction(from, to, assetCode, assetIssuer, amount, memoText, Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	if err != nil {
+		return 0, "", 0, errMap(err)
+	}
+	return Submit(sig.Signed)
 }
 
 // PaymentTransaction creates a signed transaction to send a payment from 'from' to 'to' for a custom asset.
@@ -562,8 +563,17 @@ func PaymentTransaction(from SeedStr, to AddressStr, assetCode string, issuerID 
 	return t.Sign(from)
 }
 
+// pathPayment creates a transaction with a path payment operation in it and submits it to the network.
+func pathPayment(from SeedStr, to AddressStr, sendAssetCode string, sendAssetIssuer AddressStr, sendAmountMax string, destAssetCode string, destAssetIssuer AddressStr, destAmount string, path []xdr.Asset, memoText string) (ledger int32, txid string, attempt int, err error) {
+	sig, err := PathPaymentTransaction(from, to, sendAssetCode, sendAssetIssuer, sendAmountMax, destAssetCode, destAssetIssuer, destAmount, path, memoText, Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	if err != nil {
+		return 0, "", 0, errMap(err)
+	}
+	return Submit(sig.Signed)
+}
+
 // PathPaymentTransaction creates a signed transaction for a path payment.
-func PathPaymentTransaction(from SeedStr, to AddressStr, sendAssetCode string, sendAssetIssuer AddressStr, sendAmountMax string, destAssetCode string, destAssetIssuer AddressStr, destAmount string, path []xdr.Asset, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
+func PathPaymentTransaction(from SeedStr, to AddressStr, sendAssetCode string, sendAssetIssuer AddressStr, sendAmountMax string, destAssetCode string, destAssetIssuer AddressStr, destAmount string, path []xdr.Asset, memoText string, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
 	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
 	if err != nil {
 		return SignResult{}, err
@@ -579,6 +589,7 @@ func PathPaymentTransaction(from SeedStr, to AddressStr, sendAssetCode string, s
 	}
 
 	t.AddPathPaymentOp(to, sendAssetXDR, sendAmountMax, destAssetXDR, destAmount, path)
+	t.AddMemoText(memoText)
 	t.AddBuiltTimeBounds(timeBounds)
 
 	return t.Sign(from)

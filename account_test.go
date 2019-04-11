@@ -695,7 +695,46 @@ func TestPathPayments(t *testing.T) {
 
 	fmt.Printf("paths: %+v\n", paths)
 
+	// select the path to use
+	path := paths[0]
+
+	// calculate the max send amount
+	sendAmountMax, err := pathPaymentMaxValue(path.SourceAmount)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// then bob makes the path payment
+	var sourceIssuer AddressStr
+	if path.SourceAssetIssuer != "" {
+		sourceIssuer, err = NewAddressStr(path.SourceAssetIssuer)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	var destIssuer AddressStr
+	if path.DestinationAssetIssuer != "" {
+		destIssuer, err = NewAddressStr(path.DestinationAssetIssuer)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	xdrPath := make([]xdr.Asset, len(path.Path))
+	for i, p := range path.Path {
+		issuer, err := NewAddressStr(p.AssetIssuer)
+		if err != nil {
+			t.Fatal(err)
+		}
+		a, err := makeXDRAsset(p.AssetCode, issuer)
+		if err != nil {
+			t.Fatal(err)
+		}
+		xdrPath[i] = a
+	}
+	_, _, _, err = pathPayment(seedStr(t, helper.Bob), acctAlice.address, path.SourceAssetCode, sourceIssuer, sendAmountMax, path.DestinationAssetCode, destIssuer, path.DestinationAmount, xdrPath, "pub memo path pay")
+	if err != nil {
+		t.Fatal(err)
+	}
 }
 
 type testSeqnoProv struct {

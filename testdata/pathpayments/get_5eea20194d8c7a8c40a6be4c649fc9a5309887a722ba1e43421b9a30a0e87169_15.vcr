@@ -3,7 +3,7 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Thu, 11 Apr 2019 17:06:25 GMT
+Date: Thu, 11 Apr 2019 20:50:40 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 100
@@ -16,8 +16,8 @@ X-Ratelimit-Reset: 1
         "source_asset_type": "native",
         "source_amount": "23.0000000",
         "destination_asset_type": "credit_alphanum4",
-        "destination_asset_code": "QPKI",
-        "destination_asset_issuer": "GBDB2WHSPU6EJLHGCUFXF3EORW4LI77PDDCV66PEMVP3NXEQ7M7R5DHZ",
+        "destination_asset_code": "HXCT",
+        "destination_asset_issuer": "GCQSL64O27X7TUT5ZQXUNO3X2WP6ZYW2CLPSBCF4CL6VOG5ZVLAX6DOA",
         "destination_amount": "10.0000000",
         "path": []
       }

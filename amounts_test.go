@@ -271,3 +271,17 @@ func TestStringFromStellarAmount(t *testing.T) {
 		require.Equal(t, o, v.S, "%d stringified to %s, not %s", v.I, o, v.S)
 	}
 }
+
+func TestPathPaymentMaxValue(t *testing.T) {
+	max, err := pathPaymentMaxValue("100")
+	require.NoError(t, err)
+	require.Equal(t, "105.0000000", max)
+
+	max, err = pathPaymentMaxValue("2.000")
+	require.NoError(t, err)
+	require.Equal(t, "2.1000000", max)
+
+	max, err = pathPaymentMaxValue("1234567.8989872")
+	require.NoError(t, err)
+	require.Equal(t, "1296296.2939365", max)
+}
