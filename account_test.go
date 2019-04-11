@@ -592,7 +592,7 @@ func TestTrustlines(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = CreateTrustline(seedStr(t, helper.Alice), asset.AssetCode, issuer, 10000, 200)
+	_, err = CreateTrustline(seedStr(t, helper.Alice), asset.AssetCode, issuer, "10000", 200)
 	if err != nil {
 		t.Errorf("error creating trustline: %s, expected none", err)
 	}
@@ -634,8 +634,8 @@ func TestPathPayments(t *testing.T) {
 	// alice is going to make a new asset
 	t.Logf("issuer address: %s", helper.Issuer.Address())
 	t.Logf("distributor address: %s", helper.Distributor.Address())
-	assetCode := "EULB"
-	issuer, distributor, err := createCustomAssetWithKPs(seedStr(t, helper.Alice), helper.Issuer, helper.Distributor, assetCode, 10000, "keybase.io/blueasset", "2.3", 200)
+	assetCode := helper.Config.AssetCode
+	issuer, distributor, err := createCustomAssetWithKPs(seedStr(t, helper.Alice), helper.Issuer, helper.Distributor, assetCode, "10000", "keybase.io/blueasset", "2.3", 200)
 	if err != nil {
 		t.Logf("CreateCustomAsset error type: %T", err)
 		if serr, ok := err.(Error); ok {
@@ -676,7 +676,7 @@ func TestPathPayments(t *testing.T) {
 		t.Fatalf("no asset with code %q and issuer %q found", assetCode, issuerAddr)
 	}
 
-	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, 10000, 200)
+	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, "10000", 200)
 	if err != nil {
 		t.Errorf("error creating trustline: %s, expected none", err)
 	}

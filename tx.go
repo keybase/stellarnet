@@ -163,7 +163,7 @@ func (t *Tx) AddHomeDomainOp(domain string) {
 }
 
 // AddOfferOp adds a new manage_offer operation to the transaction.
-func (t *Tx) AddOfferOp(selling, buying xdr.Asset, amount int64, priceIn string) {
+func (t *Tx) AddOfferOp(selling, buying xdr.Asset, amountToSell, priceIn string) {
 	if t.skipAddOp() {
 		return
 	}
@@ -174,10 +174,12 @@ func (t *Tx) AddOfferOp(selling, buying xdr.Asset, amount int64, priceIn string)
 		return
 	}
 
+	amountXDR, err := amount.Parse(amountToSell)
+
 	op := xdr.ManageOfferOp{
 		Selling: selling,
 		Buying:  buying,
-		Amount:  xdr.Int64(amount),
+		Amount:  amountXDR,
 		Price:   priceXDR,
 		OfferId: 0, // for a new offer
 	}
@@ -187,13 +189,8 @@ func (t *Tx) AddOfferOp(selling, buying xdr.Asset, amount int64, priceIn string)
 
 // AddCreateTrustlineOp adds a change_trust operation that will establish
 // a trustline.
-func (t *Tx) AddCreateTrustlineOp(assetCode string, assetIssuer AddressStr, limit int64) {
+func (t *Tx) AddCreateTrustlineOp(assetCode string, assetIssuer AddressStr, limit string) {
 	if t.skipAddOp() {
-		return
-	}
-
-	if limit <= 0 {
-		t.err = errors.New("limit must be greater than zero to create a trustline")
 		return
 	}
 
@@ -203,11 +200,20 @@ func (t *Tx) AddCreateTrustlineOp(assetCode string, assetIssuer AddressStr, limi
 		return
 	}
 
-	// it's undocumented, but a limit of 100 is actually 100 / StroopsPerLument
+	limitAmount, err := amount.Parse(limit)
+	if err != nil {
+		t.err = err
+		return
+	}
+
+	if limitAmount <= 0 {
+		t.err = errors.New("limit must be greater than zero to create a trustline")
+		return
+	}
 
 	op := xdr.ChangeTrustOp{
 		Line:  asset,
-		Limit: xdr.Int64(limit * StroopsPerLumen),
+		Limit: limitAmount,
 	}
 
 	t.addOp(xdr.OperationTypeChangeTrust, op)

@@ -3,7 +3,7 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Thu, 11 Apr 2019 01:40:11 GMT
+Date: Thu, 11 Apr 2019 16:52:56 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 100
@@ -16,8 +16,8 @@ X-Ratelimit-Reset: 1
         "source_asset_type": "native",
         "source_amount": "23.0000000",
         "destination_asset_type": "credit_alphanum4",
-        "destination_asset_code": "EULB",
-        "destination_asset_issuer": "GB3XCCXZCNTYIU4CBA6GEGCEHJLMYN57KKGGDUM3MQ3TSDB75AZEHKG2",
+        "destination_asset_code": "GYRF",
+        "destination_asset_issuer": "GDWPO3YCUJNX4YRDYILTRG2RKOFMCZC6X5QGMPU3J3CI65BD4S2NVOTO",
         "destination_amount": "10.0000000",
         "path": []
       }

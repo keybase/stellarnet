@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
-	"strconv"
 	"sync"
 	"time"
 
@@ -644,19 +643,19 @@ func setHomeDomain(from SeedStr, domain string) (ledger int32, txid string, atte
 }
 
 // MakeOfferTransaction creates a new offer transaction.
-func MakeOfferTransaction(from SeedStr, selling, buying xdr.Asset, amount int64, price string, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
+func MakeOfferTransaction(from SeedStr, selling, buying xdr.Asset, amountToSell, price string, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
 	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
 	if err != nil {
 		return SignResult{}, err
 	}
-	t.AddOfferOp(selling, buying, amount*StroopsPerLumen, price)
+	t.AddOfferOp(selling, buying, amountToSell, price)
 	t.AddBuiltTimeBounds(timeBounds)
 
 	return t.Sign(from)
 }
 
-func makeOffer(from SeedStr, selling, buying xdr.Asset, amount int64, price string) (ledger int32, txid string, attempt int, err error) {
-	sig, err := MakeOfferTransaction(from, selling, buying, amount, price, Client(), nil /* timeBounds */, build.DefaultBaseFee)
+func makeOffer(from SeedStr, selling, buying xdr.Asset, amountToSell, price string) (ledger int32, txid string, attempt int, err error) {
+	sig, err := MakeOfferTransaction(from, selling, buying, amountToSell, price, Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	if err != nil {
 		return 0, "", 0, errMap(err)
 	}
@@ -684,7 +683,7 @@ func RelocateTransaction(from SeedStr, to AddressStr, toIsFunded bool,
 
 // CreateTrustline submits a transaction to the stellar network to establish a trustline
 // from an account to an asset.
-func CreateTrustline(from SeedStr, assetCode string, assetIssuer AddressStr, limit int64, baseFee uint64) (txID string, err error) {
+func CreateTrustline(from SeedStr, assetCode string, assetIssuer AddressStr, limit string, baseFee uint64) (txID string, err error) {
 	sig, err := CreateTrustlineTransaction(from, assetCode, assetIssuer, limit, Client(), nil /* timeBounds */, baseFee)
 	if err != nil {
 		return "", err
@@ -695,7 +694,7 @@ func CreateTrustline(from SeedStr, assetCode string, assetIssuer AddressStr, lim
 
 // CreateTrustlineTransaction create a signed transaction to establish a trustline from
 // the `from` account to assetCode/assetIssuer.
-func CreateTrustlineTransaction(from SeedStr, assetCode string, assetIssuer AddressStr, limit int64, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
+func CreateTrustlineTransaction(from SeedStr, assetCode string, assetIssuer AddressStr, limit string, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
 	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
 	if err != nil {
 		return SignResult{}, err
@@ -785,7 +784,7 @@ func (a *Account) FindPaymentPaths(to AddressStr, assetCode string, assetIssuer 
 // If an error occurs after the issuer and distributor are funded,
 // the issuer and distributor seeds will be returned along with any
 // error so you can reclaim your funds.
-func CreateCustomAsset(source SeedStr, assetCode string, limit int64, homeDomain string, xlmPrice string, baseFee uint64) (issuer, distributor SeedStr, err error) {
+func CreateCustomAsset(source SeedStr, assetCode, limit, homeDomain string, xlmPrice string, baseFee uint64) (issuer, distributor SeedStr, err error) {
 	issuerPair, err := NewKeyPair()
 	if err != nil {
 		return "", "", err
@@ -798,7 +797,7 @@ func CreateCustomAsset(source SeedStr, assetCode string, limit int64, homeDomain
 	return createCustomAssetWithKPs(source, issuerPair, distPair, assetCode, limit, homeDomain, xlmPrice, baseFee)
 }
 
-func createCustomAssetWithKPs(source SeedStr, issuerPair, distPair *keypair.Full, assetCode string, limit int64, homeDomain string, xlmPrice string, baseFee uint64) (issuer, distributor SeedStr, err error) {
+func createCustomAssetWithKPs(source SeedStr, issuerPair, distPair *keypair.Full, assetCode, limit, homeDomain string, xlmPrice string, baseFee uint64) (issuer, distributor SeedStr, err error) {
 	// 1. create issuer
 	issuer, err = NewSeedStr(issuerPair.Seed())
 	if err != nil {
@@ -834,8 +833,7 @@ func createCustomAssetWithKPs(source SeedStr, issuerPair, distPair *keypair.Full
 	}
 
 	// 4. create the asset by paying the distributor
-	amount := strconv.FormatInt(limit, 10)
-	_, _, _, err = payment(issuer, distributorAddr, assetCode, issuerAddr, amount, "")
+	_, _, _, err = payment(issuer, distributorAddr, assetCode, issuerAddr, limit, "")
 	if err != nil {
 		return issuer, distributor, err
 	}

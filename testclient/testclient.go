@@ -6,10 +6,12 @@ import (
 	"encoding/json"
 	"flag"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/keybase/vcr"
 	"github.com/stellar/go/build"
@@ -25,7 +27,8 @@ var record = flag.Bool("record", false, "use test server, update testdata")
 
 var tvcr *vcr.VCR
 
-// Config contains the account seeds for the test users.
+// Config contains the account seeds for the test users, and any other
+// random data that might be needed (like AssetCode).
 type Config struct {
 	AliceSeed       string
 	BobSeed         string
@@ -33,6 +36,7 @@ type Config struct {
 	RebeccaSeed     string
 	IssuerSeed      string
 	DistributorSeed string
+	AssetCode       string
 }
 
 // Helper makes managing the test users and state easier.
@@ -140,6 +144,7 @@ func loadConfig(t *testing.T, subdir string) *Config {
 		conf.RebeccaSeed = newSeed(t)
 		conf.IssuerSeed = newSeed(t)
 		conf.DistributorSeed = newSeed(t)
+		conf.AssetCode = randomAssetCode()
 
 		if *record {
 			// recording, so save key pairs
@@ -231,4 +236,18 @@ func newSeed(t *testing.T) string {
 		t.Fatal(err)
 	}
 	return kp.Seed()
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+}
+
+const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+func randomAssetCode() string {
+	b := make([]byte, 4)
+	for i := range b {
+		b[i] = letters[rand.Intn(len(letters))]
+	}
+	return string(b)
 }

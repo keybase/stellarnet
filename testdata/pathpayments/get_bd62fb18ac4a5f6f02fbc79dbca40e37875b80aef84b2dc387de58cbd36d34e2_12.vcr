@@ -3,7 +3,7 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Thu, 11 Apr 2019 01:40:05 GMT
+Date: Thu, 11 Apr 2019 16:52:49 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 100
@@ -12,13 +12,13 @@ X-Ratelimit-Reset: 1
 {
   "_links": {
     "self": {
-      "href": "https://horizon-testnet.stellar.org/assets?asset_code=EULB\u0026cursor=\u0026limit=10\u0026order=asc"
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=GYRF\u0026cursor=\u0026limit=10\u0026order=asc"
     },
     "next": {
-      "href": "https://horizon-testnet.stellar.org/assets?asset_code=EULB\u0026cursor=EULB_GB3XCCXZCNTYIU4CBA6GEGCEHJLMYN57KKGGDUM3MQ3TSDB75AZEHKG2_credit_alphanum4\u0026limit=10\u0026order=asc"
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=GYRF\u0026cursor=GYRF_GDWPO3YCUJNX4YRDYILTRG2RKOFMCZC6X5QGMPU3J3CI65BD4S2NVOTO_credit_alphanum4\u0026limit=10\u0026order=asc"
     },
     "prev": {
-      "href": "https://horizon-testnet.stellar.org/assets?asset_code=EULB\u0026cursor=EULB_GB3XCCXZCNTYIU4CBA6GEGCEHJLMYN57KKGGDUM3MQ3TSDB75AZEHKG2_credit_alphanum4\u0026limit=10\u0026order=desc"
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=GYRF\u0026cursor=GYRF_GDWPO3YCUJNX4YRDYILTRG2RKOFMCZC6X5QGMPU3J3CI65BD4S2NVOTO_credit_alphanum4\u0026limit=10\u0026order=desc"
     }
   },
   "_embedded": {
@@ -30,9 +30,9 @@ X-Ratelimit-Reset: 1
           }
         },
         "asset_type": "credit_alphanum4",
-        "asset_code": "EULB",
-        "asset_issuer": "GB3XCCXZCNTYIU4CBA6GEGCEHJLMYN57KKGGDUM3MQ3TSDB75AZEHKG2",
-        "paging_token": "EULB_GB3XCCXZCNTYIU4CBA6GEGCEHJLMYN57KKGGDUM3MQ3TSDB75AZEHKG2_credit_alphanum4",
+        "asset_code": "GYRF",
+        "asset_issuer": "GDWPO3YCUJNX4YRDYILTRG2RKOFMCZC6X5QGMPU3J3CI65BD4S2NVOTO",
+        "paging_token": "GYRF_GDWPO3YCUJNX4YRDYILTRG2RKOFMCZC6X5QGMPU3J3CI65BD4S2NVOTO_credit_alphanum4",
         "amount": "10000.0000000",
         "num_accounts": 1,
         "flags": {
