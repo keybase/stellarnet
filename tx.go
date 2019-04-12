@@ -94,7 +94,7 @@ func (t *Tx) AddAssetPaymentOp(to AddressStr, asset xdr.Asset, amt string) {
 }
 
 // AddPathPaymentOp adds a path payment operation to the transaction.
-func (t *Tx) AddPathPaymentOp(to AddressStr, sendAsset xdr.Asset, sendAmountMax string, destAsset xdr.Asset, destAmount string, path []xdr.Asset) {
+func (t *Tx) AddPathPaymentOp(to AddressStr, sendAsset xdr.Asset, sendAmountMax string, destAsset xdr.Asset, destAmount string, path []PathAsset) {
 	if t.skipAddOp() {
 		return
 	}
@@ -102,7 +102,6 @@ func (t *Tx) AddPathPaymentOp(to AddressStr, sendAsset xdr.Asset, sendAmountMax 
 	op := xdr.PathPaymentOp{
 		SendAsset: sendAsset,
 		DestAsset: destAsset,
-		Path:      path,
 	}
 
 	op.SendMax, t.err = amount.Parse(sendAmountMax)
@@ -117,6 +116,22 @@ func (t *Tx) AddPathPaymentOp(to AddressStr, sendAsset xdr.Asset, sendAmountMax 
 	if t.err != nil {
 		return
 	}
+
+	xdrPath := make([]xdr.Asset, len(path))
+	for i, p := range path {
+		issuer, err := NewAddressStr(p.AssetIssuer)
+		if err != nil {
+			t.err = err
+			return
+		}
+		a, err := makeXDRAsset(p.AssetCode, issuer)
+		if err != nil {
+			t.err = err
+			return
+		}
+		xdrPath[i] = a
+	}
+	op.Path = xdrPath
 
 	t.addOp(xdr.OperationTypePathPayment, op)
 }

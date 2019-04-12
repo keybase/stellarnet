@@ -719,19 +719,7 @@ func TestPathPayments(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	xdrPath := make([]xdr.Asset, len(path.Path))
-	for i, p := range path.Path {
-		issuer, err := NewAddressStr(p.AssetIssuer)
-		if err != nil {
-			t.Fatal(err)
-		}
-		a, err := makeXDRAsset(p.AssetCode, issuer)
-		if err != nil {
-			t.Fatal(err)
-		}
-		xdrPath[i] = a
-	}
-	_, _, _, err = pathPayment(seedStr(t, helper.Bob), acctAlice.address, path.SourceAssetCode, sourceIssuer, sendAmountMax, path.DestinationAssetCode, destIssuer, path.DestinationAmount, xdrPath, "pub memo path pay")
+	_, _, _, err = pathPayment(seedStr(t, helper.Bob), acctAlice.address, path.SourceAssetCode, sourceIssuer, sendAmountMax, path.DestinationAssetCode, destIssuer, path.DestinationAmount, path.Path, "pub memo path pay")
 	if err != nil {
 		t.Fatal(err)
 	}

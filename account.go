@@ -564,7 +564,7 @@ func PaymentTransaction(from SeedStr, to AddressStr, assetCode string, issuerID 
 }
 
 // pathPayment creates a transaction with a path payment operation in it and submits it to the network.
-func pathPayment(from SeedStr, to AddressStr, sendAssetCode string, sendAssetIssuer AddressStr, sendAmountMax string, destAssetCode string, destAssetIssuer AddressStr, destAmount string, path []xdr.Asset, memoText string) (ledger int32, txid string, attempt int, err error) {
+func pathPayment(from SeedStr, to AddressStr, sendAssetCode string, sendAssetIssuer AddressStr, sendAmountMax string, destAssetCode string, destAssetIssuer AddressStr, destAmount string, path []PathAsset, memoText string) (ledger int32, txid string, attempt int, err error) {
 	sig, err := PathPaymentTransaction(from, to, sendAssetCode, sendAssetIssuer, sendAmountMax, destAssetCode, destAssetIssuer, destAmount, path, memoText, Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	if err != nil {
 		return 0, "", 0, errMap(err)
@@ -573,7 +573,7 @@ func pathPayment(from SeedStr, to AddressStr, sendAssetCode string, sendAssetIss
 }
 
 // PathPaymentTransaction creates a signed transaction for a path payment.
-func PathPaymentTransaction(from SeedStr, to AddressStr, sendAssetCode string, sendAssetIssuer AddressStr, sendAmountMax string, destAssetCode string, destAssetIssuer AddressStr, destAmount string, path []xdr.Asset, memoText string, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
+func PathPaymentTransaction(from SeedStr, to AddressStr, sendAssetCode string, sendAssetIssuer AddressStr, sendAmountMax string, destAssetCode string, destAssetIssuer AddressStr, destAmount string, path []PathAsset, memoText string, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
 	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
 	if err != nil {
 		return SignResult{}, err
