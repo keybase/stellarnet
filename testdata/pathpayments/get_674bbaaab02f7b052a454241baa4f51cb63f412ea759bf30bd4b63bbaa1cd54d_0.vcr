@@ -1,0 +1,78 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Fri, 12 Apr 2019 19:38:11 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB",
+  "paging_token": "",
+  "account_id": "GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB",
+  "sequence": "3208731412135936",
+  "subentry_count": 0,
+  "last_modified_ledger": 747091,
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false,
+    "auth_immutable": false
+  },
+  "balances": [
+    {
+      "balance": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "weight": 1,
+      "key": "GDKNLDV76TMBSPOLQWZMRE6TWL55A3RW3OAMBFVQS7E76WTHT5HGOYXB",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {}
+}

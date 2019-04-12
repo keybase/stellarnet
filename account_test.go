@@ -719,9 +719,50 @@ func TestPathPayments(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	_, _, _, err = pathPayment(seedStr(t, helper.Bob), acctAlice.address, path.SourceAssetCode, sourceIssuer, sendAmountMax, path.DestinationAssetCode, destIssuer, path.DestinationAmount, path.Path, "pub memo path pay")
+	_, txID, _, err := pathPayment(seedStr(t, helper.Bob), acctAlice.address, path.SourceAssetCode, sourceIssuer, sendAmountMax, path.DestinationAssetCode, destIssuer, path.DestinationAmount, path.Path, "pub memo path pay")
 	if err != nil {
 		t.Fatal(err)
+	}
+
+	aliceTx, _, err := acctAlice.Transactions("", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(aliceTx) != 5 {
+		t.Fatalf("alice tx count: %d, expected 5", len(aliceTx))
+	}
+
+	match = false
+	var pathTx horizon.Transaction
+	for _, tx := range aliceTx {
+		if tx.ID == txID {
+			match = true
+			pathTx = tx
+			break
+		}
+	}
+	if !match {
+		t.Fatal("path payment to alice not in recent txs")
+	}
+
+	var unpackedTx xdr.TransactionEnvelope
+	err = xdr.SafeUnmarshalBase64(pathTx.EnvelopeXdr, &unpackedTx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("envelope: %+v", unpackedTx)
+	if len(unpackedTx.Tx.Operations) != 1 {
+		t.Fatalf("operations: %d, expected 1", len(unpackedTx.Tx.Operations))
+	}
+	op := unpackedTx.Tx.Operations[0]
+	if op.Body.Type != xdr.OperationTypePathPayment {
+		t.Fatalf("operation type: %v, expected path payment (%v)", op.Body.Type, xdr.OperationTypePathPayment)
+	}
+	t.Logf("path payment op: %+v", op.Body.PathPaymentOp)
+	pathOp := op.Body.PathPaymentOp
+	if pathOp.Destination.Address() != acctAlice.address.String() {
+		t.Errorf("destination: %s, expected alice %s", pathOp.Destination.Address(), acctAlice.address)
 	}
 }
 

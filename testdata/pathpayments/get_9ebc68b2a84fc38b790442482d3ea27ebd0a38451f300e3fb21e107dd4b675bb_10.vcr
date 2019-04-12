@@ -1,0 +1,88 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Fri, 12 Apr 2019 19:38:37 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A",
+  "paging_token": "",
+  "account_id": "GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A",
+  "sequence": "3208748592005121",
+  "subentry_count": 1,
+  "last_modified_ledger": 747096,
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false,
+    "auth_immutable": false
+  },
+  "balances": [
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "last_modified_ledger": 747097,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "TTMU",
+      "asset_issuer": "GBPQONSNA2O22QYWLY76PGP3M6ECBX525JA3GDMHDETKDLKFWKYX3FNB"
+    },
+    {
+      "balance": "4.9999800",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "weight": 1,
+      "key": "GBWB5QYRS2U43TQ5AJF5U2HS5PPVCVXED6PUF4NO5XPQVUNROB3VJA2A",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {}
+}
