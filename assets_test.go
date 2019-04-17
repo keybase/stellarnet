@@ -113,4 +113,17 @@ func TestAssetSearch(t *testing.T) {
 	res, err = search("", "badissuerID")
 	require.Error(t, err)
 	require.Equal(t, len(res), 0)
+
+	// works with credit_alphanum12 asset codes
+	res, err = search("COUPON", "")
+	require.NoError(t, err)
+	expectedMatch = AssetSummary{
+		UnverifiedWellKnownLink: "",
+		AssetType:               "credit_alphanum12",
+		AssetCode:               "COUPON",
+		AssetIssuer:             "GBMMZMK2DC4FFP4CAI6KCVNCQ7WLO5A7DQU7EC7WGHRDQBZB763X4OQI",
+		Amount:                  "84999.1936063",
+		NumAccounts:             7,
+	}
+	require.Contains(t, res, expectedMatch)
 }
