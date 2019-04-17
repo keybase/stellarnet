@@ -73,6 +73,7 @@ func AssetsWithCode(assetCode string) ([]AssetSummary, error) {
 	return res, err
 }
 
+// AssetSearchArg is the argument for passing to AssetSearch
 type AssetSearchArg struct {
 	AssetCode string // this is case sensitive
 	IssuerID  string
