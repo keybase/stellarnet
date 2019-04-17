@@ -72,14 +72,7 @@ func TestAssetSearch(t *testing.T) {
 		Amount:                  "3000.0000000",
 		NumAccounts:             3,
 	}
-	var foundMatch bool
-	for _, asset := range res {
-		if asset == expectedMatch {
-			foundMatch = true
-			break
-		}
-	}
-	require.True(t, foundMatch)
+	require.Contains(t, res, expectedMatch)
 	require.Equal(t, len(res), 10)
 
 	// finds an exact match
@@ -93,14 +86,7 @@ func TestAssetSearch(t *testing.T) {
 		Amount:                  "0.0049880",
 		NumAccounts:             2,
 	}
-	foundMatch = false
-	for _, asset := range res {
-		if asset == expectedMatch {
-			foundMatch = true
-			break
-		}
-	}
-	require.True(t, foundMatch)
+	require.Contains(t, res, expectedMatch)
 	require.Equal(t, len(res), 1)
 
 	// does not find a non-existent asset
