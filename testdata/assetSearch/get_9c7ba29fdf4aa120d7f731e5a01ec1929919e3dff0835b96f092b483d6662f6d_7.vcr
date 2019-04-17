@@ -1,0 +1,82 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Wed, 17 Apr 2019 19:33:56 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 97
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=COUPON\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=COUPON\u0026cursor=COUPON_GCHD4QHTEM2RNNOJGLBLZNAIACAWVEHYNNLXO2XULER3OZ2EGAIZOBH5_credit_alphanum12\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=COUPON\u0026cursor=COUPON_GBHXGGUD3LIAWJHFO7737C4TFNDDDLZ74C6VBEPF5H53XNRCVIUWZA5I_credit_alphanum12\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "COUPON",
+        "asset_issuer": "GBHXGGUD3LIAWJHFO7737C4TFNDDDLZ74C6VBEPF5H53XNRCVIUWZA5I",
+        "paging_token": "COUPON_GBHXGGUD3LIAWJHFO7737C4TFNDDDLZ74C6VBEPF5H53XNRCVIUWZA5I_credit_alphanum12",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "COUPON",
+        "asset_issuer": "GBMMZMK2DC4FFP4CAI6KCVNCQ7WLO5A7DQU7EC7WGHRDQBZB763X4OQI",
+        "paging_token": "COUPON_GBMMZMK2DC4FFP4CAI6KCVNCQ7WLO5A7DQU7EC7WGHRDQBZB763X4OQI_credit_alphanum12",
+        "amount": "84999.1936063",
+        "num_accounts": 7,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "COUPON",
+        "asset_issuer": "GCHD4QHTEM2RNNOJGLBLZNAIACAWVEHYNNLXO2XULER3OZ2EGAIZOBH5",
+        "paging_token": "COUPON_GCHD4QHTEM2RNNOJGLBLZNAIACAWVEHYNNLXO2XULER3OZ2EGAIZOBH5_credit_alphanum12",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      }
+    ]
+  }
+}
