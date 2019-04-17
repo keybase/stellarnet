@@ -108,7 +108,7 @@ func makeXDRAsset(assetCode string, issuerID AddressStr) (xdr.Asset, error) {
 	case x >= 5 && x <= 12:
 		asset := xdr.AssetAlphaNum12{Issuer: issuer}
 		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
-		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
+		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
 	default:
 		return xdr.Asset{}, errors.New("invalid assetCode length")
 	}
