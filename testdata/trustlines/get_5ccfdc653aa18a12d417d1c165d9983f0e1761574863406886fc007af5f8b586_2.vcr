@@ -3,7 +3,7 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Tue, 09 Apr 2019 16:35:52 GMT
+Date: Wed, 17 Apr 2019 18:23:33 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 99
@@ -15,7 +15,7 @@ X-Ratelimit-Reset: 1
       "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=\u0026limit=10\u0026order=asc"
     },
     "next": {
-      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA3XTGNVPRKKIYMYRDTOOB25JGXH4PLBQTIBMXRJY7UTILVM5Q77BYBE_credit_alphanum4\u0026limit=10\u0026order=asc"
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA3O2X4UATXF5GA3S7JACXTEOMEJSETTYEB5QP5Y74ZYALJEEZ2H6RQ6_credit_alphanum4\u0026limit=10\u0026order=asc"
     },
     "prev": {
       "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA24N4QZJVSO7EIIV5JPNXZXZQLOMVXZ4BDTBYCAXRROLPOUATIT7WLO_credit_alphanum4\u0026limit=10\u0026order=desc"
@@ -106,7 +106,25 @@ X-Ratelimit-Reset: 1
         "asset_issuer": "GA2WHUVE6D3WHFZEUYRJJEBLSCZTFMX2MFVVUCTV5UPS3UQXHSO56XCE",
         "paging_token": "USD_GA2WHUVE6D3WHFZEUYRJJEBLSCZTFMX2MFVVUCTV5UPS3UQXHSO56XCE_credit_alphanum4",
         "amount": "320.0000000",
-        "num_accounts": 29,
+        "num_accounts": 32,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA2XQBK3TXYABYHWX7K5H666G7R3JNFYGYAWH3PNZDFQUF5X5IRI4TJK",
+        "paging_token": "USD_GA2XQBK3TXYABYHWX7K5H666G7R3JNFYGYAWH3PNZDFQUF5X5IRI4TJK_credit_alphanum4",
+        "amount": "20.0000000",
+        "num_accounts": 1,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -142,7 +160,7 @@ X-Ratelimit-Reset: 1
         "asset_issuer": "GA35PL6OTEWOVUZGW36TYVSWFQFT2FHNLE7S5YVZ4OLGJEWEM5ON2CJU",
         "paging_token": "USD_GA35PL6OTEWOVUZGW36TYVSWFQFT2FHNLE7S5YVZ4OLGJEWEM5ON2CJU_credit_alphanum4",
         "amount": "21000000.0000000",
-        "num_accounts": 11,
+        "num_accounts": 14,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -179,24 +197,6 @@ X-Ratelimit-Reset: 1
         "paging_token": "USD_GA3O2X4UATXF5GA3S7JACXTEOMEJSETTYEB5QP5Y74ZYALJEEZ2H6RQ6_credit_alphanum4",
         "amount": "20.0000000",
         "num_accounts": 1,
-        "flags": {
-          "auth_required": false,
-          "auth_revocable": false,
-          "auth_immutable": false
-        }
-      },
-      {
-        "_links": {
-          "toml": {
-            "href": ""
-          }
-        },
-        "asset_type": "credit_alphanum4",
-        "asset_code": "USD",
-        "asset_issuer": "GA3XTGNVPRKKIYMYRDTOOB25JGXH4PLBQTIBMXRJY7UTILVM5Q77BYBE",
-        "paging_token": "USD_GA3XTGNVPRKKIYMYRDTOOB25JGXH4PLBQTIBMXRJY7UTILVM5Q77BYBE_credit_alphanum4",
-        "amount": "100.0000000",
-        "num_accounts": 3,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,

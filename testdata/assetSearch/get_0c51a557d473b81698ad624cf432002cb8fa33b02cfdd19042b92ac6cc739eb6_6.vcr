@@ -1,0 +1,21 @@
+HTTP/1.1 400 Bad Request
+Content-Length: 253
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Type: application/problem+json; charset=utf-8
+Date: Wed, 17 Apr 2019 18:23:47 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 94
+X-Ratelimit-Reset: 2
+
+{
+  "type": "https://stellar.org/horizon-errors/bad_request",
+  "title": "Bad Request",
+  "status": 400,
+  "detail": "The request you sent was invalid in some way",
+  "extras": {
+    "invalid_field": "asset_issuer",
+    "reason": "invalid address"
+  }
+}
