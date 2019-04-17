@@ -3,16 +3,16 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Wed, 17 Apr 2019 19:16:39 GMT
+Date: Thu, 14 Mar 2019 19:14:50 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 92
-X-Ratelimit-Reset: 2
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
 
 {
-  "last_ledger": "826368",
+  "last_ledger": "259379",
   "last_ledger_base_fee": "100",
-  "ledger_capacity_usage": "0.03",
+  "ledger_capacity_usage": "0.02",
   "min_accepted_fee": "100",
   "mode_accepted_fee": "100",
   "p10_accepted_fee": "100",
@@ -23,7 +23,7 @@ X-Ratelimit-Reset: 2
   "p60_accepted_fee": "100",
   "p70_accepted_fee": "100",
   "p80_accepted_fee": "100",
-  "p90_accepted_fee": "150",
-  "p95_accepted_fee": "200",
-  "p99_accepted_fee": "200"
+  "p90_accepted_fee": "100",
+  "p95_accepted_fee": "100",
+  "p99_accepted_fee": "100"
 }
