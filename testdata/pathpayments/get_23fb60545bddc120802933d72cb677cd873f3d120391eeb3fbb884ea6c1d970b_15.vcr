@@ -1,0 +1,26 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Fri, 12 Apr 2019 19:38:49 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_embedded": {
+    "records": [
+      {
+        "source_asset_type": "native",
+        "source_amount": "23.0000000",
+        "destination_asset_type": "credit_alphanum4",
+        "destination_asset_code": "TTMU",
+        "destination_asset_issuer": "GBPQONSNA2O22QYWLY76PGP3M6ECBX525JA3GDMHDETKDLKFWKYX3FNB",
+        "destination_amount": "10.0000000",
+        "path": []
+      }
+    ]
+  }
+}

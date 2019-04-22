@@ -592,7 +592,7 @@ func TestTrustlines(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = CreateTrustline(seedStr(t, helper.Alice), asset.AssetCode, issuer, 10000, 200)
+	_, err = CreateTrustline(seedStr(t, helper.Alice), asset.AssetCode, issuer, "10000", 200)
 	if err != nil {
 		t.Errorf("error creating trustline: %s, expected none", err)
 	}
@@ -617,6 +617,152 @@ func TestTrustlines(t *testing.T) {
 
 	if len(tlines) != 1 {
 		t.Errorf("num trustlines: %d, expected 1", len(tlines))
+	}
+}
+
+func TestPathPayments(t *testing.T) {
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "pathpayments")
+
+	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	testclient.GetTestLumens(t, helper.Alice)
+
+	acctBob := NewAccount(addressStr(t, helper.Bob))
+	testclient.GetTestLumens(t, helper.Bob)
+
+	// alice is going to make a new asset
+	t.Logf("issuer address: %s", helper.Issuer.Address())
+	t.Logf("distributor address: %s", helper.Distributor.Address())
+	assetCode := helper.Config.AssetCode
+	issuer, distributor, err := createCustomAssetWithKPs(seedStr(t, helper.Alice), helper.Issuer, helper.Distributor, assetCode, "10000", "keybase.io/blueasset", "2.3", 200)
+	if err != nil {
+		t.Logf("CreateCustomAsset error type: %T", err)
+		if serr, ok := err.(Error); ok {
+			t.Logf(serr.Verbose())
+			if serr.HorizonError != nil {
+				t.Logf("horizon error: %+v", serr.HorizonError)
+				t.Logf("horizon error problem: %+v", serr.HorizonError.Problem)
+				t.Logf("horizon error extras %s", serr.HorizonError.Problem.Extras["result_codes"])
+			}
+		}
+		t.Fatal(err)
+	}
+	issuerAddr, err := issuer.Address()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = distributor
+
+	t.Logf("returned issuer address: %s", issuerAddr)
+	if issuerAddr.String() != helper.Issuer.Address() {
+		t.Errorf("issuerAddr returned by CreateCustomAsset did not match address in helper.Issuer (%q != %q)", issuerAddr, helper.Issuer.Address())
+	}
+
+	// check that the asset is available
+	assets, err := AssetsWithCode(assetCode)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("%d assets with code %q", len(assets), assetCode)
+	match := false
+	for _, a := range assets {
+		t.Logf("asset: %+v", a)
+		if a.AssetIssuer == issuerAddr.String() {
+			match = true
+		}
+	}
+	if !match {
+		t.Fatalf("no asset with code %q and issuer %q found", assetCode, issuerAddr)
+	}
+
+	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, "10000", 200)
+	if err != nil {
+		t.Errorf("error creating trustline: %s, expected none", err)
+	}
+
+	// bob is going to do a path payment to alice with this asset as the destination
+	// asset
+
+	// first bob finds the paths available
+	paths, err := acctBob.FindPaymentPaths(acctAlice.address, assetCode, issuerAddr, "10")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paths) == 0 {
+		t.Fatalf("no paths available from bob to alice for %s/%s", assetCode, issuerAddr)
+	}
+
+	fmt.Printf("paths: %+v\n", paths)
+
+	// select the path to use
+	path := paths[0]
+
+	// calculate the max send amount
+	sendAmountMax, err := pathPaymentMaxValue(path.SourceAmount)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// then bob makes the path payment
+	var sourceIssuer AddressStr
+	if path.SourceAssetIssuer != "" {
+		sourceIssuer, err = NewAddressStr(path.SourceAssetIssuer)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	var destIssuer AddressStr
+	if path.DestinationAssetIssuer != "" {
+		destIssuer, err = NewAddressStr(path.DestinationAssetIssuer)
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	_, txID, _, err := pathPayment(seedStr(t, helper.Bob), acctAlice.address, path.SourceAssetCode, sourceIssuer, sendAmountMax, path.DestinationAssetCode, destIssuer, path.DestinationAmount, path.Path, "pub memo path pay")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	aliceTx, _, err := acctAlice.Transactions("", 100)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(aliceTx) != 5 {
+		t.Fatalf("alice tx count: %d, expected 5", len(aliceTx))
+	}
+
+	match = false
+	var pathTx horizon.Transaction
+	for _, tx := range aliceTx {
+		if tx.ID == txID {
+			match = true
+			pathTx = tx
+			break
+		}
+	}
+	if !match {
+		t.Fatal("path payment to alice not in recent txs")
+	}
+
+	var unpackedTx xdr.TransactionEnvelope
+	err = xdr.SafeUnmarshalBase64(pathTx.EnvelopeXdr, &unpackedTx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Logf("envelope: %+v", unpackedTx)
+	if len(unpackedTx.Tx.Operations) != 1 {
+		t.Fatalf("operations: %d, expected 1", len(unpackedTx.Tx.Operations))
+	}
+	op := unpackedTx.Tx.Operations[0]
+	if op.Body.Type != xdr.OperationTypePathPayment {
+		t.Fatalf("operation type: %v, expected path payment (%v)", op.Body.Type, xdr.OperationTypePathPayment)
+	}
+	t.Logf("path payment op: %+v", op.Body.PathPaymentOp)
+	pathOp := op.Body.PathPaymentOp
+	if pathOp.Destination.Address() != acctAlice.address.String() {
+		t.Errorf("destination: %s, expected alice %s", pathOp.Destination.Address(), acctAlice.address)
 	}
 }
 

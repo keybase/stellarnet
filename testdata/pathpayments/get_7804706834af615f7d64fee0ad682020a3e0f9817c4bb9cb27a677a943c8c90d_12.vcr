@@ -1,0 +1,46 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Fri, 12 Apr 2019 19:38:41 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=TTMU\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=TTMU\u0026cursor=TTMU_GBPQONSNA2O22QYWLY76PGP3M6ECBX525JA3GDMHDETKDLKFWKYX3FNB_credit_alphanum4\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=TTMU\u0026cursor=TTMU_GBPQONSNA2O22QYWLY76PGP3M6ECBX525JA3GDMHDETKDLKFWKYX3FNB_credit_alphanum4\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "TTMU",
+        "asset_issuer": "GBPQONSNA2O22QYWLY76PGP3M6ECBX525JA3GDMHDETKDLKFWKYX3FNB",
+        "paging_token": "TTMU_GBPQONSNA2O22QYWLY76PGP3M6ECBX525JA3GDMHDETKDLKFWKYX3FNB_credit_alphanum4",
+        "amount": "10000.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      }
+    ]
+  }
+}
