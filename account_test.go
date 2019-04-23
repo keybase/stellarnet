@@ -635,7 +635,7 @@ func TestPathPayments(t *testing.T) {
 	t.Logf("issuer address: %s", helper.Issuer.Address())
 	t.Logf("distributor address: %s", helper.Distributor.Address())
 	assetCode := helper.Config.AssetCode
-	issuer, distributor, err := createCustomAssetWithKPs(seedStr(t, helper.Alice), helper.Issuer, helper.Distributor, assetCode, "10000", "keybase.io/blueasset", "2.3", 200)
+	issuer, distributor, err := CreateCustomAssetWithKPs(seedStr(t, helper.Alice), helper.Issuer, helper.Distributor, assetCode, "10000", "keybase.io/blueasset", "2.3", 200)
 	if err != nil {
 		t.Logf("CreateCustomAsset error type: %T", err)
 		if serr, ok := err.(Error); ok {
