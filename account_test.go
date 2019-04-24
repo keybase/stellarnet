@@ -705,21 +705,7 @@ func TestPathPayments(t *testing.T) {
 	}
 
 	// then bob makes the path payment
-	var sourceIssuer AddressStr
-	if path.SourceAssetIssuer != "" {
-		sourceIssuer, err = NewAddressStr(path.SourceAssetIssuer)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	var destIssuer AddressStr
-	if path.DestinationAssetIssuer != "" {
-		destIssuer, err = NewAddressStr(path.DestinationAssetIssuer)
-		if err != nil {
-			t.Fatal(err)
-		}
-	}
-	_, txID, _, err := pathPayment(seedStr(t, helper.Bob), acctAlice.address, path.SourceAssetCode, sourceIssuer, sendAmountMax, path.DestinationAssetCode, destIssuer, path.DestinationAmount, path.Path, "pub memo path pay")
+	_, txID, _, err := pathPayment(seedStr(t, helper.Bob), acctAlice.address, path.SourceAsset(), sendAmountMax, path.DestinationAsset(), path.DestinationAmount, PathAssetSliceToAssetBase(path.Path), "pub memo path pay")
 	if err != nil {
 		t.Fatal(err)
 	}
