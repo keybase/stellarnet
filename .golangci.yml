@@ -1,3 +1,5 @@
 linters:
         enable:
                 - gofmt
+                - gocritic
+                - unconvert
