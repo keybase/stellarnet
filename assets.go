@@ -224,10 +224,6 @@ func assetCodeToType(code string) (string, error) {
 	}
 }
 
-func assetBaseType(a AssetBase) (string, error) {
-	return assetCodeToType(a.CodeString())
-}
-
 func assetBaseIssuer(a AssetBase) (AddressStr, error) {
 	return NewAddressStr(a.IssuerString())
 }
@@ -259,5 +255,4 @@ func assetBaseToXDR(a AssetBase) (xdr.Asset, error) {
 	default:
 		return xdr.Asset{}, errors.New("invalid asset code length")
 	}
-
 }

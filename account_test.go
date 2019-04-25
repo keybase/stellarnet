@@ -699,7 +699,7 @@ func TestPathPayments(t *testing.T) {
 	path := paths[0]
 
 	// calculate the max send amount
-	sendAmountMax, err := pathPaymentMaxValue(path.SourceAmount)
+	sendAmountMax, err := PathPaymentMaxValue(path.SourceAmount)
 	if err != nil {
 		t.Fatal(err)
 	}
