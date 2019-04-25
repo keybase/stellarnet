@@ -188,18 +188,24 @@ func Setup(t *testing.T) (*Helper, *horizon.Client, build.Network) {
 // If not record or live, it is a no-op.
 func GetTestLumens(t *testing.T, kp keypair.KP) {
 	if *record || *live {
-		t.Logf("getting test lumens from friendbot for %s", kp.Address())
-		resp, err := http.Get("https://friendbot.stellar.org/?addr=" + kp.Address())
-		if err != nil {
-			t.Fatal(err)
+		for i := 0; i < 10; i++ {
+			t.Logf("getting test lumens from friendbot for %s", kp.Address())
+			resp, err := http.Get("https://friendbot.stellar.org/?addr=" + kp.Address())
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer resp.Body.Close()
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp.StatusCode == http.StatusOK {
+				return
+			}
+			t.Logf("friendbot response: %+v", resp)
+			t.Logf("friendbot body: %s", body)
 		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatal(err)
-		}
-		t.Logf("friendbot response: %+v", resp)
-		t.Logf("friendbot body: %s", body)
+		t.Fatal("friendbot failed")
 	}
 }
 

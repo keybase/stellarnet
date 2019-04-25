@@ -693,8 +693,6 @@ func TestPathPayments(t *testing.T) {
 		t.Fatalf("no paths available from bob to alice for %s/%s", assetCode, issuerAddr)
 	}
 
-	fmt.Printf("paths: %+v\n", paths)
-
 	// select the path to use
 	path := paths[0]
 
