@@ -215,6 +215,8 @@ func makeXDRAsset(assetCode string, issuerID AddressStr) (xdr.Asset, error) {
 func assetCodeToType(code string) (string, error) {
 	x := len(code)
 	switch {
+	case x == 0:
+		return "native", nil
 	case x >= 1 && x <= 4:
 		return "credit_alphanum4", nil
 	case x >= 5 && x <= 12:
