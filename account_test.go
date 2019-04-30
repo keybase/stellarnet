@@ -300,7 +300,7 @@ func TestScenario(t *testing.T) {
 	t.Logf("bob merges account into alice's account")
 	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), build.DefaultBaseFee)
 	require.NoError(t, err)
-	_, _, _, err = Submit(sig.Signed)
+	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
 
 	t.Log("bob's account has been merged away")
@@ -317,7 +317,7 @@ func TestScenario(t *testing.T) {
 	var nines uint64 = 999
 	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.NoError(t, err)
-	_, _, _, err = Submit(sig.Signed)
+	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
 
 	t.Logf("charlie merges into a funded account")
@@ -344,7 +344,7 @@ func TestAccountMergeAmount(t *testing.T) {
 	t.Logf("bob merges back to alice")
 	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), build.DefaultBaseFee)
 	require.NoError(t, err)
-	_, _, _, err = Submit(sig.Signed)
+	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
 
 	if !testclient.IsPlayback() {
@@ -443,7 +443,7 @@ func TestTimeBounds(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _, _, err = Submit(tx.Signed)
+		_, err = Submit(tx.Signed)
 		assertHorizonError(t, err, tc.txError)
 	}
 
@@ -453,7 +453,7 @@ func TestTimeBounds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, _, err = Submit(tx.Signed)
+	_, err = Submit(tx.Signed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -464,7 +464,7 @@ func TestTimeBounds(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _, _, err = Submit(tx.Signed)
+		_, err = Submit(tx.Signed)
 		assertHorizonError(t, err, tc.txError)
 	}
 
@@ -473,7 +473,7 @@ func TestTimeBounds(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, _, _, err = Submit(tx.Signed)
+	_, err = Submit(tx.Signed)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -493,7 +493,7 @@ func TestTimeBounds(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, _, _, err = Submit(tx.Signed)
+		_, err = Submit(tx.Signed)
 		assertHorizonError(t, err, tc.txError)
 	}
 }
@@ -537,8 +537,8 @@ func TestConcurrentSubmit(t *testing.T) {
 	results := make(chan sres, n)
 	for i := 0; i < n; i++ {
 		go func(index int) {
-			ledger, txid, attempt, err := Submit(prepared[index].Signed)
-			fmt.Printf("index: %d, ledger: %d, txid: %s, attempt: %d, err: %v\n", index, ledger, txid, attempt, err)
+			res, err := Submit(prepared[index].Signed)
+			fmt.Printf("index: %d, result: %+v, err: %v\n", index, res, err)
 			if xerr, ok := err.(Error); ok {
 				resultCodes, zerr := xerr.HorizonError.ResultCodes()
 				if zerr == nil {
@@ -547,7 +547,7 @@ func TestConcurrentSubmit(t *testing.T) {
 					fmt.Printf("index: %d, zerr: %s (%s)\n", index, zerr, xerr.Details)
 				}
 			}
-			results <- sres{Index: index, Attempt: attempt, Ledger: ledger, TxID: txid, Error: err}
+			results <- sres{Index: index, Attempt: res.Attempt, Ledger: res.Ledger, TxID: res.TxID, Error: err}
 		}(i)
 	}
 
