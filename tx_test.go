@@ -23,7 +23,7 @@ func TestMultipleOps(t *testing.T) {
 	r, err := tx.Sign(seedStr(t, helper.Alice))
 	require.NoError(t, err)
 	t.Logf("sign result: %+v", r)
-	_, _, _, err = Submit(r.Signed)
+	_, err = Submit(r.Signed)
 	require.NoError(t, err)
 
 	acctAlice := NewAccount(addressStr(t, helper.Alice))
@@ -47,7 +47,7 @@ func TestMultipleOps(t *testing.T) {
 	r, err = tx.Sign(seedStr(t, helper.Alice))
 	require.NoError(t, err)
 	t.Logf("sign result: %+v", r)
-	_, _, _, err = Submit(r.Signed)
+	_, err = Submit(r.Signed)
 	require.NoError(t, err)
 
 	balance, err = acctBob.BalanceXLM()
