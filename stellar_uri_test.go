@@ -2,6 +2,7 @@ package stellarnet
 
 import (
 	"encoding/base64"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -135,6 +136,8 @@ func (h *httpClient) Get(url string) (resp *http.Response, err error) {
 	switch url {
 	case "https://someDomain.com/.well-known/stellar.toml":
 		body = `URI_REQUEST_SIGNING_KEY="GD7ACHBPHSC5OJMJZZBXA7Z5IAUFTH6E6XVLNBPASDQYJ7LO5UIYBDQW"`
+	default:
+		fmt.Println(url)
 	}
 
 	r := &http.Response{
