@@ -1,6 +1,12 @@
 package stellarnet
 
-import "testing"
+import (
+	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"testing"
+)
 
 type invalidURITest struct {
 	URI string
@@ -18,6 +24,34 @@ var invalidTests = []invalidURITest{
 		URI: "http://keybase.io",
 		Err: ErrInvalidScheme,
 	},
+	{
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
+		Err: ErrMissingParameter{Key: "origin_domain"},
+	},
+	{
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=blah.com",
+		Err: ErrMissingParameter{Key: "signature"},
+	},
+	{
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com:8000&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
+		Err: ErrInvalidParameter{Key: "origin_domain"},
+	},
+	{
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=http://someDomain.com&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
+		Err: ErrInvalidParameter{Key: "origin_domain"},
+	},
+	{
+		URI: "web+stellar:sign?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
+		Err: ErrInvalidOperation,
+	},
+	{
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
+		Err: ErrBadSignature,
+	},
+	{
+		URI: "web+stellar:tx?msg=signthis&origin_domain=someDomain.com&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
+		Err: ErrMissingParameter{Key: "xdr"},
+	},
 }
 
 var validTests = []validURITest{
@@ -30,9 +64,11 @@ var validTests = []validURITest{
 
 func TestInvalidStellarURIs(t *testing.T) {
 	for i, test := range invalidTests {
-		v, err := ValidateStellarURI(test.URI)
+		v, err := ValidateStellarURI(test.URI, &httpClient{})
 		if err != test.Err {
-			t.Errorf("%d. expected err %s, got %s", i, test.Err, err)
+			if err == nil || (err.Error() != test.Err.Error()) {
+				t.Errorf("%d. expected err %s, got %v", i, test.Err, err)
+			}
 		}
 		if v != nil {
 			t.Errorf("%d. expected nil result, got %+v", i, v)
@@ -42,7 +78,7 @@ func TestInvalidStellarURIs(t *testing.T) {
 
 func TestValidStellarURIs(t *testing.T) {
 	for i, test := range validTests {
-		v, err := ValidateStellarURI(test.URI)
+		v, err := ValidateStellarURI(test.URI, &httpClient{})
 		if err != nil {
 			t.Errorf("%d. expected no err, got %s", i, err)
 			continue
@@ -54,4 +90,26 @@ func TestValidStellarURIs(t *testing.T) {
 			t.Errorf("%d. origin domain: %q, expected %q", i, v.OriginDomain, test.OriginDomain)
 		}
 	}
+}
+
+type httpClient struct{}
+
+func (h *httpClient) Get(url string) (resp *http.Response, err error) {
+	var body string
+	switch url {
+	case "https://someDomain.com/.well-known/stellar.toml":
+		body = `URI_REQUEST_SIGNING_KEY="GD7ACHBPHSC5OJMJZZBXA7Z5IAUFTH6E6XVLNBPASDQYJ7LO5UIYBDQW"`
+	default:
+		fmt.Println(url)
+	}
+
+	r := &http.Response{
+		StatusCode: http.StatusOK,
+		Body:       ioutil.NopCloser(strings.NewReader(body)),
+	}
+	if body == "" {
+		r.StatusCode = http.StatusNotFound
+	}
+
+	return r, nil
 }
