@@ -1,11 +1,15 @@
 package stellarnet
 
 import (
+	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"testing"
+
+	"github.com/stellar/go/keypair"
 )
 
 type invalidURITest struct {
@@ -52,11 +56,16 @@ var invalidTests = []invalidURITest{
 		URI: "web+stellar:tx?msg=signthis&origin_domain=someDomain.com&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
 		Err: ErrMissingParameter{Key: "xdr"},
 	},
+	{
+		// this is the example in the spec, but it actually fails to validate
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
+		Err: ErrBadSignature,
+	},
 }
 
 var validTests = []validURITest{
 	{
-		URI:          "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
+		URI:          "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=JTlGMGzxUv90P2SWxUY9xo%2BLlbXaDloend6gkpyylY8X4bUNf6%2F9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ%3D%3D",
 		Operation:    "pay",
 		OriginDomain: "someDomain.com",
 	},
@@ -89,6 +98,30 @@ func TestValidStellarURIs(t *testing.T) {
 		if v.OriginDomain != test.OriginDomain {
 			t.Errorf("%d. origin domain: %q, expected %q", i, v.OriginDomain, test.OriginDomain)
 		}
+	}
+}
+
+func TestSignStellarURI(t *testing.T) {
+	key := "SBPOVRVKTTV7W3IOX2FJPSMPCJ5L2WU2YKTP3HCLYPXNI5MDIGREVNYC"
+	kp, err := keypair.Parse(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Printf("addr: %s\n", kp.Address())
+
+	payload := payloadFromString("web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com")
+	signature, err := kp.Sign(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	signatureB64 := base64.StdEncoding.EncodeToString(signature)
+	signatureEsc := url.QueryEscape(signatureB64)
+
+	if signatureB64 != "JTlGMGzxUv90P2SWxUY9xo+LlbXaDloend6gkpyylY8X4bUNf6/9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ==" {
+		t.Error("signature b64 mismatch")
+	}
+	if signatureEsc != "JTlGMGzxUv90P2SWxUY9xo%2BLlbXaDloend6gkpyylY8X4bUNf6%2F9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ%3D%3D" {
+		t.Error("signature escaped mismatch")
 	}
 }
 

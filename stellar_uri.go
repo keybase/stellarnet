@@ -1,6 +1,7 @@
 package stellarnet
 
 import (
+	"encoding/base64"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"github.com/stellar/go/keypair"
 )
 
 // HTTPGetter is an interface for making GET http requests.
@@ -187,10 +189,36 @@ func (u *unvalidatedURI) validateOriginDomain(getter HTTPGetter) error {
 	}
 
 	if signingKey == "" {
-		return ErrInvalidWellKnownOrigin{Wrapped: errors.New("no siging key")}
+		return ErrInvalidWellKnownOrigin{Wrapped: errors.New("no signing key")}
+	}
+
+	kp, err := keypair.Parse(signingKey)
+	if err != nil {
+		return ErrInvalidWellKnownOrigin{Wrapped: errors.New("invalid signing key")}
+	}
+
+	signature, err := base64.StdEncoding.DecodeString(u.Signature)
+	if err != nil {
+		return ErrBadSignature
+	}
+
+	if err := kp.Verify(u.payload(), signature); err != nil {
+		return ErrBadSignature
 	}
 
 	return nil
+}
+
+func (u *unvalidatedURI) payload() []byte {
+	// get the portion of the URI that was signed by stripping &signature off the end
+	index := strings.LastIndex(u.raw, "&signature=")
+	if index == -1 {
+		// this shouldn't happen because we already checked that signature
+		// exists
+		return nil
+	}
+
+	return payloadFromString(u.raw[0:index])
 }
 
 func (u *unvalidatedURI) validatePay(getter HTTPGetter) (*ValidatedStellarURI, error) {
@@ -216,4 +244,14 @@ func (u *unvalidatedURI) validateTx(getter HTTPGetter) (*ValidatedStellarURI, er
 
 func (u *unvalidatedURI) value(key string) string {
 	return strings.TrimSpace(u.values.Get(key))
+}
+
+func payloadFromString(data string) []byte {
+	payload := make([]byte, 36)
+	payload[35] = 4
+
+	payload = append(payload, []byte("stellar.sep.7 - URI Scheme")...)
+	payload = append(payload, []byte(data)...)
+
+	return payload
 }
