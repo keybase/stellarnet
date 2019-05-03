@@ -2,7 +2,6 @@ package stellarnet
 
 import (
 	"encoding/base64"
-	"fmt"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -61,6 +60,11 @@ var invalidTests = []invalidURITest{
 		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
 		Err: ErrBadSignature,
 	},
+	{
+		// changed amount
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=12.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=JTlGMGzxUv90P2SWxUY9xo%2BLlbXaDloend6gkpyylY8X4bUNf6%2F9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ%3D%3D",
+		Err: ErrBadSignature,
+	},
 }
 
 var validTests = []validURITest{
@@ -107,7 +111,6 @@ func TestSignStellarURI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("addr: %s\n", kp.Address())
 
 	payload := payloadFromString("web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com")
 	signature, err := kp.Sign(payload)
@@ -132,8 +135,6 @@ func (h *httpClient) Get(url string) (resp *http.Response, err error) {
 	switch url {
 	case "https://someDomain.com/.well-known/stellar.toml":
 		body = `URI_REQUEST_SIGNING_KEY="GD7ACHBPHSC5OJMJZZBXA7Z5IAUFTH6E6XVLNBPASDQYJ7LO5UIYBDQW"`
-	default:
-		fmt.Println(url)
 	}
 
 	r := &http.Response{
