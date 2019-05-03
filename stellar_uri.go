@@ -73,11 +73,30 @@ var ErrInvalidOperation = errors.New("invalid stellar URI operation")
 // ErrBadSignature is returned if the signature fails verification.
 var ErrBadSignature = errors.New("bad signature")
 
+// SignStellarURI signs a stellar+web URI and returns the URI with the signature
+// attached.
+func SignStellarURI(uri string, seed SeedStr) (signedURI, signatureB64 string, err error) {
+	kp, err := keypair.Parse(seed.SecureNoLogString())
+	if err != nil {
+		return "", "", err
+	}
+	payload := payloadFromString(uri)
+	signature, err := kp.Sign(payload)
+	if err != nil {
+		return "", "", err
+	}
+	signatureB64 = base64.StdEncoding.EncodeToString(signature)
+	signatureEsc := url.QueryEscape(signatureB64)
+
+	signedURI = uri + "&signature=" + signatureEsc
+
+	return signedURI, signatureB64, nil
+}
+
 // ValidatedStellarURI contains the origin domain that ValidateStellarURI
 // confirmed
 type ValidatedStellarURI struct {
 	URI          string
-	XDR          string
 	Operation    string
 	OriginDomain string
 }

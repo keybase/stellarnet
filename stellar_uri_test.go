@@ -1,15 +1,11 @@
 package stellarnet
 
 import (
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"strings"
 	"testing"
-
-	"github.com/stellar/go/keypair"
 )
 
 type invalidURITest struct {
@@ -108,24 +104,18 @@ func TestValidStellarURIs(t *testing.T) {
 
 func TestSignStellarURI(t *testing.T) {
 	key := "SBPOVRVKTTV7W3IOX2FJPSMPCJ5L2WU2YKTP3HCLYPXNI5MDIGREVNYC"
-	kp, err := keypair.Parse(key)
+	seed, err := NewSeedStr(key)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	payload := payloadFromString("web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com")
-	signature, err := kp.Sign(payload)
-	if err != nil {
-		t.Fatal(err)
-	}
-	signatureB64 := base64.StdEncoding.EncodeToString(signature)
-	signatureEsc := url.QueryEscape(signatureB64)
+	signedURI, signatureB64, err := SignStellarURI("web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com", seed)
 
+	if signedURI != "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=JTlGMGzxUv90P2SWxUY9xo%2BLlbXaDloend6gkpyylY8X4bUNf6%2F9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ%3D%3D" {
+		t.Error("signedURI mismatch")
+	}
 	if signatureB64 != "JTlGMGzxUv90P2SWxUY9xo+LlbXaDloend6gkpyylY8X4bUNf6/9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ==" {
 		t.Error("signature b64 mismatch")
-	}
-	if signatureEsc != "JTlGMGzxUv90P2SWxUY9xo%2BLlbXaDloend6gkpyylY8X4bUNf6%2F9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ%3D%3D" {
-		t.Error("signature escaped mismatch")
 	}
 }
 
