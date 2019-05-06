@@ -99,6 +99,19 @@ func TestValidStellarURIs(t *testing.T) {
 		if v.OriginDomain != test.OriginDomain {
 			t.Errorf("%d. origin domain: %q, expected %q", i, v.OriginDomain, test.OriginDomain)
 		}
+		switch v.Operation {
+		case "pay":
+			if v.Recipient == "" {
+				t.Errorf("%d. valid pay operation but no recipient", i)
+			}
+		case "tx":
+			if v.XDR == "" {
+				t.Errorf("%d. valid tx operation but no xdr", i)
+			}
+			if v.Tx == nil {
+				t.Errorf("%d. valid tx operation but no xdr.Transaction", i)
+			}
+		}
 	}
 }
 

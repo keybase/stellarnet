@@ -11,6 +11,7 @@ import (
 
 	"github.com/BurntSushi/toml"
 	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/xdr"
 )
 
 // HTTPGetter is an interface for making GET http requests.
@@ -99,6 +100,16 @@ type ValidatedStellarURI struct {
 	URI          string
 	Operation    string
 	OriginDomain string
+	Message      string
+	CallbackURL  string
+	XDR          string
+	Tx           *xdr.Transaction
+	Recipient    string
+	Amount       string
+	AssetCode    string
+	AssetIssuer  string
+	Memo         string
+	MemoType     string
 }
 
 // ValidateStellarURI will check the validity of a web+stellar SEP7 URI.
@@ -245,12 +256,38 @@ func (u *unvalidatedURI) validatePay(getter HTTPGetter) (*ValidatedStellarURI, e
 		return nil, err
 	}
 
-	return &ValidatedStellarURI{Operation: "pay", OriginDomain: u.OriginDomain}, nil
+	destination := u.value("destination")
+	if destination == "" {
+		return nil, ErrMissingParameter{Key: "destination"}
+	}
+
+	validated := u.newValidated("pay")
+	validated.Recipient = destination
+	validated.Amount = u.value("amount")
+	validated.AssetCode = u.value("asset_code")
+	validated.AssetIssuer = u.value("asset_issuer")
+	validated.Memo = u.value("memo")
+	validated.MemoType = u.value("memo_type")
+
+	if validated.AssetCode != "" && validated.AssetIssuer == "" {
+		return nil, ErrMissingParameter{Key: "asset_issuer"}
+	}
+	if validated.AssetIssuer != "" && validated.AssetCode == "" {
+		return nil, ErrMissingParameter{Key: "asset_code"}
+	}
+	if validated.Memo != "" && validated.MemoType == "" {
+		validated.MemoType = "MEMO_TEXT"
+	}
+	if validated.MemoType != "" && validated.Memo == "" {
+		return nil, ErrMissingParameter{Key: "memo"}
+	}
+
+	return validated, nil
 }
 
 func (u *unvalidatedURI) validateTx(getter HTTPGetter) (*ValidatedStellarURI, error) {
-	xdr := u.value("xdr")
-	if xdr == "" {
+	xdrEncoded := u.value("xdr")
+	if xdrEncoded == "" {
 		return nil, ErrMissingParameter{Key: "xdr"}
 	}
 
@@ -258,7 +295,27 @@ func (u *unvalidatedURI) validateTx(getter HTTPGetter) (*ValidatedStellarURI, er
 		return nil, err
 	}
 
-	return &ValidatedStellarURI{Operation: "tx", OriginDomain: u.OriginDomain}, nil
+	validated := u.newValidated("tx")
+	validated.XDR = xdrEncoded
+
+	var tx xdr.Transaction
+	if err := xdr.SafeUnmarshalBase64(xdrEncoded, &tx); err != nil {
+		return nil, ErrInvalidParameter{Key: "xdr"}
+	}
+
+	return validated, nil
+}
+
+// newValidated returns a new ValidatedStellarURI with the common
+// fields populated.
+func (u *unvalidatedURI) newValidated(op string) *ValidatedStellarURI {
+	return &ValidatedStellarURI{
+		URI:          u.raw,
+		Operation:    op,
+		OriginDomain: u.OriginDomain,
+		Message:      u.value("msg"),
+		CallbackURL:  u.value("callback"),
+	}
 }
 
 func (u *unvalidatedURI) value(key string) string {
