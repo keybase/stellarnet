@@ -258,3 +258,19 @@ func assetBaseToXDR(a AssetBase) (xdr.Asset, error) {
 		return xdr.Asset{}, errors.New("invalid asset code length")
 	}
 }
+
+// XDRToAssetMinimal transforms xdr.Asset to AssetMinimal.
+func XDRToAssetMinimal(x xdr.Asset) (AssetMinimal, error) {
+	switch x.Type {
+	case xdr.AssetTypeAssetTypeNative:
+		return AssetMinimal{}, nil
+	case xdr.AssetTypeAssetTypeCreditAlphanum4:
+		a := x.MustAlphaNum4()
+		return AssetMinimal{AssetCode: string(a.AssetCode[:]), AssetIssuer: a.Issuer.Address()}, nil
+	case xdr.AssetTypeAssetTypeCreditAlphanum12:
+		a := x.MustAlphaNum12()
+		return AssetMinimal{AssetCode: string(a.AssetCode[:]), AssetIssuer: a.Issuer.Address()}, nil
+	default:
+		return AssetMinimal{}, errors.New("invalid xdr asset type")
+	}
+}
