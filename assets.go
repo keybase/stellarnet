@@ -274,3 +274,20 @@ func XDRToAssetMinimal(x xdr.Asset) (AssetMinimal, error) {
 		return AssetMinimal{}, errors.New("invalid xdr asset type")
 	}
 }
+
+// AssetBaseSummary returns a string summary of an asset.
+func AssetBaseSummary(a AssetBase) string {
+	if a.TypeString() == "native" {
+		return "XLM"
+	}
+	return a.CodeString() + "/" + a.IssuerString()
+}
+
+// XDRSummary returns a string summary of an xdr.Asset.
+func XDRSummary(x xdr.Asset) string {
+	a, err := XDRToAssetMinimal(x)
+	if err != nil {
+		return "invalid asset"
+	}
+	return AssetBaseSummary(a)
+}
