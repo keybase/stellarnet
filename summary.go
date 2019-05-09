@@ -2,20 +2,21 @@ package stellarnet
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/stellar/go/xdr"
 )
 
 // OpSummary returns a string summary of an operation.
 func OpSummary(op xdr.Operation) string {
-	var opSource string
+	body := opBodySummary(op)
 	if op.SourceAccount != nil {
-		opSource = op.SourceAccount.Address()
+		return fmt.Sprintf("[Source account %s] %s", op.SourceAccount.Address(), body)
 	}
+	return body
+}
 
-	// TODO: show this
-	_ = opSource
-
+func opBodySummary(op xdr.Operation) string {
 	switch op.Body.Type {
 	case xdr.OperationTypeCreateAccount:
 		iop := op.Body.MustCreateAccountOp()
@@ -71,23 +72,44 @@ func OpSummary(op xdr.Operation) string {
 		if iop.Signer != nil {
 			all = append(all, fmt.Sprintf("Set signer key %s with weight %d", iop.Signer.Key.Address(), iop.Signer.Weight))
 		}
+		return strings.Join(all, "\n")
 	case xdr.OperationTypeChangeTrust:
 		iop := op.Body.MustChangeTrustOp()
-		_ = iop
+		if iop.Limit == 0 {
+			return fmt.Sprintf("Remove trust line to %s", XDRAssetSummary(iop.Line))
+		} else {
+			return fmt.Sprintf("Establish trust line to %s with limit %d", XDRAssetSummary(iop.Line), iop.Limit)
+		}
 	case xdr.OperationTypeAllowTrust:
 		iop := op.Body.MustAllowTrustOp()
-		_ = iop
+		var assetCode string
+		switch iop.Asset.Type {
+		case xdr.AssetTypeAssetTypeCreditAlphanum4:
+			code := iop.Asset.MustAssetCode4()
+			assetCode = string(code[:])
+		case xdr.AssetTypeAssetTypeCreditAlphanum12:
+			code := iop.Asset.MustAssetCode12()
+			assetCode = string(code[:])
+		default:
+			return "invalid allow trust asset code"
+		}
+		if iop.Authorize {
+			return fmt.Sprintf("Authorize trustline to %s for %s", assetCode, iop.Trustor.Address())
+		} else {
+			return fmt.Sprintf("Deauthorize trustline to %s for %s", assetCode, iop.Trustor.Address())
+		}
 	case xdr.OperationTypeAccountMerge:
 		// oh of cource, MustDestination...why would it possibly match
 		// everything else?
-		iop := op.Body.MustDestination()
-		_ = iop
+		destination := op.Body.MustDestination()
+		return fmt.Sprintf("Merge account into %s", destination.Address())
 	case xdr.OperationTypeManageData:
 		iop := op.Body.MustManageDataOp()
-		_ = iop
+		if iop.DataValue == nil {
+			return fmt.Sprintf("Remove data %q", iop.DataName)
+		}
+		return fmt.Sprintf("Add data with key %s, hex of binary data %x", iop.DataName, iop.DataValue)
 	default:
 		return "invalid operation type"
 	}
-
-	return "something went wrong"
 }
