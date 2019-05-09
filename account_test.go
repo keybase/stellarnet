@@ -1,7 +1,6 @@
 package stellarnet
 
 import (
-	"encoding/json"
 	"fmt"
 	"sync"
 	"testing"
@@ -737,12 +736,6 @@ func TestPathPayments(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("envelope: %+v", unpackedTx)
-
-	fmt.Printf("envelope: %+v\n", unpackedTx)
-	jsonTX, err := json.MarshalIndent(unpackedTx.Tx, "", "    ")
-	if err == nil {
-		fmt.Println(string(jsonTX))
-	}
 
 	if len(unpackedTx.Tx.Operations) != 1 {
 		t.Fatalf("operations: %d, expected 1", len(unpackedTx.Tx.Operations))

@@ -62,6 +62,16 @@ var invalidTests = []invalidURITest{
 		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=12.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=JTlGMGzxUv90P2SWxUY9xo%2BLlbXaDloend6gkpyylY8X4bUNf6%2F9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ%3D%3D",
 		Err: ErrBadSignature,
 	},
+	{
+		// this xdr comes from the example in the spec, but it fails base64 decoding
+		URI: "web+stellar:tx?origin_domain=blog.stathat.com&xdr=AAAAAL6Qe0ushP7lzogR2y3vyb8LKiorvD1U2KIlfs1wRBliAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAABEz4bSpWmsmrXcIVAkY2hM3VdeCBJse56M18LaGzHQUAAAAAAAAAAACadvgAAAAAAAAAAA&signature=rv3QDVC6IDIrP062Wko%2BIMWVc8pDrMszZcjdgCGNfYdzrcjDpfP%2BSC97S61JJfqqfv%2F4KRqcxJcgYnFezNg%2BDA%3D%3D",
+		Err: ErrInvalidParameter{Key: "xdr"},
+	},
+	{
+		// this xdr comes from the change trust example in the spec, but it fails base64 decoding
+		URI: "web+stellar:tx?origin_domain=blog.stathat.com&xdr=AAAAAP%2Byw%2BZEuNg533pUmwlYxfrq6%2FBoMJqiJ8vuQhf6rHWmAAAAZAB8NHAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA%2F7LD5kS42DnfelSbCVjF%2Burr8GgwmqIny%2B5CF%2FqsdaYAAAAAAAAAAACYloAAAAAAAAAAAA&signature=1RD8KbHbCCXqlKkA2oiDyb7wgxZO4%2FnSEa3CFhP4gl4YhNZi9UWTspEtkbc6xRPvZyfJTDi0r6u6oNJuO8dLCQ%3D%3D",
+		Err: ErrInvalidParameter{Key: "xdr"},
+	},
 }
 
 var validTests = []validURITest{
@@ -69,6 +79,16 @@ var validTests = []validURITest{
 		URI:          "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=JTlGMGzxUv90P2SWxUY9xo%2BLlbXaDloend6gkpyylY8X4bUNf6%2F9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ%3D%3D",
 		Operation:    "pay",
 		OriginDomain: "someDomain.com",
+	},
+	{
+		URI:          "web+stellar:tx?origin_domain=blog.stathat.com&xdr=AAAAAL6Qe0ushP7lzogR2y3vyb8LKiorvD1U2KIlfs1wRBliAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAABEz4bSpWmsmrXcIVAkY2hM3VdeCBJse56M18LaGzHQUAAAAAAAAAAACadvgAAAAA&signature=VYODTfrluw38TTwoBEa5o7AMGVXv3NBXHIYIpyPY9bhnN5tMWGNw1yLaynWuGA29PKV%2BcyMfeFdP3wTWmHDwCA%3D%3D",
+		Operation:    "tx",
+		OriginDomain: "blog.stathat.com",
+	},
+	{
+		URI:          "web+stellar:tx?origin_domain=blog.stathat.com&xdr=AAAAAP%2Byw%2BZEuNg533pUmwlYxfrq6%2FBoMJqiJ8vuQhf6rHWmAAAAZAB8NHAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA%2F7LD5kS42DnfelSbCVjF%2Burr8GgwmqIny%2B5CF%2FqsdaYAAAAAAAAAAACYloAAAAAA&signature=JJaHhHColjAg%2BC8jIl%2Ba08%2F31tzRRBT9zYaiPJhcZobEt%2FMHZL8856ypRai5UTKHm8FVXfBT0XHE%2BE%2B4PdTFAg%3D%3D",
+		Operation:    "tx",
+		OriginDomain: "blog.stathat.com",
 	},
 }
 
@@ -142,6 +162,8 @@ func (h *httpClient) Get(url string) (resp *http.Response, err error) {
 	switch url {
 	case "https://someDomain.com/.well-known/stellar.toml":
 		body = `URI_REQUEST_SIGNING_KEY="GD7ACHBPHSC5OJMJZZBXA7Z5IAUFTH6E6XVLNBPASDQYJ7LO5UIYBDQW"`
+	case "https://blog.stathat.com/.well-known/stellar.toml":
+		body = `URI_REQUEST_SIGNING_KEY="GD6UAXSACFXDNGT6KXXC74VTECJ3M4R6SENCS2VAFRNLFQG5B2VV5JXZ"`
 	default:
 		fmt.Println(url)
 	}
