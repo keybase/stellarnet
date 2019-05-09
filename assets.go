@@ -280,6 +280,9 @@ func AssetBaseSummary(a AssetBase) string {
 	if a.TypeString() == "native" {
 		return "XLM"
 	}
+	if a.CodeString() == "" && a.IssuerString() == "" {
+		return "XLM"
+	}
 	return a.CodeString() + "/" + a.IssuerString()
 }
 

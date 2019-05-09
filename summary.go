@@ -78,7 +78,7 @@ func opBodySummary(op xdr.Operation) string {
 		if iop.Limit == 0 {
 			return fmt.Sprintf("Remove trust line to %s", XDRAssetSummary(iop.Line))
 		} else {
-			return fmt.Sprintf("Establish trust line to %s with limit %d", XDRAssetSummary(iop.Line), iop.Limit)
+			return fmt.Sprintf("Establish trust line to %s with limit %v", XDRAssetSummary(iop.Line), iop.Limit)
 		}
 	case xdr.OperationTypeAllowTrust:
 		iop := op.Body.MustAllowTrustOp()
