@@ -29,11 +29,12 @@ func opBodySummary(op xdr.Operation) string {
 		return fmt.Sprintf("Pay %s to account %s using at most %s", XDRAssetAmountSummary(iop.DestAmount, iop.DestAsset), iop.Destination.Address(), XDRAssetAmountSummary(iop.SendMax, iop.SendAsset))
 	case xdr.OperationTypeManageOffer:
 		iop := op.Body.MustManageOfferOp()
-		if iop.OfferId == 0 {
+		switch {
+		case iop.OfferId == 0:
 			return fmt.Sprintf("Create offer selling %s for %s to buy %s", XDRAssetAmountSummary(iop.Amount, iop.Selling), XDRPriceString(iop.Price), XDRAssetSummary(iop.Buying))
-		} else if iop.Amount == 0 {
+		case iop.Amount == 0:
 			return fmt.Sprintf("Remove offer selling %s for %s to buy %s (id %d)", XDRAssetSummary(iop.Selling), XDRPriceString(iop.Price), XDRAssetSummary(iop.Buying), iop.OfferId)
-		} else {
+		default:
 			return fmt.Sprintf("Update offer selling %s for %s to buy %s (id %d)", XDRAssetAmountSummary(iop.Amount, iop.Selling), XDRPriceString(iop.Price), XDRAssetSummary(iop.Buying), iop.OfferId)
 		}
 	case xdr.OperationTypeCreatePassiveOffer:
