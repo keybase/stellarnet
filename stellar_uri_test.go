@@ -81,12 +81,7 @@ var validTests = []validURITest{
 		OriginDomain: "someDomain.com",
 	},
 	{
-		URI:          "web+stellar:tx?origin_domain=blog.stathat.com&xdr=AAAAAL6Qe0ushP7lzogR2y3vyb8LKiorvD1U2KIlfs1wRBliAAAAZAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAABEz4bSpWmsmrXcIVAkY2hM3VdeCBJse56M18LaGzHQUAAAAAAAAAAACadvgAAAAA&signature=VYODTfrluw38TTwoBEa5o7AMGVXv3NBXHIYIpyPY9bhnN5tMWGNw1yLaynWuGA29PKV%2BcyMfeFdP3wTWmHDwCA%3D%3D",
-		Operation:    "tx",
-		OriginDomain: "blog.stathat.com",
-	},
-	{
-		URI:          "web+stellar:tx?origin_domain=blog.stathat.com&xdr=AAAAAP%2Byw%2BZEuNg533pUmwlYxfrq6%2FBoMJqiJ8vuQhf6rHWmAAAAZAB8NHAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA%2F7LD5kS42DnfelSbCVjF%2Burr8GgwmqIny%2B5CF%2FqsdaYAAAAAAAAAAACYloAAAAAA&signature=JJaHhHColjAg%2BC8jIl%2Ba08%2F31tzRRBT9zYaiPJhcZobEt%2FMHZL8856ypRai5UTKHm8FVXfBT0XHE%2BE%2B4PdTFAg%3D%3D",
+		URI:          "web+stellar:tx?origin_domain=blog.stathat.com&xdr=AAAAAHN%2Bb9x5HwmNAmIgPPfK5P%2FYZFHjQkwp3njikB8qNRyXAAAAZAFb5rMAAAAlAAAAAAAAAAAAAAABAAAAAAAAAAYAAAABV0hBVAAAAABzfm%2FceR8JjQJiIDz3yuT%2F2GRR40JMKd544pAfKjUcl3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FAAAAAAAAAAA%3D&signature=sSA9%2BAm0SZQsd%2BQ7keCI9gP0t5rM%2BOahSVqF%2FkuNkJcKAc7kNYS1wprervmb2QTJmdKfvpQ2nRNMt9HmTNRNBQ%3D%3D",
 		Operation:    "tx",
 		OriginDomain: "blog.stathat.com",
 	},
@@ -128,7 +123,7 @@ func TestValidStellarURIs(t *testing.T) {
 			if v.XDR == "" {
 				t.Errorf("%d. valid tx operation but no xdr", i)
 			}
-			if v.Tx == nil {
+			if v.TxEnv == nil {
 				t.Errorf("%d. valid tx operation but no xdr.Transaction", i)
 			}
 		}
