@@ -38,6 +38,10 @@ func PathPaymentSourceAmount(resultXDR string) (string, error) {
 		return "", errors.New("path payment not successful, cannot calculate source amount")
 	}
 
+	if len(success.Offers) == 0 {
+		return StringFromStellarXdrAmount(success.Last.Amount), nil
+	}
+
 	// finally, we have the offers...the sum of the AmountBought values should
 	// be the total of the source asset that the sender spent.
 	var total xdr.Int64

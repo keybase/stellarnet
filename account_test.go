@@ -736,6 +736,7 @@ func TestPathPayments(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Logf("envelope: %+v", unpackedTx)
+
 	if len(unpackedTx.Tx.Operations) != 1 {
 		t.Fatalf("operations: %d, expected 1", len(unpackedTx.Tx.Operations))
 	}
