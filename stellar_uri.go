@@ -240,7 +240,9 @@ func (u *unvalidatedURI) validateOriginDomain(getter HTTPGetter) error {
 
 func (u *unvalidatedURI) payload() []byte {
 	// get the portion of the URI that was signed by stripping &signature off the end
-	index := strings.LastIndex(u.raw, "&signature=")
+	// note that we are stripping off whatever is the last parameter.  In a valid URI
+	// that will be the signature.
+	index := strings.LastIndex(u.raw, "&")
 	if index == -1 {
 		// this shouldn't happen because we already checked that signature
 		// exists
