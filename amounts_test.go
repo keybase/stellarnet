@@ -4,7 +4,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -285,39 +284,4 @@ func TestPathPaymentMaxValue(t *testing.T) {
 	max, err = PathPaymentMaxValue("1234567.8989872")
 	require.NoError(t, err)
 	require.Equal(t, "1296296.2939365", max)
-}
-
-// values taken from stellar/go/price/main_test.go, but doing reverse operation.
-var xpricetests = []struct {
-	out string
-	in  xdr.Price
-}{
-	{"0.1000000", xdr.Price{N: 1, D: 10}},
-	{"0.0100000", xdr.Price{N: 1, D: 100}},
-	{"0.0010000", xdr.Price{N: 1, D: 1000}},
-	{"543.0179300", xdr.Price{N: 54301793, D: 100000}},
-	{"319.6998300", xdr.Price{N: 31969983, D: 100000}},
-	{"0.9300000", xdr.Price{N: 93, D: 100}},
-	{"0.5000000", xdr.Price{N: 1, D: 2}},
-	{"1.7300000", xdr.Price{N: 173, D: 100}},
-	{"0.8533438", xdr.Price{N: 5333399, D: 6250000}},
-	{"5.5000000", xdr.Price{N: 11, D: 2}},
-	{"2.7278300", xdr.Price{N: 272783, D: 100000}},
-	{"638082.0000000", xdr.Price{N: 638082, D: 1}},
-	{"2.9385009", xdr.Price{N: 36731261, D: 12500000}},
-	{"58.0400000", xdr.Price{N: 1451, D: 25}},
-	{"41.2650000", xdr.Price{N: 8253, D: 200}},
-	{"5.1476000", xdr.Price{N: 12869, D: 2500}},
-	{"95.1400000", xdr.Price{N: 4757, D: 50}},
-	{"0.7458000", xdr.Price{N: 3729, D: 5000}},
-	{"4119.0000000", xdr.Price{N: 4119, D: 1}},
-}
-
-func TestXDRPriceString(t *testing.T) {
-	for i, test := range xpricetests {
-		s := XDRPriceString(test.in)
-		if s != test.out {
-			t.Errorf("%d. converted %#v to %q, expected %q", i, test.in, s, test.out)
-		}
-	}
 }
