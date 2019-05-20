@@ -584,13 +584,20 @@ func pathPayment(from SeedStr, to AddressStr, sendAsset AssetBase, sendAmountMax
 
 // PathPaymentTransaction creates a signed transaction for a path payment.
 func PathPaymentTransaction(from SeedStr, to AddressStr, sendAsset AssetBase, sendAmountMax string, destAsset AssetBase, destAmount string, path []AssetBase, memoText string, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
+	memo := NewMemoText(memoText)
+	return PathPaymentTransactionWithMemo(from, to, sendAsset, sendAmountMax, destAsset, destAmount, path, memo, seqnoProvider, timeBounds, baseFee)
+}
+
+// PathPaymentTransactionWithMemo creates a signed transaction for a path payment.
+// It supports all memo types.
+func PathPaymentTransactionWithMemo(from SeedStr, to AddressStr, sendAsset AssetBase, sendAmountMax string, destAsset AssetBase, destAmount string, path []AssetBase, memo *Memo, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (SignResult, error) {
 	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
 	if err != nil {
 		return SignResult{}, err
 	}
 
 	t.AddPathPaymentOp(to, sendAsset, sendAmountMax, destAsset, destAmount, path)
-	t.AddMemoText(memoText)
+	t.AddMemo(memo)
 	t.AddBuiltTimeBounds(timeBounds)
 
 	return t.Sign(from)
