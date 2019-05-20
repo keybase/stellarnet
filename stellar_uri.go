@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/BurntSushi/toml"
@@ -122,6 +123,42 @@ func ValidateStellarURI(uri string, getter HTTPGetter) (*ValidatedStellarURI, er
 		return nil, err
 	}
 	return uv.Validate(getter)
+}
+
+// MemoExport returns a Memo type based on Memo, MemoType from the URI.
+func (v *ValidatedStellarURI) MemoExport() (*Memo, error) {
+	switch v.MemoType {
+	case "MEMO_TEXT":
+		return NewMemoText(v.Memo), nil
+	case "MEMO_ID":
+		id, err := strconv.ParseUint(v.Memo, 10, 64)
+		if err != nil {
+			return nil, err
+		}
+		return NewMemoID(id), nil
+	case "MEMO_HASH":
+		hash, err := base64.StdEncoding.DecodeString(v.Memo)
+		if err != nil {
+			return nil, err
+		}
+		var bhash MemoHash
+		copy(bhash[:], hash)
+		return NewMemoHash(bhash), nil
+	case "MEMO_RETURN":
+		hash, err := base64.StdEncoding.DecodeString(v.Memo)
+		if err != nil {
+			return nil, err
+		}
+		var bhash MemoHash
+		copy(bhash[:], hash)
+		return NewMemoReturn(bhash), nil
+	case "":
+		if v.Memo == "" {
+			return NewMemoNone(), nil
+		}
+	}
+
+	return nil, errors.New("invalid memo")
 }
 
 type unvalidatedURI struct {

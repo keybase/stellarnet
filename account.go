@@ -529,12 +529,20 @@ func paymentXLM(from SeedStr, to AddressStr, amount, memoText string) (ledger in
 // PaymentXLMTransaction creates a signed transaction to send a payment from 'from' to 'to' for 'amount' lumens.
 func PaymentXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
+	memo := NewMemoText(memoText)
+	return PaymentXLMTransactionWithMemo(from, to, amount, memo, seqnoProvider, timeBounds, baseFee)
+}
+
+// PaymentXLMTransactionWithMemo creates a signed transaction to send a payment
+// from 'from' to 'to' for 'amount' lumens.  It supports all the memo types.
+func PaymentXLMTransactionWithMemo(from SeedStr, to AddressStr, amount string, memo *Memo,
+	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
 	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
 	if err != nil {
 		return res, err
 	}
 	t.AddPaymentOp(to, amount)
-	t.AddMemoText(memoText)
+	t.AddMemo(memo)
 	t.AddBuiltTimeBounds(timeBounds)
 	return t.Sign(from)
 }
@@ -602,12 +610,20 @@ func createAccountXLM(from SeedStr, to AddressStr, amount, memoText string) (led
 // with a starting balance of 'amount'.
 func CreateAccountXLMTransaction(from SeedStr, to AddressStr, amount, memoText string,
 	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
+	memo := NewMemoText(memoText)
+	return CreateAccountXLMTransactionWithMemo(from, to, amount, memo, seqnoProvider, timeBounds, baseFee)
+}
+
+// CreateAccountXLMTransactionWithMemo creates a signed transaction to fund an new
+// account 'to' from 'from' with a starting balance of 'amount'.  It supports all
+// memo types.
+func CreateAccountXLMTransactionWithMemo(from SeedStr, to AddressStr, amount string, memo *Memo, seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
 	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
 	if err != nil {
 		return res, err
 	}
 	t.AddCreateAccountOp(to, amount)
-	t.AddMemoText(memoText)
+	t.AddMemo(memo)
 	t.AddBuiltTimeBounds(timeBounds)
 	return t.Sign(from)
 }
