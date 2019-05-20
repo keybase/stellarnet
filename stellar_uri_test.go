@@ -89,6 +89,16 @@ var validTests = []validURITest{
 		OriginDomain: "someDomain.com",
 	},
 	{
+		URI:          "web+stellar:pay?amount=10&destination=GBZX4364PEPQTDICMIQDZ56K4T75QZCR4NBEYKO6PDRJAHZKGUOJPCXB&memo=12345&memo_type=MEMO_ID&origin_domain=blog.stathat.com&signature=B4OBgVKEtL4dzddGZRyIKcwvVxNI4Y8gVDN4ugCAszTNknsqYhKNMRCKHr85ULnfAr5lWoB%2BaJeial0y9QU8Cg%3D%3D",
+		Operation:    "pay",
+		OriginDomain: "blog.stathat.com",
+	},
+	{
+		URI:          "web+stellar:pay?amount=10&destination=GBZX4364PEPQTDICMIQDZ56K4T75QZCR4NBEYKO6PDRJAHZKGUOJPCXB&memo=MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEK&memo_type=MEMO_HASH&origin_domain=blog.stathat.com&signature=2NpUO1rf5yLse4PQBtNXz4KIim0YvjTbTt0gWuhGlrnfsi6MlQuzhx5NGYIaPnqK9Lc4V9eS%2BgU0HUTJs8wbDQ%3D%3D",
+		Operation:    "pay",
+		OriginDomain: "blog.stathat.com",
+	},
+	{
 		URI:          "web+stellar:tx?origin_domain=blog.stathat.com&xdr=AAAAAHN%2Bb9x5HwmNAmIgPPfK5P%2FYZFHjQkwp3njikB8qNRyXAAAAZAFb5rMAAAAlAAAAAAAAAAAAAAABAAAAAAAAAAYAAAABV0hBVAAAAABzfm%2FceR8JjQJiIDz3yuT%2F2GRR40JMKd544pAfKjUcl3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FAAAAAAAAAAA%3D&signature=sSA9%2BAm0SZQsd%2BQ7keCI9gP0t5rM%2BOahSVqF%2FkuNkJcKAc7kNYS1wprervmb2QTJmdKfvpQ2nRNMt9HmTNRNBQ%3D%3D",
 		Operation:    "tx",
 		OriginDomain: "blog.stathat.com",
@@ -127,6 +137,11 @@ func TestValidStellarURIs(t *testing.T) {
 			if v.Recipient == "" {
 				t.Errorf("%d. valid pay operation but no recipient", i)
 			}
+			memo, err := v.MemoExport()
+			if err != nil {
+				t.Errorf("%d. memo export error: %s", i, err)
+			}
+			t.Logf("memo: %+v", memo)
 		case "tx":
 			if v.XDR == "" {
 				t.Errorf("%d. valid tx operation but no xdr", i)
