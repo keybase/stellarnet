@@ -3,7 +3,9 @@ language: go
 go:
   - 1.12.x
 
-script: 
+script:
+  - go get honnef.co/go/tools/cmd/staticcheck
+  - staticcheck .
   - go vet .
   - go get -u golang.org/x/lint/golint
   - golint -set_exit_status .
