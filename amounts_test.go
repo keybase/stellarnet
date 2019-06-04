@@ -285,3 +285,22 @@ func TestPathPaymentMaxValue(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "1296296.2939365", max)
 }
+
+type feeTest struct {
+	in  int32
+	out string
+}
+
+var feeTests = []feeTest{
+	{in: 100, out: "0.0000100"},
+	{in: 1500, out: "0.0001500"},
+	{in: 1234, out: "0.0001234"},
+}
+
+func TestFeeString(t *testing.T) {
+	for i, test := range feeTests {
+		if FeeString(test.in) != test.out {
+			t.Errorf("%d: FeeString(%d) => %s != %s", i, test.in, FeeString(test.in), test.out)
+		}
+	}
+}
