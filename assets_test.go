@@ -129,6 +129,27 @@ func TestAssetSearch(t *testing.T) {
 	require.Contains(t, res, expectedMatch)
 }
 
+func TestAssetList(t *testing.T) {
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "assetList")
+
+	limit := 10
+	order := "asc"
+	firstRes, firstCursor, err := AssetList("", limit, order)
+	require.NoError(t, err)
+	require.Equal(t, len(firstRes), limit)
+	// We don't really care what the cursor is, only that it exists and we can pass it
+	// along to the next request. But this is what they look like:
+	// 0288d1_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12
+	require.True(t, len(firstCursor) > 0)
+
+	secondRes, secondCursor, err := AssetList(firstCursor, limit, order)
+	require.NoError(t, err)
+	require.Equal(t, len(secondRes), limit)
+	require.True(t, len(secondCursor) > 0)
+}
+
 func TestMakeXDRAsset(t *testing.T) {
 	a, err := makeXDRAsset("", "")
 	require.NoError(t, err)
