@@ -23,16 +23,22 @@ func opBodySummary(op xdr.Operation, pastTense bool) string {
 		}
 		return ""
 	}
+	tense := func(present, past string) string {
+		if pastTense {
+			return past
+		}
+		return present
+	}
 	switch op.Body.Type {
 	case xdr.OperationTypeCreateAccount:
 		iop := op.Body.MustCreateAccountOp()
 		return fmt.Sprintf("Create%s account %s with starting balance of %s XLM", past("d"), iop.Destination.Address(), StringFromStellarXdrAmount(iop.StartingBalance))
 	case xdr.OperationTypePayment:
 		iop := op.Body.MustPaymentOp()
-		return fmt.Sprintf("Pay%s %s to account %s", past("ed"), XDRAssetAmountSummary(iop.Amount, iop.Asset), iop.Destination.Address())
+		return fmt.Sprintf("%s %s to account %s", tense("Pay", "Paid"), XDRAssetAmountSummary(iop.Amount, iop.Asset), iop.Destination.Address())
 	case xdr.OperationTypePathPayment:
 		iop := op.Body.MustPathPaymentOp()
-		return fmt.Sprintf("Pay%s %s to account %s using at most %s", past("ed"), XDRAssetAmountSummary(iop.DestAmount, iop.DestAsset), iop.Destination.Address(), XDRAssetAmountSummary(iop.SendMax, iop.SendAsset))
+		return fmt.Sprintf("%s %s to account %s using at most %s", tense("Pay", "Paid"), XDRAssetAmountSummary(iop.DestAmount, iop.DestAsset), iop.Destination.Address(), XDRAssetAmountSummary(iop.SendMax, iop.SendAsset))
 	case xdr.OperationTypeManageOffer:
 		iop := op.Body.MustManageOfferOp()
 		switch {
