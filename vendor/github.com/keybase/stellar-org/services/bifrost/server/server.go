@@ -6,20 +6,21 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"math/big"
-	"net/http"
+	stdhttp "net/http"
 	"os"
 	"os/signal"
 	"time"
 
-	"github.com/go-chi/chi/middleware"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/services/bifrost/bitcoin"
 	"github.com/stellar/go/services/bifrost/common"
 	"github.com/stellar/go/services/bifrost/database"
 	"github.com/stellar/go/services/bifrost/ethereum"
+	"github.com/stellar/go/support/app"
 	"github.com/stellar/go/support/errors"
-	"github.com/stellar/go/support/http/server"
+	"github.com/stellar/go/support/http"
 	"github.com/stellar/go/support/log"
 	"github.com/stellar/go/xdr"
 )
@@ -32,7 +33,8 @@ func (s *Server) Start() error {
 	s.BitcoinListener.TransactionHandler = s.onNewBitcoinTransaction
 	s.EthereumListener.TransactionHandler = s.onNewEthereumTransaction
 	s.StellarAccountConfigurator.OnAccountCreated = s.onStellarAccountCreated
-	s.StellarAccountConfigurator.OnAccountCredited = s.onStellarAccountCredited
+	s.StellarAccountConfigurator.OnExchanged = s.onExchanged
+	s.StellarAccountConfigurator.OnExchangedTimelocked = s.OnExchangedTimelocked
 
 	if !s.BitcoinListener.Enabled && !s.EthereumListener.Enabled {
 		return errors.New("At least one listener (BitcoinListener or EthereumListener) must be enabled")
@@ -112,24 +114,26 @@ func (s *Server) shutdown() {
 }
 
 func (s *Server) startHTTPServer() {
-	muxConfig := server.EmptyConfig()
+	mux := http.NewMux(s.Config.UsingProxy)
 
-	if s.Config.UsingProxy {
-		muxConfig.Middleware(middleware.RealIP)
-	}
-	server.AddBasicMiddleware(muxConfig)
+	mux.Get("/events", s.HandlerEvents)
+	mux.Post("/generate-bitcoin-address", s.HandlerGenerateBitcoinAddress)
+	mux.Post("/generate-ethereum-address", s.HandlerGenerateEthereumAddress)
+	mux.Post("/recovery-transaction", s.HandlerRecoveryTransaction)
 
-	muxConfig.Route(http.MethodGet, "/events", s.HandlerEvents)
-	muxConfig.Route(http.MethodPost, "/generate-bitcoin-address", s.HandlerGenerateBitcoinAddress)
-	muxConfig.Route(http.MethodPost, "/generate-ethereum-address", s.HandlerGenerateEthereumAddress)
-	muxConfig.Route(http.MethodPost, "/recovery-transaction", s.HandlerRecoveryTransaction)
+	addr := fmt.Sprintf("0.0.0.0:%d", s.Config.Port)
 
-	r := server.NewRouter(muxConfig)
-
-	server.Serve(r, s.Config.Port, nil)
+	http.Run(http.Config{
+		ListenAddr: addr,
+		Handler:    mux,
+		OnStarting: func() {
+			log.Infof("starting bifrost server - %s", app.Version())
+			log.Infof("listening on %s", addr)
+		},
+	})
 }
 
-func (s *Server) HandlerEvents(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandlerEvents(w stdhttp.ResponseWriter, r *stdhttp.Request) {
 	// Create SSE stream if not exists but only if address exists.
 	// This is required to restart a stream after server restart or failure.
 	address := r.URL.Query().Get("stream")
@@ -137,7 +141,7 @@ func (s *Server) HandlerEvents(w http.ResponseWriter, r *http.Request) {
 		var chain database.Chain
 
 		if len(address) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
+			w.WriteHeader(stdhttp.StatusBadRequest)
 			return
 		}
 
@@ -151,7 +155,7 @@ func (s *Server) HandlerEvents(w http.ResponseWriter, r *http.Request) {
 		association, err := s.Database.GetAssociationByChainAddress(chain, address)
 		if err != nil {
 			log.WithField("err", err).Error("Error getting address association")
-			w.WriteHeader(http.StatusInternalServerError)
+			w.WriteHeader(stdhttp.StatusInternalServerError)
 			return
 		}
 
@@ -163,29 +167,29 @@ func (s *Server) HandlerEvents(w http.ResponseWriter, r *http.Request) {
 	s.SSEServer.HTTPHandler(w, r)
 }
 
-func (s *Server) HandlerGenerateBitcoinAddress(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandlerGenerateBitcoinAddress(w stdhttp.ResponseWriter, r *stdhttp.Request) {
 	s.handlerGenerateAddress(w, r, database.ChainBitcoin)
 }
 
-func (s *Server) HandlerGenerateEthereumAddress(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandlerGenerateEthereumAddress(w stdhttp.ResponseWriter, r *stdhttp.Request) {
 	s.handlerGenerateAddress(w, r, database.ChainEthereum)
 }
 
-func (s *Server) handlerGenerateAddress(w http.ResponseWriter, r *http.Request, chain database.Chain) {
+func (s *Server) handlerGenerateAddress(w stdhttp.ResponseWriter, r *stdhttp.Request, chain database.Chain) {
 	w.Header().Set("Access-Control-Allow-Origin", s.Config.AccessControlAllowOriginHeader)
 
 	stellarPublicKey := r.PostFormValue("stellar_public_key")
 	_, err := keypair.Parse(stellarPublicKey)
 	if err != nil || (err == nil && stellarPublicKey[0] != 'G') {
 		log.WithField("stellarPublicKey", stellarPublicKey).Warn("Invalid stellarPublicKey")
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(stdhttp.StatusBadRequest)
 		return
 	}
 
 	index, err := s.Database.IncrementAddressIndex(chain)
 	if err != nil {
 		log.WithField("err", err).Error("Error incrementing address index")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(stdhttp.StatusInternalServerError)
 		return
 	}
 
@@ -198,13 +202,13 @@ func (s *Server) handlerGenerateAddress(w http.ResponseWriter, r *http.Request, 
 		address, err = s.EthereumAddressGenerator.Generate(index)
 	default:
 		log.WithField("chain", chain).Error("Invalid chain")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(stdhttp.StatusInternalServerError)
 		return
 	}
 
 	if err != nil {
 		log.WithFields(log.F{"err": err, "index": index}).Error("Error generating address")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(stdhttp.StatusInternalServerError)
 		return
 	}
 
@@ -217,7 +221,7 @@ func (s *Server) handlerGenerateAddress(w http.ResponseWriter, r *http.Request, 
 			"stellarPublicKey": stellarPublicKey,
 			"address":          address,
 		}).Error("Error creating address association")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(stdhttp.StatusInternalServerError)
 		return
 	}
 
@@ -228,19 +232,20 @@ func (s *Server) handlerGenerateAddress(w http.ResponseWriter, r *http.Request, 
 		ProtocolVersion: ProtocolVersion,
 		Chain:           string(chain),
 		Address:         address,
+		Signer:          s.SignerPublicKey,
 	}
 
 	responseBytes, err := json.Marshal(response)
 	if err != nil {
 		log.WithField("err", err).Error("Error encoding JSON")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(stdhttp.StatusInternalServerError)
 		return
 	}
 
 	w.Write(responseBytes)
 }
 
-func (s *Server) HandlerRecoveryTransaction(w http.ResponseWriter, r *http.Request) {
+func (s *Server) HandlerRecoveryTransaction(w stdhttp.ResponseWriter, r *stdhttp.Request) {
 	w.Header().Set("Access-Control-Allow-Origin", s.Config.AccessControlAllowOriginHeader)
 	var transactionEnvelope xdr.TransactionEnvelope
 	transactionXdr := r.PostFormValue("transaction_xdr")
@@ -248,24 +253,24 @@ func (s *Server) HandlerRecoveryTransaction(w http.ResponseWriter, r *http.Reque
 
 	if transactionXdr == "" {
 		localLog.Warn("Invalid input. No Transaction XDR")
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(stdhttp.StatusBadRequest)
 		return
 	}
 
 	err := xdr.SafeUnmarshalBase64(transactionXdr, &transactionEnvelope)
 	if err != nil {
 		localLog.WithField("err", err).Warn("Invalid Transaction XDR")
-		w.WriteHeader(http.StatusBadRequest)
+		w.WriteHeader(stdhttp.StatusBadRequest)
 		return
 	}
 
 	err = s.Database.AddRecoveryTransaction(transactionEnvelope.Tx.SourceAccount.Address(), transactionXdr)
 	if err != nil {
 		localLog.WithField("err", err).Error("Error saving recovery transaction")
-		w.WriteHeader(http.StatusInternalServerError)
+		w.WriteHeader(stdhttp.StatusInternalServerError)
 		return
 	}
 
-	w.WriteHeader(http.StatusOK)
+	w.WriteHeader(stdhttp.StatusOK)
 	return
 }

@@ -1,6 +1,7 @@
 package stress
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -16,7 +17,6 @@ import (
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/services/bifrost/common"
 	"github.com/stellar/go/services/bifrost/server"
-	"golang.org/x/net/context"
 )
 
 func (u *Users) Start(accounts chan<- server.GenerateAddressResponse) {
@@ -284,7 +284,7 @@ func (u *Users) getAccount(account string) (horizon.Account, bool, error) {
 	var hAccount horizon.Account
 	hAccount, err := u.Horizon.LoadAccount(account)
 	if err != nil {
-		if err, ok := err.(*horizon.Error); ok && err.Response.StatusCode == http.StatusNotFound {
+		if err2, ok := err.(*horizon.Error); ok && err2.Response.StatusCode == http.StatusNotFound {
 			return hAccount, false, nil
 		}
 		return hAccount, false, err

@@ -5,79 +5,79 @@ title: Basic Examples
 - [Creating a payment Transaction](#creating-and-submitting-a-payment-transaction)
 
 
-## Creating and submitting a payment transaction
+## Create an account
 
-Crafting transactions and getting the base64-encoded transaction envelope (often referred to as the "transaction blob") is a central aspect of interacting with the stellar network.  The Go SDK uses the `build` package to craft transactions.  The example below builds a payment for testnet and outputs the encoded blob to standard out.  For this example, we have two previously created accounts on the test network.
+The first account on TestNet needs to be created by calling friendbot, a helper service that will create and fund the
+provided account address. However, on the public network, you need an initial, funded account before you can create further accounts. Typically a wallet or exchange can create an initial account for you.
+
+In this TestNet example, we first get an account funded from friendbot, and then demonstrate the `create account`
+operation to set up a second account.
 
 ```go
 package main
 
 import (
-	"fmt"
+	"log"
 
-	b "github.com/stellar/go/build"
-	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/clients/horizonclient"
+	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/network"
+	"github.com/stellar/go/txnbuild"
 )
 
 func main() {
-	// address: GB6S3XHQVL6ZBAF6FIK62OCK3XTUI4L5Z5YUVYNBZUXZ4AZMVBQZNSAU
-	from := "SCRUYGFG76UPX3EIUWGPIQPQDPD24XPR3RII5BD53DYPKZJGG43FL5HI"
-
-	// seed: SDLJZXOSOMKPWAK4OCWNNVOYUEYEESPGCWK53PT7QMG4J4KGDAUIL5LG
-	to := "GA3A7AD7ZR4PIYW6A52SP6IK7UISESICPMMZVJGNUTVIZ5OUYOPBTK6X"
-
-	tx, err := b.Transaction(
-		b.SourceAccount{AddressOrSeed: from},
-		b.TestNetwork,
-		b.AutoSequence{SequenceProvider: horizon.DefaultTestNetClient},
-		b.Payment(
-			b.Destination{AddressOrSeed: to},
-			b.NativeAmount{Amount: "0.1"},
-		),
-	)
+	// Generate a new randomly generated address
+	pair, err := keypair.Random()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
+	}
+	log.Println("Seed 0:", pair.Seed())
+	log.Println("Address 0:", pair.Address())
+
+	// Create and fund the address on TestNet, using friendbot
+	client := horizonclient.DefaultTestNetClient
+	client.Fund(pair.Address())
+
+	// Get information about the account we just created
+	accountRequest := horizonclient.AccountRequest{AccountID: pair.Address()}
+	hAccount0, err := client.AccountDetail(accountRequest)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	txe, err := tx.Sign(from)
+	// Generate a second randomly generated address
+	kp1, err := keypair.Random()
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
+	}
+	log.Println("Seed 1:", kp1.Seed())
+	log.Println("Address 1:", kp1.Address())
+
+	// Construct the operation
+	createAccountOp := txnbuild.CreateAccount{
+		Destination: kp1.Address(),
+		Amount:      "10",
 	}
 
-	txeB64, err := txe.Base64()
-
-	if err != nil {
-		panic(err)
+	// Construct the transaction that will carry the operation
+	tx := txnbuild.Transaction{
+		SourceAccount: &hAccount0,
+		Operations:    []txnbuild.Operation{&createAccountOp},
+		Timebounds:    txnbuild.NewTimeout(300),
+		Network:       network.TestNetworkPassphrase,
 	}
 
-	fmt.Printf("tx base64: %s", txeB64)
+	// Sign the transaction, serialise it to XDR, and base 64 encode it
+	txeBase64, err := tx.BuildSignEncode(pair)
+	log.Println("Transaction base64: ", txeBase64)
+
+	// Submit the transaction
+	resp, err := client.SubmitTransactionXDR(txeBase64)
+	if err != nil {
+		hError := err.(*horizonclient.Error)
+		log.Fatal("Error submitting transaction:", hError)
+	}
+
+	log.Println("\nTransaction response: ", resp)
 }
 ```
-
-The above program will output something similar to `tx base64: AAAAAH0t3PCq/ZCAvioV7ThK3edEcX3PcUrhoc0vngMsqGGWAAAAZAA1fpcAAAABAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAANg+Af8x49GLeB3Un+Qr9ESJJAnsZmqTNpOqM9dTDnhkAAAAAAAAAAAAPQkAAAAAAAAAAASyoYZYAAABA/L7Du9hlYzCtR9F89Mp9/alkCXsq9CWuJ1Mpql+Q16fHE4P2+H62p4cx+b2YUp/fUX73ucW+RPxOgSXmeV6uBQ==`, the transaction blob.  Now we need to submit the transaction to the testnet using a horizon client:
-
-
-```go
-
-package main
-
-import (
-	"fmt"
-
-	"github.com/stellar/go/clients/horizon"
-)
-
-func main() {
-	blob := "AAAAAH0t3PCq/ZCAvioV7ThK3edEcX3PcUrhoc0vngMsqGGWAAAAZAA1fpcAAAABAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAANg+Af8x49GLeB3Un+Qr9ESJJAnsZmqTNpOqM9dTDnhkAAAAAAAAAAAAPQkAAAAAAAAAAASyoYZYAAABA/L7Du9hlYzCtR9F89Mp9/alkCXsq9CWuJ1Mpql+Q16fHE4P2+H62p4cx+b2YUp/fUX73ucW+RPxOgSXmeV6uBQ=="
-
-	resp, err := horizon.DefaultTestNetClient.SubmitTransaction(blob)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println("transaction posted in ledger:", resp.Ledger)
-}
-
-```
-
-The script above will return an error if the transaction was not successfully accepted by the testnet.

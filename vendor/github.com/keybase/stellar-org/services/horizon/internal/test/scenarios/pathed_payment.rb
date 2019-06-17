@@ -30,3 +30,5 @@ close_ledger
 
 # fix path pathment
 payment :scott, :bartek, ["EUR", :eur_gateway, 10], with: ["USD", :usd_gateway, 10], path:[]
+
+close_ledger

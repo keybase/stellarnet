@@ -28,9 +28,11 @@ func ForOperation(
 		result = append(result, op.Body.MustPaymentOp().Destination)
 	case xdr.OperationTypePathPayment:
 		result = append(result, op.Body.MustPathPaymentOp().Destination)
-	case xdr.OperationTypeManageOffer:
+	case xdr.OperationTypeManageBuyOffer:
 		// the only direct participant is the source_account
-	case xdr.OperationTypeCreatePassiveOffer:
+	case xdr.OperationTypeManageSellOffer:
+		// the only direct participant is the source_account
+	case xdr.OperationTypeCreatePassiveSellOffer:
 		// the only direct participant is the source_account
 	case xdr.OperationTypeSetOptions:
 		// the only direct participant is the source_account
@@ -43,6 +45,8 @@ func ForOperation(
 	case xdr.OperationTypeInflation:
 		// the only direct participant is the source_account
 	case xdr.OperationTypeManageData:
+		// the only direct participant is the source_account
+	case xdr.OperationTypeBumpSequence:
 		// the only direct participant is the source_account
 	default:
 		err = fmt.Errorf("Unknown operation type: %s", op.Body.Type)

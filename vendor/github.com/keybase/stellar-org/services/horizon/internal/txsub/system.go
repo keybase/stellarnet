@@ -2,12 +2,13 @@ package txsub
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/rcrowley/go-metrics"
-	"github.com/stellar/go/services/horizon/internal/log"
 	"github.com/stellar/go/services/horizon/internal/txsub/sequence"
+	"github.com/stellar/go/support/log"
 )
 
 // System represents a completely configured transaction submission system.
@@ -16,6 +17,9 @@ import (
 type System struct {
 	initializer sync.Once
 
+	tickMutex      sync.Mutex
+	tickInProgress bool
+
 	Pending           OpenSubmissionList
 	Results           ResultProvider
 	Sequences         SequenceProvider
@@ -23,6 +27,7 @@ type System struct {
 	SubmissionQueue   *sequence.Manager
 	NetworkPassphrase string
 	SubmissionTimeout time.Duration
+	Log               *log.Entry
 
 	Metrics struct {
 		// SubmissionTimer exposes timing metrics about the rate and latency of
@@ -57,28 +62,42 @@ func (sys *System) Submit(ctx context.Context, env string) (result <-chan Result
 	// calculate hash of transaction
 	info, err := extractEnvelopeInfo(ctx, env, sys.NetworkPassphrase)
 	if err != nil {
-		sys.finish(response, Result{Err: err, EnvelopeXDR: env})
+		sys.finish(ctx, response, Result{Err: err, EnvelopeXDR: env})
 		return
 	}
+
+	sys.Log.Ctx(ctx).WithFields(log.F{
+		"hash": info.Hash,
+		"tx":   env,
+	}).Info("Processing transaction")
 
 	// check the configured result provider for an existing result
 	r := sys.Results.ResultByHash(ctx, info.Hash)
 
-	if r.Err != ErrNoResults {
-		sys.finish(response, r)
+	if r.Err == nil {
+		sys.Log.Ctx(ctx).WithField("hash", info.Hash).Info("Found submission result in a DB")
+		sys.finish(ctx, response, r)
 		return
 	}
 
+	if r.Err != ErrNoResults {
+		sys.Log.Ctx(ctx).WithField("hash", info.Hash).Info("Error getting submission result from a DB")
+		sys.finish(ctx, response, r)
+		return
+	}
+
+	// From now: r.Err == ErrNoResults
+
 	curSeq, err := sys.Sequences.Get([]string{info.SourceAddress})
 	if err != nil {
-		sys.finish(response, Result{Err: err, EnvelopeXDR: env})
+		sys.finish(ctx, response, Result{Err: err, EnvelopeXDR: env})
 		return
 	}
 
 	// If account's sequence cannot be found, abort with tx_NO_ACCOUNT
 	// error code
 	if _, ok := curSeq[info.SourceAddress]; !ok {
-		sys.finish(response, Result{Err: ErrNoAccount, EnvelopeXDR: env})
+		sys.finish(ctx, response, Result{Err: ErrNoAccount, EnvelopeXDR: env})
 		return
 	}
 
@@ -98,7 +117,7 @@ func (sys *System) Submit(ctx context.Context, env string) (result <-chan Result
 		}
 
 		if err != nil {
-			sys.finish(response, Result{Err: err, EnvelopeXDR: env})
+			sys.finish(ctx, response, Result{Err: err, EnvelopeXDR: env})
 			return
 		}
 
@@ -116,12 +135,12 @@ func (sys *System) Submit(ctx context.Context, env string) (result <-chan Result
 		// any error other than "txBAD_SEQ" is a failure
 		isBad, err := sr.IsBadSeq()
 		if err != nil {
-			sys.finish(response, Result{Err: err, EnvelopeXDR: env})
+			sys.finish(ctx, response, Result{Err: err, EnvelopeXDR: env})
 			return
 		}
 
 		if !isBad {
-			sys.finish(response, Result{Err: sr.Err, EnvelopeXDR: env})
+			sys.finish(ctx, response, Result{Err: sr.Err, EnvelopeXDR: env})
 			return
 		}
 
@@ -130,14 +149,14 @@ func (sys *System) Submit(ctx context.Context, env string) (result <-chan Result
 
 		if r.Err == nil {
 			// If the found use it as the result
-			sys.finish(response, r)
+			sys.finish(ctx, response, r)
 		} else {
 			// finally, return the bad_seq error if no result was found on 2nd attempt
-			sys.finish(response, Result{Err: sr.Err, EnvelopeXDR: env})
+			sys.finish(ctx, response, Result{Err: sr.Err, EnvelopeXDR: env})
 		}
 
 	case <-ctx.Done():
-		sys.finish(response, Result{Err: ErrCanceled, EnvelopeXDR: env})
+		sys.finish(ctx, response, Result{Err: ErrCanceled, EnvelopeXDR: env})
 	}
 
 	return
@@ -160,10 +179,40 @@ func (sys *System) submitOnce(ctx context.Context, env string) SubmissionResult 
 	return sr
 }
 
+// setTickInProgress sets `tickInProgress` to `true` if it's
+// `false`. Returns `true` if `tickInProgress` has been switched
+// to `true` inside this method and `Tick()` should continue.
+func (sys *System) setTickInProgress(ctx context.Context) bool {
+	sys.tickMutex.Lock()
+	defer sys.tickMutex.Unlock()
+
+	if sys.tickInProgress {
+		logger := log.Ctx(ctx)
+		logger.Info("ticking in progress")
+		return false
+	}
+
+	sys.tickInProgress = true
+	return true
+}
+
+func (sys *System) unsetTickInProgress() {
+	sys.tickMutex.Lock()
+	defer sys.tickMutex.Unlock()
+	sys.tickInProgress = false
+}
+
 // Tick triggers the system to update itself with any new data available.
 func (sys *System) Tick(ctx context.Context) {
 	sys.Init()
 	logger := log.Ctx(ctx)
+
+	// Make sure Tick is not run concurrently
+	if !sys.setTickInProgress(ctx) {
+		return
+	}
+
+	defer sys.unsetTickInProgress()
 
 	logger.
 		WithField("queued", sys.SubmissionQueue.String()).
@@ -174,6 +223,7 @@ func (sys *System) Tick(ctx context.Context) {
 		curSeq, err := sys.Sequences.Get(addys)
 		if err != nil {
 			logger.WithStack(err).Error(err)
+			return
 		} else {
 			sys.SubmissionQueue.Update(curSeq)
 		}
@@ -204,6 +254,7 @@ func (sys *System) Tick(ctx context.Context) {
 	stillOpen, err := sys.Pending.Clean(ctx, sys.SubmissionTimeout)
 	if err != nil {
 		logger.WithStack(err).Error(err)
+		return
 	}
 
 	sys.Metrics.OpenSubmissionsGauge.Update(int64(stillOpen))
@@ -213,6 +264,8 @@ func (sys *System) Tick(ctx context.Context) {
 // Init initializes `sys`
 func (sys *System) Init() {
 	sys.initializer.Do(func() {
+		sys.Log = log.DefaultLogger.WithField("service", "txsub.System")
+
 		sys.Metrics.FailedSubmissionsMeter = metrics.NewMeter()
 		sys.Metrics.SuccessfulSubmissionsMeter = metrics.NewMeter()
 		sys.Metrics.SubmissionTimer = metrics.NewTimer()
@@ -220,12 +273,19 @@ func (sys *System) Init() {
 		sys.Metrics.BufferedSubmissionsGauge = metrics.NewGauge()
 
 		if sys.SubmissionTimeout == 0 {
-			sys.SubmissionTimeout = 1 * time.Minute
+			// HTTP clients in SDKs usually timeout in 60 seconds. We want SubmissionTimeout
+			// to be lower than that to make sure that they read the response before the client
+			// timeout.
+			// 30 seconds is 6 ledgers (with avg. close time = 5 sec), enough for stellar-core
+			// to drop the transaction if not added to the ledger and ask client to try again
+			// by sending a Timeout response.
+			sys.SubmissionTimeout = 30 * time.Second
 		}
 	})
 }
 
-func (sys *System) finish(response chan<- Result, r Result) {
+func (sys *System) finish(ctx context.Context, response chan<- Result, r Result) {
+	sys.Log.Ctx(ctx).WithField("result", fmt.Sprintf("%+v", r)).WithField("hash", r.Hash).Info("Submission system result")
 	response <- r
 	close(response)
 }

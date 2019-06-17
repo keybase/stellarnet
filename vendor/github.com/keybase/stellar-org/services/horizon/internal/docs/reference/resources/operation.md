@@ -12,17 +12,20 @@ To learn more about the concept of operations in the Stellar network, take a loo
 
 | type                                          | type_i | description                                                                                                |
 |-----------------------------------------------|--------|------------------------------------------------------------------------------------------------------------|
-| [CREATE_ACCOUNT](#create-account)             | 0      | Creates a new account in Stellar network.
-| [PAYMENT](#payment)                           | 1      | Sends a simple payment between two accounts in Stellar network.
-| [PATH_PAYMENT](#path-payment)                 | 2      | Sends a path payment between two accounts in the Stellar network.
-| [MANAGE_OFFER](#manage-offer)                 | 3      | Creates, updates or deletes an offer in the Stellar network.
-| [CREATE_PASSIVE_OFFER](#create-passive-offer) | 4      | Creates an offer that won't consume a counter offer that exactly matches this offer.
-| [SET_OPTIONS](#set-options)                   | 5      | Sets account options (inflation destination, adding signers, etc.)
-| [CHANGE_TRUST](#change-trust)                 | 6      | Creates, updates or deletes a trust line.
-| [ALLOW_TRUST](#allow-trust)                   | 7      | Updates the "authorized" flag of an existing trust line this is called by the issuer of the related asset.
-| [ACCOUNT_MERGE](#account-merge)               | 8      | Deletes account and transfers remaining balance to destination account.
-| [INFLATION](#inflation)                       | 9      | Runs inflation.
-| [MANAGE_DATA](#manage-data)                   | 10     | Set, modify or delete a Data Entry (name/value pair) for an account.
+| [CREATE_ACCOUNT](#create-account)                       | 0      | Creates a new account in Stellar network.
+| [PAYMENT](#payment)                                     | 1      | Sends a simple payment between two accounts in Stellar network.
+| [PATH_PAYMENT](#path-payment)                           | 2      | Sends a path payment between two accounts in the Stellar network.
+| [MANAGE_SELL_OFFER](#manage-sell-offer)                 | 3      | Creates, updates or deletes a sell offer in the Stellar network.
+| [MANAGE_BUY_OFFER](#manage-buy-offer)                   | 12     | Creates, updates or deletes a buy offer in the Stellar network.
+| [CREATE_PASSIVE_SELL_OFFER](#create-passive-sell-offer) | 4      | Creates an offer that won't consume a counter offer that exactly matches this offer.
+| [SET_OPTIONS](#set-options)                             | 5      | Sets account options (inflation destination, adding signers, etc.)
+| [CHANGE_TRUST](#change-trust)                           | 6      | Creates, updates or deletes a trust line.
+| [ALLOW_TRUST](#allow-trust)                             | 7      | Updates the "authorized" flag of an existing trust line this is called by the issuer of the related asset.
+| [ACCOUNT_MERGE](#account-merge)                         | 8      | Deletes account and transfers remaining balance to destination account.
+| [INFLATION](#inflation)                                 | 9      | Runs inflation.
+| [MANAGE_DATA](#manage-data)                             | 10     | Set, modify or delete a Data Entry (name/value pair) for an account.
+| [BUMP_SEQUENCE](#bump-sequence)                         | 11     | Bumps forward the sequence number of an account.
+
 
 
 Every operation type shares a set of common attributes and links, some operations also contain
@@ -36,6 +39,7 @@ additional attributes and links specific to that operation type.
 |--------------|--------|-----------------------------------------------------------------------------------------------------------------------------|
 | id           | number | The canonical id of this operation, suitable for use as the :id parameter for url templates that require an operation's ID. |
 | paging_token | any    | A [paging token](./page.md) suitable for use as a `cursor` parameter.                                                       |
+| transaction_successful | bool    | *From 0.17.0* Indicates if this operation is part of successful transaction. |
 | type         | string | A string representation of the type of operation.                                                                           |
 | type_i       | number | Specifies the type of operation, See "Types" section below for reference.                                                   |
 
@@ -150,6 +154,7 @@ can be either a simple native asset payment or a fiat asset payment.
   "id": 58402965295104,
   "paging_token": "58402965295104",
   "to": "GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ",
+  "transaction_successful": true,
   "type_i": 1,
   "type": "payment"
 }
@@ -212,15 +217,16 @@ A path payment operation represents a payment from one account to another throug
   "source_amount": "10.0",
   "source_max": "10.0",
   "to": "GA5WBPYA5Y4WAEHXWR2UKO2UO4BUGHUQ74EUPKON2QHV4WRHOIRNKKH2",
+  "transaction_successful": true,
   "type_i": 2,
   "type": "path_payment"
 }
 ```
 
-<a id="manage-offer"></a>
-### Manage Offer
+<a id="manage-sell-offer"></a>
+### Manage Sell Offer
 
-A "Manage Offer" operation can create, update or delete an
+A "Manage Sell Offer" operation can create, update or delete a sell
 offer to trade assets in the Stellar network.
 It specifies an issuer, a price and amount of a given asset to
 buy or sell.
@@ -232,6 +238,14 @@ In the event that there are not enough crossing orders to fill the order complet
 a new "Offer" object will be created in the ledger.  As other accounts make
 offers or payments, this offer can potentially be filled.
 
+#### Sell Offer vs. Buy Offer
+
+A [sell offer](#manage-sell-offer) specifies a certain amount of the `selling` asset that should be sold in exchange for the maximum quantity of the `buying` asset. It additionally only crosses offers where the price is higher than `price`.
+
+A [buy offer](#manage-buy-offer) specifies a certain amount of the `buying` asset that should be bought in exchange for the minimum quantity of the `selling` asset. It additionally only crosses offers where the price is lower than `price`.
+
+Both will fill only partially (or not at all) if there are few (or no) offers that cross them.
+
 #### Attributes
 
 | Field           |  Type  | Description       |
@@ -241,7 +255,7 @@ offers or payments, this offer can potentially be filled.
 | buying_asset_code | string | The code of asset to buy. |
 | buying_asset_issuer | string | The issuer of asset to buy. |
 | buying_asset_type | string | Type of asset to buy (native / alphanum4 / alphanum12) |
-| price | string | Price to buy a buying_asset |
+| price | string | Price of selling_asset in units of buying_asset |
 | price_r | Object | n: price numerator, d: price denominator |
 | selling_asset_code | string | The code of asset to sell. |
 | selling_asset_issuer | string | The issuer of asset to sell. |
@@ -284,19 +298,93 @@ offers or payments, this offer can potentially be filled.
   "selling_asset_code": "YEN",
   "selling_asset_issuer": "GDVXG2FMFFSUMMMBIUEMWPZAIU2FNCH7QNGJMWRXRD6K5FZK5KJS4DDR",
   "selling_asset_type": "credit_alphanum4",
+  "transaction_successful": true,
   "type_i": 3,
-  "type": "manage_offer"
+  "type": "manage_offer" // `manage_sell_offer` from v0.19.0
 }
 ```
 
-<a id="create-passive-offer"></a>
-### Create Passive Offer
+<a id="manage-buy-offer"></a>
+### Manage Buy Offer
 
-“Create Passive Offer” operation creates an offer that won't consume a counter offer that exactly matches this offer. This is useful for offers just used as 1:1 exchanges for path payments. Use Manage Offer to manage this offer after using this operation to create it.
+A "Manage Buy Offer" operation can create, update or delete a buy
+offer to trade assets in the Stellar network.
+It specifies an issuer, a price and amount of a given asset to
+buy or sell.
+
+When this operation is applied to the ledger, trades can potentially be executed if
+this offer crosses others that already exist in the ledger.
+
+In the event that there are not enough crossing orders to fill the order completely
+a new "Offer" object will be created in the ledger.  As other accounts make
+offers or payments, this offer can potentially be filled.
 
 #### Attributes
 
-As in [Manage Offer](#manage-offer) operation.
+| Field           |  Type  | Description       |
+| --------------- | ------ | ----------------- |
+| offer_id | number | Offer ID. |
+| buy_amount     | string | Amount of asset to be bought. |
+| buying_asset_code | string | The code of asset to buy. |
+| buying_asset_issuer | string | The issuer of asset to buy. |
+| buying_asset_type | string | Type of asset to buy (native / alphanum4 / alphanum12) |
+| price | string | Price of thing being bought in terms of what you are selling. |
+| price_r | Object | n: price numerator, d: price denominator |
+| selling_asset_code | string | The code of asset to sell. |
+| selling_asset_issuer | string | The issuer of asset to sell. |
+| selling_asset_type | string | Type of asset to sell (native / alphanum4 / alphanum12) |
+
+#### Example
+
+```json
+{
+  "_links": {
+    "effects": {
+      "href": "/operations/592323234762753/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "precedes": {
+      "href": "/operations?cursor=592323234762753\u0026order=asc"
+    },
+    "self": {
+      "href": "/operations/592323234762753"
+    },
+    "succeeds": {
+      "href": "/operations?cursor=592323234762753\u0026order=desc"
+    },
+    "transaction": {
+      "href": "/transactions/592323234762752"
+    }
+  },
+  "amount": "100.0",
+  "buying_asset_code": "CHP",
+  "buying_asset_issuer": "GAC2ZUXVI5266NMMGDPBMXHH4BTZKJ7MMTGXRZGX2R5YLMFRYLJ7U5EA",
+  "buying_asset_type": "credit_alphanum4",
+  "id": 592323234762753,
+  "offer_id": 8,
+  "paging_token": "592323234762753",
+  "price": "2.0",
+  "price_r": {
+    "d": 1,
+    "n": 2
+  },
+  "selling_asset_code": "YEN",
+  "selling_asset_issuer": "GDVXG2FMFFSUMMMBIUEMWPZAIU2FNCH7QNGJMWRXRD6K5FZK5KJS4DDR",
+  "selling_asset_type": "credit_alphanum4",
+  "transaction_successful": true,
+  "type_i": 12,
+  "type": "manage_buy_offer"
+}
+```
+
+<a id="create-passive-sell-offer"></a>
+### Create Passive Sell Offer
+
+“Create Passive Sell Offer” operation creates an offer that won't consume a counter offer that exactly matches this offer. This is useful for offers just used as 1:1 exchanges for path payments. Use Manage Sell Offer to manage this offer after using this operation to create it.
+
+#### Attributes
+
+As in [Manage Sell Offer](#manage-sell-offer) operation.
 
 #### Example
 
@@ -333,8 +421,9 @@ As in [Manage Offer](#manage-offer) operation.
     "n": 1
   },
   "selling_asset_type": "native",
+  "transaction_successful": true,
   "type_i": 4,
-  "type": "create_passive_offer"
+  "type": "create_passive_offer" // `create_passive_sell_offer` from v0.18.0
 }
 ```
 
@@ -402,6 +491,7 @@ Use “Set Options” operation to set following options to your account:
   "set_flags_s": [
     "auth_required_flag"
   ],
+  "transaction_successful": true,
   "type_i": 5,
   "type": "set_options"
 }
@@ -453,6 +543,7 @@ Use “Change Trust” operation to create/update/delete a trust line from the s
   "paging_token": "574731048718337",
   "trustee": "GAC2ZUXVI5266NMMGDPBMXHH4BTZKJ7MMTGXRZGX2R5YLMFRYLJ7U5EA",
   "trustor": "GDVXG2FMFFSUMMMBIUEMWPZAIU2FNCH7QNGJMWRXRD6K5FZK5KJS4DDR",
+  "transaction_successful": true,
   "type_i": 6,
   "type": "change_trust"
 }
@@ -506,6 +597,7 @@ Heads up! Unless the issuing account has `AUTH_REVOCABLE_FLAG` set than the "aut
   "paging_token": "34359742465",
   "trustee": "GC23QF2HUE52AMXUFUH3AYJAXXGXXV2VHXYYR6EYXETPKDXZSAW67XO4",
   "trustor": "GBXGQJWVLWOYHFLVTKWV5FGHA3LNYY2JQKM7OAJAUEQFU6LPCSEFVXON",
+  "transaction_successful": true,
   "type_i": 7,
   "type": "allow_trust"
 }
@@ -547,6 +639,7 @@ Removes the account and transfers all remaining XLM to the destination account.
   "id": 799357838299137,
   "into": "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
   "paging_token": "799357838299137",
+  "transaction_successful": true,
   "type_i": 8,
   "type": "account_merge"
 }
@@ -581,6 +674,7 @@ Runs inflation.
   },
   "id": 12884914177,
   "paging_token": "12884914177",
+  "transaction_successful": true,
   "type_i": 9,
   "type": "inflation"
 }
@@ -617,8 +711,50 @@ Set, modify or delete a Data Entry (name/value pair) for an account.
   "source_account": "GCGG3CIRBG2TTBR4HYZJ7JLDRFKZIYOAHFXRWLU62CA2QN52P2SUQNPJ",
   "type": "manage_data",
   "type_i": 10,
+  "transaction_successful": true,
   "name": "lang",
   "value": "aW5kb25lc2lhbg=="
+}
+```
+
+<a id="bump-sequence"></a>
+### Bump Sequence
+
+Bumps forward the sequence number of the source account of the operation, allowing it to invalidate any transactions with a smaller sequence number.
+
+#### Attributes
+
+| Field      |  Type  | Description                                                      |
+| ---------- | ------ | ---------------------------------------------------------------- |
+| bumpTo     | number | Desired value for the operation’s source account sequence number.|
+
+#### Example
+```json
+{
+  "_links": {
+    "self": {
+      "href": "/operations/1743756726273"
+    },
+    "transaction": {
+      "href": "/transactions/328436a8dffaf6ca33c08a93279234c7d3eaf1c028804152614187dc76b7168d"
+    },
+    "effects": {
+      "href": "/operations/1743756726273/effects"
+    },
+    "succeeds": {
+      "href": "/effects?order=desc&cursor=1743756726273"
+    },
+    "precedes": {
+      "href": "/effects?order=asc&cursor=1743756726273"
+    }
+  },
+  "id": "1743756726273",
+  "paging_token": "1743756726273",
+  "source_account": "GBHPJ3VMVT3X7Y6HIIAPK7YPTZCF3CWO4557BKGX2GVO4O7EZHIBELLH",
+  "type": "bump_sequence",
+  "type_i": 11,
+  "transaction_hash": "328436a8dffaf6ca33c08a93279234c7d3eaf1c028804152614187dc76b7168d",
+  "bump_to": "1273737228"
 }
 ```
 

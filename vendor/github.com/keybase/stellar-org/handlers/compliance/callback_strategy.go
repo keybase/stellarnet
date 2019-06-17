@@ -89,13 +89,13 @@ func parseResponse(resp *http.Response, body []byte, response *proto.AuthRespons
 		response.TxStatus = proto.AuthStatusPending
 
 		var pending int
-		pendingResponse := pendingResponse{}
-		err := json.Unmarshal(body, &pendingResponse)
+		pendingResponseObj := pendingResponse{}
+		err := json.Unmarshal(body, &pendingResponseObj)
 		if err != nil {
 			return errors.New("Cannot parse pending response")
 		}
 
-		pending = pendingResponse.Pending
+		pending = pendingResponseObj.Pending
 
 		// Check if SanctionsCheck pending time is smaller
 		if pending > response.Pending {

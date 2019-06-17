@@ -2,17 +2,17 @@
 title: Overview
 ---
 
-The Go SDK contains packages for interacting with most aspects of the stellar ecosystem.  In addition to generally useful, low-level packages such as [`keypair`](https://godoc.org/github.com/stellar/go/keypair) (used for creating stellar-compliant public/secret key pairs), the Go SDK also contains code for the server applications and client tools written in go.
+The Go SDK is a set of packages for interacting with most aspects of the Stellar ecosystem. The primary component is the Horizon SDK, which provides convenient access to Horizon services. There are also packages for other Stellar services such as [TOML support](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0001.md) and [federation](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0002.md).
 
-## Godoc reference
+## Horizon SDK
 
-The most accurate and up-to-date reference information on the Go SDK is found within godoc.  The godoc.org service automatically updates the documentation for the Go SDK everytime github is updated.  The godoc for all of our packages can be found at (https://godoc.org/github.com/stellar/go).
+The Horizon SDK is composed of two complementary libraries: `txnbuild` + `horizonclient`.
+The `txnbuild` ([source](https://github.com/stellar/go/tree/master/txnbuild), [docs](https://godoc.org/github.com/stellar/go/txnbuild)) package enables the construction, signing and encoding of Stellar [transactions](https://www.stellar.org/developers/guides/concepts/transactions.html) and [operations](https://www.stellar.org/developers/guides/concepts/list-of-operations.html) in Go. The `horizonclient` ([source](https://github.com/stellar/go/tree/master/clients/horizonclient), [docs](https://godoc.org/github.com/stellar/go/clients/horizonclient)) package provides a web client for interfacing with [Horizon](https://www.stellar.org/developers/guides/get-started/) server REST endpoints to retrieve ledger information, and to submit transactions built with `txnbuild`.
 
-## Client Packages
+## List of major SDK packages
 
-The Go SDK contains packages for interacting with the various stellar services:
-
-- [`horizon`](https://godoc.org/github.com/stellar/go/clients/horizon) provides client access to a horizon server, allowing you to load account information, stream payments, post transactions and more.
-- [`stellartoml`](https://godoc.org/github.com/stellar/go/clients/stellartoml) provides the ability to resolve Stellar.toml files from the internet.  You can read about [Stellar.toml concepts here](../../guides/concepts/stellar-toml.md).
-- [`federation`](https://godoc.org/github.com/stellar/go/clients/federation) makes it easy to resolve a stellar addresses (e.g. `scott*stellar.org`) into a stellar account ID suitable for use within a transaction.
+- `horizonclient` ([source](https://github.com/stellar/go/tree/master/clients/horizonclient), [docs](https://godoc.org/github.com/stellar/go/clients/horizonclient)) - programmatic client access to Horizon
+- `txnbuild` ([source](https://github.com/stellar/go/tree/master/txnbuild), [docs](https://godoc.org/github.com/stellar/go/txnbuild)) - construction, signing and encoding of Stellar transactions and operations
+- `stellartoml` ([source](https://github.com/stellar/go/tree/master/clients/horizonclient), [docs](https://godoc.org/github.com/stellar/go/clients/stellartoml)) - parse [Stellar.toml](../../guides/concepts/stellar-toml.md) files from the internet
+- `federation` ([source](https://godoc.org/github.com/stellar/go/clients/federation)) - resolve federation addresses  into stellar account IDs, suitable for use within a transaction
 

@@ -6,8 +6,9 @@ import (
 	"encoding/json"
 
 	"github.com/stellar/go/services/horizon/internal/ledger"
-	"github.com/stellar/go/services/horizon/internal/render/hal"
+	"github.com/stellar/go/services/horizon/internal/operationfeestats"
 	"github.com/stellar/go/support/db"
+	"github.com/stellar/go/support/render/hal"
 )
 
 // CoreSession returns a db.Session instance pointing at the stellar core test database
@@ -24,6 +25,7 @@ func (t *T) Finish() {
 	RestoreLogger()
 	// Reset cached ledger state
 	ledger.SetState(ledger.State{})
+	operationfeestats.ResetState()
 
 	if t.LogBuffer.Len() > 0 {
 		t.T.Log("\n" + t.LogBuffer.String())
@@ -88,6 +90,18 @@ func (t *T) UnmarshalNext(r io.Reader) string {
 	err := json.NewDecoder(r).Decode(&env)
 	t.Require.NoError(err, "failed to decode page")
 	return env.Links.Next.Href
+}
+
+// UnmarshalExtras extracts and returns extras content
+func (t *T) UnmarshalExtras(r io.Reader) map[string]string {
+	var resp struct {
+		Extras map[string]string `json:"extras"`
+	}
+
+	err := json.NewDecoder(r).Decode(&resp)
+	t.Require.NoError(err, "failed to decode page")
+
+	return resp.Extras
 }
 
 // UpdateLedgerState updates the cached ledger state (or panicing on failure).

@@ -21,7 +21,7 @@ func (s *Server) onStellarAccountCreated(destination string) {
 	s.SSEServer.BroadcastEvent(association.Address, sse.AccountCreatedAddressEvent, nil)
 }
 
-func (s *Server) onStellarAccountCredited(destination, assetCode, amount string) {
+func (s *Server) onExchanged(destination string) {
 	association, err := s.Database.GetAssociationByStellarPublicKey(destination)
 	if err != nil {
 		s.log.WithField("err", err).Error("Error getting association")
@@ -33,9 +33,30 @@ func (s *Server) onStellarAccountCredited(destination, assetCode, amount string)
 		return
 	}
 
+	s.SSEServer.BroadcastEvent(association.Address, sse.ExchangedEvent, nil)
+}
+
+func (s *Server) OnExchangedTimelocked(destination, transaction string) {
+	association, err := s.Database.GetAssociationByStellarPublicKey(destination)
+	if err != nil {
+		s.log.WithField("err", err).Error("Error getting association")
+		return
+	}
+
+	if association == nil {
+		s.log.WithField("stellarPublicKey", destination).Error("Association not found")
+		return
+	}
+
+	// Save tx to database
+	err = s.Database.AddRecoveryTransaction(destination, transaction)
+	if err != nil {
+		s.log.WithField("err", err).Error("Error saving unlock transaction to DB")
+		return
+	}
+
 	data := map[string]string{
-		"assetCode": assetCode,
-		"amount":    amount,
+		"transaction": transaction,
 	}
 
 	j, err := json.Marshal(data)
@@ -43,5 +64,5 @@ func (s *Server) onStellarAccountCredited(destination, assetCode, amount string)
 		s.log.WithField("data", data).Error("Error marshalling json")
 	}
 
-	s.SSEServer.BroadcastEvent(association.Address, sse.AccountCreditedAddressEvent, j)
+	s.SSEServer.BroadcastEvent(association.Address, sse.ExchangedTimelockedEvent, j)
 }

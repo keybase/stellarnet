@@ -21,6 +21,15 @@ A Trade Aggregation represents aggregated statistics on an asset pair (`base` an
 | close | string | price as seen on last trade aggregated.|
 | close_r | object | price as seen on last trade aggregated as a rational number.|
 
+#### Price_r Object
+Price_r (high_r, low_r, open_r, close_r) is a more precise representation of a bid/ask offer.
+
+|    Attribute     |  Type  |                                                                                                                                |
+| ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| n               | number | The numerator.   |
+| d              | number | The denominator.  |
+
+Thus to get price you would take n / d.
 
 ## Endpoints
 

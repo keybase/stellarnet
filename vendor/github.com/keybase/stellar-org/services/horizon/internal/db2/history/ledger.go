@@ -44,6 +44,20 @@ func (q *Q) LedgersBySequence(dest interface{}, seqs ...int32) error {
 	return q.Select(dest, sql)
 }
 
+// LedgerCapacityUsageStats returns ledger capacity stats for the last 5 ledgers.
+// Currently, we hard code the query to return the last 5 ledgers.
+// TODO: make the number of ledgers configurable.
+func (q *Q) LedgerCapacityUsageStats(currentSeq int32, dest *LedgerCapacityUsageStats) error {
+	return q.GetRaw(dest, `
+		SELECT
+			round(avg(
+				cast(successful_transaction_count+failed_transaction_count as decimal)/max_tx_set_size
+			), 2) AS "ledger_capacity_usage"
+		FROM history_ledgers
+		WHERE sequence > $1 AND sequence <= $2
+	`, currentSeq-5, currentSeq)
+}
+
 // Page specifies the paging constraints for the query being built by `q`.
 func (q *LedgersQ) Page(page db2.PageQuery) *LedgersQ {
 	if q.Err != nil {
@@ -71,6 +85,8 @@ var selectLedger = sq.Select(
 	"hl.ledger_hash",
 	"hl.previous_ledger_hash",
 	"hl.transaction_count",
+	"hl.successful_transaction_count",
+	"hl.failed_transaction_count",
 	"hl.operation_count",
 	"hl.closed_at",
 	"hl.created_at",

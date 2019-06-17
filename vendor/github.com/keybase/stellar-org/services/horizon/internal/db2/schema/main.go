@@ -3,6 +3,7 @@ package schema
 import (
 	"database/sql"
 	"errors"
+	stdLog "log"
 
 	migrate "github.com/rubenv/sql-migrate"
 	"github.com/stellar/go/support/db"
@@ -67,4 +68,54 @@ func Migrate(db *sql.DB, dir MigrateDir, count int) (int, error) {
 	default:
 		return 0, errors.New("Invalid migration direction")
 	}
+}
+
+// GetMigrationsUp returns a list of names of any migrations needed in the
+// "up" direction (more recent schema versions).
+func GetMigrationsUp(dbUrl string) (migrationIds []string) {
+	// Get a DB handle
+	db, dbErr := sql.Open("postgres", dbUrl)
+	if dbErr != nil {
+		stdLog.Fatal(dbErr)
+	}
+
+	// Get the possible migrations
+	possibleMigrations, _, migrateErr := migrate.PlanMigration(db, "postgres", Migrations, migrate.Up, 0)
+	if migrateErr != nil {
+		stdLog.Fatal(migrateErr)
+	}
+
+	// Extract a list of the possible migration names
+	for _, m := range possibleMigrations {
+		migrationIds = append(migrationIds, m.Id)
+	}
+
+	return migrationIds
+}
+
+// GetNumMigrationsDown returns the number of migrations to apply in the
+// "down" direction to return to the older schema version expected by this
+// version of Horizon. To keep the code simple, it does not provide a list of
+// migration names.
+func GetNumMigrationsDown(dbUrl string) (nMigrations int) {
+	// Get a DB handle
+	db, dbErr := sql.Open("postgres", dbUrl)
+	if dbErr != nil {
+		stdLog.Fatal(dbErr)
+	}
+
+	// Get the set of migrations recorded in the database
+	migrationRecords, recordErr := migrate.GetMigrationRecords(db, "postgres")
+	if recordErr != nil {
+		stdLog.Fatal(recordErr)
+	}
+
+	// Get the list of migrations needed by this version of Horizon
+	allNeededMigrations, _, migrateErr := migrate.PlanMigration(db, "postgres", Migrations, migrate.Down, 0)
+	if migrateErr != nil {
+		stdLog.Fatal(migrateErr)
+	}
+
+	// Return the size difference between the two sets of migrations
+	return len(migrationRecords) - len(allNeededMigrations)
 }

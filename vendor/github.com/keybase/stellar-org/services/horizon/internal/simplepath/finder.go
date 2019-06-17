@@ -3,8 +3,8 @@ package simplepath
 import (
 	"github.com/go-errors/errors"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
-	"github.com/stellar/go/services/horizon/internal/log"
 	"github.com/stellar/go/services/horizon/internal/paths"
+	"github.com/stellar/go/support/log"
 )
 
 // Finder implements the paths.Finder interface and searchs for
@@ -20,7 +20,7 @@ type Finder struct {
 var _ paths.Finder = &Finder{}
 
 // Find performs a path find with the provided query.
-func (f *Finder) Find(q paths.Query) (result []paths.Path, err error) {
+func (f *Finder) Find(q paths.Query, maxLength uint) (result []paths.Path, err error) {
 	log.WithField("source_assets", q.SourceAssets).
 		WithField("destination_asset", q.DestinationAsset).
 		WithField("destination_amount", q.DestinationAmount).
@@ -31,9 +31,19 @@ func (f *Finder) Find(q paths.Query) (result []paths.Path, err error) {
 		return
 	}
 
+	if maxLength == 0 {
+		maxLength = MaxPathLength
+	}
+
+	if maxLength < 2 || maxLength > MaxPathLength {
+		err = errors.New("invalid value of maxLength")
+		return
+	}
+
 	s := &search{
-		Query:  q,
-		Finder: f,
+		Query:     q,
+		Q:         &core.Q{f.Q.Clone()},
+		MaxLength: maxLength,
 	}
 
 	s.Init()

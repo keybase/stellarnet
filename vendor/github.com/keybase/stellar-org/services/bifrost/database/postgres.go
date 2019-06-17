@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
 	"github.com/stellar/go/services/bifrost/queue"
 	"github.com/stellar/go/services/bifrost/sse"
 	"github.com/stellar/go/support/db"
@@ -13,6 +14,8 @@ import (
 )
 
 const (
+	schemaVersionKey = "schema_version"
+
 	ethereumAddressIndexKey = "ethereum_address_index"
 	ethereumLastBlockKey    = "ethereum_last_block"
 
@@ -96,6 +99,39 @@ func (d *PostgresDatabase) Open(dsn string) error {
 	}
 
 	return nil
+}
+
+// Import imports DB schema
+func (d *PostgresDatabase) Import() error {
+	return d.session.ExecAll(schema)
+}
+
+// GetSchemaVersion returns schema version of Bifrost DB. Returns 0.
+func (d *PostgresDatabase) GetSchemaVersion() (uint32, error) {
+	keyValueStore := d.getTable(keyValueStoreTableName, nil)
+	row := keyValueStoreRow{}
+
+	err := keyValueStore.Get(&row, map[string]interface{}{"key": schemaVersionKey}).Exec()
+	if err != nil {
+		if pqErr, ok := errors.Cause(err).(*pq.Error); ok && pqErr.Code == "42P01" {
+			// Relation does not exist - DB is probably clean. If not, Import will return error.
+			return 0, nil
+		}
+
+		if errors.Cause(err) == sql.ErrNoRows {
+			// schemaVersionKey key not found - schema is old (return 1 because schemaVersionKey was set to 2 when created)
+			return 1, nil
+		}
+
+		return 0, errors.Wrap(err, "Error getting `"+schemaVersionKey+"` from DB")
+	}
+
+	version, err := strconv.ParseUint(row.Value, 10, 32)
+	if err != nil {
+		return 0, errors.Wrap(err, "Error converting `"+schemaVersionKey+"` value to uint32")
+	}
+
+	return uint32(version), nil
 }
 
 func (d *PostgresDatabase) getTable(name string, session *db.Session) *db.Table {

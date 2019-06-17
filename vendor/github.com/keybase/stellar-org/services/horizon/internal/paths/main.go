@@ -12,18 +12,17 @@ type Query struct {
 	SourceAssets       []xdr.Asset
 }
 
-// Path is the interface that represents a single result returned
-// by a path finder.
-type Path interface {
-	Path() []xdr.Asset
-	Source() xdr.Asset
-	Destination() xdr.Asset
-	// Cost returns an amount (which may be estimated), delimited in the Source assets
-	// that is suitable for use as the `sendMax` field for a `PathPaymentOp` struct.
-	Cost(amount xdr.Int64) (xdr.Int64, error)
+// Path is the result returned by a path finder and is tied to the DestinationAmount used in the input query
+type Path struct {
+	Path        []xdr.Asset
+	Source      xdr.Asset
+	Destination xdr.Asset
+	// represents the source assets to be used as `sendMax` field for a `PathPaymentOp` struct
+	Cost xdr.Int64
 }
 
 // Finder finds paths.
 type Finder interface {
-	Find(Query) ([]Path, error)
+	// Returns path for a Query of a maximum length `maxLength`
+	Find(q Query, maxLength uint) ([]Path, error)
 }

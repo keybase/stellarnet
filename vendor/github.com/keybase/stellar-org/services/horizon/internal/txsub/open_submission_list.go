@@ -2,10 +2,12 @@ package txsub
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"time"
 
 	"github.com/go-errors/errors"
+	"github.com/stellar/go/support/log"
 )
 
 // NewDefaultSubmissionList returns a list that manages open submissions purely
@@ -13,6 +15,7 @@ import (
 func NewDefaultSubmissionList() OpenSubmissionList {
 	return &submissionList{
 		submissions: map[string]*openSubmission{},
+		log:         log.DefaultLogger.WithField("service", "txsub.submissionList"),
 	}
 }
 
@@ -26,7 +29,8 @@ type openSubmission struct {
 
 type submissionList struct {
 	sync.Mutex
-	submissions map[string]*openSubmission
+	submissions map[string]*openSubmission // hash => `*openSubmission`
+	log         *log.Entry
 }
 
 func (s *submissionList) Add(ctx context.Context, hash string, l Listener) error {
@@ -50,6 +54,9 @@ func (s *submissionList) Add(ctx context.Context, hash string, l Listener) error
 			Listeners:   []Listener{},
 		}
 		s.submissions[hash] = os
+		s.log.WithField("hash", hash).Info("Created a new submission for a transaction")
+	} else {
+		s.log.WithField("hash", hash).Info("Adding listener to existing submission")
 	}
 
 	os.Listeners = append(os.Listeners, l)
@@ -66,6 +73,12 @@ func (s *submissionList) Finish(ctx context.Context, r Result) error {
 		return nil
 	}
 
+	s.log.WithFields(log.F{
+		"hash":      r.Hash,
+		"listeners": len(os.Listeners),
+		"result":    fmt.Sprintf("%+v", r),
+	}).Info("Sending submission result to listeners")
+
 	for _, l := range os.Listeners {
 		l <- r
 		close(l)
@@ -81,6 +94,10 @@ func (s *submissionList) Clean(ctx context.Context, maxAge time.Duration) (int, 
 
 	for _, os := range s.submissions {
 		if time.Since(os.SubmittedAt) > maxAge {
+			s.log.WithFields(log.F{
+				"hash":      os.Hash,
+				"listeners": len(os.Listeners),
+			}).Warn("Cleared submission due to timeout")
 			r := Result{Err: ErrTimeout}
 			delete(s.submissions, os.Hash)
 			for _, l := range os.Listeners {

@@ -160,7 +160,7 @@ func (c *Cursor) Operation() *xdr.Operation {
 // OperationChanges returns all of LedgerEntryChanges that occurred in the
 // course of applying the current operation.
 func (c *Cursor) OperationChanges() xdr.LedgerEntryChanges {
-	return c.data.Transactions[c.tx].ResultMeta.MustOperations()[c.op].Changes
+	return c.TransactionMetaBundle().OperationsMetas()[c.op].Changes
 }
 
 // OperationCount returns the count of operations in the current transaction
@@ -243,6 +243,17 @@ func (c *Cursor) SuccessfulLedgerOperationCount() (ret int) {
 func (c *Cursor) SuccessfulTransactionCount() (ret int) {
 	for i := range c.data.Transactions {
 		if c.data.Transactions[i].IsSuccessful() {
+			ret++
+		}
+	}
+	return
+}
+
+// FailedTransactionCount returns the count of transactions in the current
+// ledger that failed.
+func (c *Cursor) FailedTransactionCount() (ret int) {
+	for i := range c.data.Transactions {
+		if !c.data.Transactions[i].IsSuccessful() {
 			ret++
 		}
 	}

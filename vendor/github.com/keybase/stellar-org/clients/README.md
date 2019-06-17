@@ -1,10 +1,15 @@
 # Clients package
 
-Packages contained by this package provide client libraries for accessing the ecosystem of stellar services.  At present, it only contains a simple horizon client library, but in the future it will contain clients to interact with stellar-core, federation, the bridge server and more.
+Packages here provide client libraries for accessing the ecosystem of Stellar services.
 
-See [godoc](https://godoc.org/github.com/stellar/go/clients) for details about each package.
+* `horizonclient` - programmatic client access to Horizon (use in conjunction with [txnbuild](../txnbuild))
+* `stellartoml` - parse Stellar.toml files from the internet
+* `federation` - resolve federation addresses into stellar account IDs, suitable for use within a transaction
+* `horizon` (DEPRECATED) - the original Horizon client, now superceded by `horizonclient`
 
-## Adding new client packages
+See [GoDoc](https://godoc.org/github.com/stellar/go/clients) for more details.
+
+## For developers: Adding new client packages
 
 Ideally, each one of our client packages will have commonalities in their API to ease the cost of learning each.  It's recommended that we follow a pattern similar to the `net/http` package's client shape:
 

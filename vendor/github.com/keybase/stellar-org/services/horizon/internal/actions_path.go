@@ -1,11 +1,15 @@
 package horizon
 
 import (
+	"github.com/stellar/go/protocols/horizon"
+	"github.com/stellar/go/services/horizon/internal/actions"
 	"github.com/stellar/go/services/horizon/internal/paths"
-	"github.com/stellar/go/services/horizon/internal/render/hal"
-	"github.com/stellar/go/services/horizon/internal/resource"
-	halRender "github.com/stellar/go/support/render/hal"
+	"github.com/stellar/go/services/horizon/internal/resourceadapter"
+	"github.com/stellar/go/support/render/hal"
 )
+
+// Interface verification
+var _ actions.JSONer = (*PathIndexAction)(nil)
 
 // PathIndexAction provides path finding
 type PathIndexAction struct {
@@ -16,23 +20,21 @@ type PathIndexAction struct {
 }
 
 // JSON implements actions.JSON
-func (action *PathIndexAction) JSON() {
+func (action *PathIndexAction) JSON() error {
 	action.Do(
 		action.loadQuery,
 		action.loadSourceAssets,
 		action.loadRecords,
 		action.loadPage,
-		func() {
-			halRender.Render(action.W, action.Page)
-		},
+		func() { hal.Render(action.W, action.Page) },
 	)
+	return action.Err
 }
 
 func (action *PathIndexAction) loadQuery() {
-	action.Query.DestinationAmount = action.GetAmount("destination_amount")
-	action.Query.DestinationAddress = action.GetAddress("destination_account")
+	action.Query.DestinationAmount = action.GetPositiveAmount("destination_amount")
+	action.Query.DestinationAddress = action.GetAddress("destination_account", actions.RequiredParam)
 	action.Query.DestinationAsset = action.GetAsset("destination_")
-
 }
 
 func (action *PathIndexAction) loadSourceAssets() {
@@ -43,14 +45,15 @@ func (action *PathIndexAction) loadSourceAssets() {
 }
 
 func (action *PathIndexAction) loadRecords() {
-	action.Records, action.Err = action.App.paths.Find(action.Query)
+	action.Records, action.Err = action.App.paths.Find(action.Query, action.App.config.MaxPathLength)
 }
 
 func (action *PathIndexAction) loadPage() {
 	action.Page.Init()
 	for _, p := range action.Records {
-		var res resource.Path
-		action.Err = res.Populate(action.Ctx, action.Query, p)
+		var res horizon.Path
+		action.Err = resourceadapter.PopulatePath(action.R.Context(), &res, action.Query, p)
+
 		if action.Err != nil {
 			return
 		}

@@ -7,3 +7,5 @@ create_account :scott,  :master, 100
 close_ledger
 
 payment :scott, :scott,  [:native, 5]
+
+close_ledger

@@ -9,6 +9,7 @@ use_manual_close
 KP = Stellar::KeyPair
 close_ledger #2
 
+
 ## Transaction exercises
 
 # time bounds
@@ -352,8 +353,34 @@ close_ledger #47
 
   account :selfpay, KP.from_seed("SAN5MUUVD2B3WJPIFDT7FQRLGNTD7LYFT7S7ULOKYBFC6ZUFIOSC2YRP")
   create_account :selfpay
-  close_ledger
+  close_ledger #55
 
   payment :selfpay, :selfpay, [:native, "10.0"]
-  close_ledger
+  close_ledger #56
 
+# bumpseq
+  # Public Key	GCQZP3IU7XU6EJ63JZXKCQOYT2RNXN3HB5CNHENNUEUHSMA4VUJJJSEN
+  # Secret Key	SB7M6CWQLVEAMCJMYNVURRVXQDBBEDEAYFXUSP5B4XCG4FRMALD7CWCG
+
+  account :bumper, KP.from_seed("SB7M6CWQLVEAMCJMYNVURRVXQDBBEDEAYFXUSP5B4XCG4FRMALD7CWCG")
+  create_account :bumper
+  close_ledger #57
+
+  bump_sequence :bumper, 300000000000 #should work
+  close_ledger #58
+
+  #all the following should ingest as operations but have no effects
+  bump_sequence :bumper, 100
+  close_ledger #59
+
+  bump_sequence :bumper, next_sequence(get_account(:bumper))-1
+  close_ledger #60
+
+  bump_sequence :bumper, next_sequence(get_account(:bumper))
+  close_ledger #61
+
+# ====================================================================
+# NOTE:  Do not add any additional commands to this recipe.  Due to an 
+# issue, we can't easily go beyond 64 ledgers in a single recipe.
+return
+# ====================================================================

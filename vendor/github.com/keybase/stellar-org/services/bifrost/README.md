@@ -18,7 +18,7 @@ It solves many problems connected to moving tokens to Stellar network:
 
 We are releasing the **alpha version** of this software. We encourage our community of developers to test and improve it.
 
-Download the binary from [the release page](https://github.com/stellar/go/releases/tag/bifrost-v0.0.1) and use it with it's [Bifrost JS SDK](https://github.com/stellar/bifrost-js-sdk).
+Download the binary from [the release page](https://github.com/stellar/go/releases/tag/bifrost-v0.0.2) and use it with it's [Bifrost JS SDK](https://github.com/stellar/bifrost-js-sdk).
 
 ## How it works
 
@@ -27,10 +27,9 @@ Download the binary from [the release page](https://github.com/stellar/go/releas
 1. User selects what cryptocurrency she wants to move to Stellar network.
 1. A receiving Bitcoin/Ethereum address is generated.
 1. User sends funds in Bitcoin/Ethereum network.
-1. Bifrost listens to Bitcoin and Ethereum network events. When payment arrives it creates a Stellar [account](https://www.stellar.org/developers/guides/concepts/accounts.html) for the user.
-1. User creates a [trust line](https://www.stellar.org/developers/guides/concepts/assets.html) to BTC/ETH issued by Bifrost account.
-1. Bifrost sends corresponding amount of BTC/ETH to user's Stellar account.
-1. As an optional step, web application can also exchange BTC/ETH to other token in Stellar network at a given rate.
+1. Bifrost listens to Bitcoin and Ethereum network events. When payment arrives it creates a Stellar [account](https://www.stellar.org/developers/guides/concepts/accounts.html) for the user who later adds a temporary signer on the account.
+1. Using a temporary signer Bifrost creates necessary [trust lines](https://www.stellar.org/developers/guides/concepts/assets.html) and sends corresponding amount of BTC/ETH to user's Stellar account. It also exchanges BTC/ETH to the final token at a given rate.
+1. Finally a temporary signer is removed.
 
 ## Demo
 
@@ -49,6 +48,7 @@ https://bifrost.stellar.org/
 
 * `port` - bifrost server listening port
 * `using_proxy` (default `false`) - set to `true` if bifrost lives behind a proxy or load balancer
+* `access_control_allow_origin_header` (default `*`) - value of `Access-Control-Allow-Origin` headers sent by Bifrost
 * `bitcoin`
   * `master_public_key` - master public key for bitcoin keys derivation (read more in [BIP-0032](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki))
   * `rpc_server` - URL of [bitcoin-core](https://github.com/bitcoin/bitcoin) >= 0.15.0 RPC server
@@ -56,18 +56,22 @@ https://bifrost.stellar.org/
   * `rpc_pass` (default empty) - password for RPC server (if any)
   * `testnet` (default `false`) - set to `true` if you're testing bifrost in ethereum
   * `minimum_value_btc` - minimum transaction value in BTC that will be accepted by Bifrost, everything below will be ignored.
+  * `token_price` - a price of one BTC in terms of final token (`stellar.token_asset_code`)
 * `ethereum`
-  * `master_public_key` - master public key for bitcoin keys derivation (read more in [BIP-0032](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki))
+  * `master_public_key` - master public key for ethereum keys derivation (read more in [BIP-0032](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki))
   * `rpc_server` - URL of [geth](https://github.com/ethereum/go-ethereum) >= 1.7.1 RPC server
   * `network_id` - network ID (`3` - Ropsten testnet, `1` - live Ethereum network)
   * `minimum_value_eth` - minimum transaction value in ETH that will be accepted by Bifrost, everything below will be ignored.
+  * `token_price` - a price of one ETH in terms of final token (`stellar.token_asset_code`)
 * `stellar`
   * `token_asset_code` - asset code for the token that will be distributed
-  * `issuer_public_key` - public key of the assets issuer or hot wallet,
-  * `signer_secret_key` - issuer's secret key if only one instance of Bifrost is deployed OR [channel](https://www.stellar.org/developers/guides/channels.html)'s secret key if more than one instance of Bifrost is deployed. Signer's sequence number will be consumed in transaction's sequence number.
+  * `issuer_public_key` - public key of the assets issuer (see "Account configuration" section),
+  * `distribution_public_key` - public key of the distribution account, it can be the same as issuer but it's recommended to use a separate account, it's also used to fund new accounts (see "Account configuration" section)
+  * `signer_secret_key` - distribuions accounts's secret key if only one instance of Bifrost is deployed OR [channel](https://www.stellar.org/developers/guides/channels.html)'s secret key if more than one instance of Bifrost is deployed, signer is also used as a temporary signer in new accounts (see "Account configuration" section)
   * `horizon` - URL to [horizon](https://github.com/stellar/go/tree/master/services/horizon) server
   * `network_passphrase` - Stellar network passphrase (`Public Global Stellar Network ; September 2015` for production network, `Test SDF Network ; September 2015` for test network)
   * `starting_balance` - Stellar XLM amount issued to created account (41 by default)
+  * `lock_unix_timestamp` - Unix timestamp (in seconds) of a date until funds will be locked in a new account (helpful if you want to disallow trading during token sale)
 * `database`
   * `type` - currently the only supported database type is: `postgres`
   * `dsn` - data source name for postgres connection (`postgres://user:password@host/dbname?sslmode=sslmode` - [more info](https://godoc.org/github.com/lib/pq#hdr-Connection_String_Parameters))
@@ -86,12 +90,32 @@ Here's the proposed architecture diagram of high-availability deployment:
 
 ![Architecture](./images/architecture.png)
 
+## Account configuration
+
+Issuing, Distribution and Signer Accounts can be configured in many different ways, it all depends on your needs.
+
+### Issuing Account Only
+
+This is the most basic configuration but it is not recommended. In this configuration only one account is responsible for everything: issuing and distributing assets and creating new accounts. In this configuration `stellar.issuer_public_key`, `stellar.distribution_public_key` and `stellar.signer_secret_key` represent a single account.
+
+### Issuing and Distribution Accounts
+
+Sometimes you want to have a limited supply of your token so you create a distribution account, send all the tokens to distribution (and other accounts, ex. vesting) and lock the issuing account so no new tokens can be created. In this configuration `stellar.distribution_public_key` and `stellar.signer_secret_key` represent a separate account used to distribute funds in a token sale. This account will also be used to create new accounts.
+
+### Distribution Account with multiple signers
+
+If you expect really high load you should deploy multiple Bifrost servers. To prevent Bifrost instances from consuming the same sequence numbers of the Distribution account you should use [channels](https://www.stellar.org/developers/guides/channels.html). Each Bifrost server will contain a secret key of one of the signers of Distribution account and will use Signer account as a [transaction source](https://www.stellar.org/developers/guides/concepts/transactions.html#source-account) when creating new accounts.
+
+In this configuration all servers have the same `stellar.issuer_public_key` and `stellar.distribution_public_key` values but each server has a separate `stellar.signer_secret_key` which is a signer of `stellar.distribution_public_key` account (and needs to exist in Stellar ledger).
+
+![Accounts](./images/accounts.png)
+
 ## Going to production
 
 * Remember that everyone with master public key and **any** child private key can recover your **master** private key. Do not share your master public key and obviously any private keys. Treat your master public key as if it was a private key. Read more in BIP-0032 [Security](https://github.com/bitcoin/bips/blob/master/bip-0032.mediawiki#security) section.
 * Make sure "Sell [your token] for BTC" and/or "Sell [your token] for ETH" exist in Stellar production network. If not, you can create an offer by sending a transaction with `manage_offer` operation.
 * Make sure you don't use account from `stellar.issuer_secret_key` anywhere else than bifrost. Otherwise, sequence numbers will go out of sync and bifrost will stop working. It's good idea to create a new signer on issuing account.
-* Check if public master key correct. Use CLI tool (`bifrost check-keys`) to generate a few addresses and ensure you have corresponding private keys! You should probably send test transactions to some of these addresses and check if you can withdraw funds.
+* Check if public master key is correct. Use CLI tool (`bifrost check-keys`) to generate a few addresses and ensure you have corresponding private keys! You should probably send test transactions to some of these addresses and check if you can withdraw funds.
 * Make sure `using_proxy` variable is set to correct value. Otherwise you will see your proxy IP instead of users' IPs in logs.
 * Make sure you're not connecting to testnets.
 * Deploy at least 2 bifrost, bitcoin-core, geth, stellar-core and horizon servers. Use multi-AZ database.
@@ -102,4 +126,27 @@ Here's the proposed architecture diagram of high-availability deployment:
 * Make sure you are using geth >= 1.7.1 and bitcoin-core >= 0.15.0.
 * Increase horizon rate limiting to handle expected load.
 * Make sure you configured minimum accepted value for Bitcoin and Ethereum transactions to the value you really want.
-* Make sure you start from a fresh Bifrost DB in production. If Bifrost was running, you stopped bitcoin-core or geth and then started it again then all the Bitcoin and Ethereum blocks mined during that period will be processed which can take a lot of time.
+* Make sure you start from a fresh Bifrost DB in production. If Bifrost was running, you stopped it and then started it again, all the Bitcoin and Ethereum blocks mined during that period will be processed which can take a lot of time.
+* Make sure that `lock_unix_timestamp` is correct and test it. If the value is too far in the future users will be locked out of their funds.
+
+## FAQ
+
+#### Transactions are not processed by Bifrost
+
+Here is a list of possible reasons why Bifrost may not process transactions:
+
+* Bifrost is detecting transactions but there's a proxy between client and Bifrost server and it's blocking SSE (Server-Sent Events) sent by Bifrost. Solution for this can be found [here](https://serverfault.com/a/801629).
+* There's a long queue of blocks Bifrost needs to process. During the first start of Bifrost, it starts processing blocks from the latest block available. If Bifrost was turned off for a longer time or `geth` is still catchup up it may cause delays. To solve this, recreate Bifrost DB so it resets data or (if you don't want to delete data in a DB) set `ethereum_last_block` value in `key_value_store` table to `0`.
+* You are sending a transaction with amount below `minimum_value_eth`.
+* Geth is connected to one network and you're sending ETH in another network.
+
+#### How do I unlock the account when `lock_unix_timestamp` is set?
+
+You need to submit a special transaction that "unlocks" the account by removing the temporary signer and adding back user's master key. This can be done by everyone: user or organization that runs Bifrost. Transaction can be found in:
+
+* `Bifrost.ExchangedTimelockedEvent` [event](https://github.com/stellar/bifrost-js-sdk#oneventevent-data). You can display it to the user if you want your users to unlock accounts.
+* In database: `recovery_transaction` table. These transactions are independent so you can submit them in any order / at the same time.
+
+#### I don't see answer to my question. What do I do?
+
+Check [Stellar Stack Exchange](https://stellar.stackexchange.com/questions/tagged/bifrost/) to find similar questions or add the new question with the `bifrost` tag.

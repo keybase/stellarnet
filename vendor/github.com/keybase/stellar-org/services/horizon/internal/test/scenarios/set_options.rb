@@ -17,3 +17,5 @@ add_signer :scott, kp, 1                          ; close_ledger
 add_signer :scott, kp, 5                          ; close_ledger
 clear_flags :scott, [:auth_required_flag]         ; close_ledger
 remove_signer :scott, kp                          ; close_ledger
+
+close_ledger

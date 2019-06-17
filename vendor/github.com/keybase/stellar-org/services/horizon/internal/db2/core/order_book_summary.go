@@ -19,7 +19,8 @@ type orderbookQueryBuilder struct {
 	args          []interface{}
 }
 
-var orderbookQueryTemplate *template.Template
+var orderbookQueryTemplateSchema8 *template.Template
+var orderbookQuerySchema9 string
 
 // Asks filters the summary into a slice of PriceLevelRecords where the type is 'ask'
 func (o *OrderBookSummary) Asks() []OrderBookSummaryPriceLevel {
@@ -54,6 +55,19 @@ func (o *OrderBookSummary) filter(typ string, prepend bool) []OrderBookSummaryPr
 // selling/buying pair. It is designed to drive an order book summary client
 // interface (bid/ask spread, prices and volume, etc).
 func (q *Q) GetOrderBookSummary(dest interface{}, selling xdr.Asset, buying xdr.Asset, limit uint64) error {
+	schemaVersion, err := q.SchemaVersion()
+	if err != nil {
+		return err
+	}
+
+	if schemaVersion < 9 {
+		return q.getOrderBookSummarySchema8(dest, selling, buying, limit)
+	} else {
+		return q.getOrderBookSummarySchema9(dest, selling, buying, limit)
+	}
+}
+
+func (q *Q) getOrderBookSummarySchema8(dest interface{}, selling xdr.Asset, buying xdr.Asset, limit uint64) error {
 	var sql bytes.Buffer
 	var oq orderbookQueryBuilder
 	err := selling.Extract(&oq.SellingType, &oq.SellingCode, &oq.SellingIssuer)
@@ -67,7 +81,7 @@ func (q *Q) GetOrderBookSummary(dest interface{}, selling xdr.Asset, buying xdr.
 
 	oq.pushArg(limit)
 
-	err = orderbookQueryTemplate.Execute(&sql, &oq)
+	err = orderbookQueryTemplateSchema8.Execute(&sql, &oq)
 	if err != nil {
 		return errors.Wrap(err, 1)
 	}
@@ -100,8 +114,29 @@ func (q *orderbookQueryBuilder) pushArg(v interface{}) int {
 	return len(q.args)
 }
 
+func (q *Q) getOrderBookSummarySchema9(dest interface{}, selling xdr.Asset, buying xdr.Asset, limit uint64) error {
+	var sellingXDRString, buyingXDRString string
+
+	sellingXDRString, err := xdr.MarshalBase64(selling)
+	if err != nil {
+		return err
+	}
+
+	buyingXDRString, err = xdr.MarshalBase64(buying)
+	if err != nil {
+		return err
+	}
+
+	err = q.SelectRaw(dest, orderbookQuerySchema9, sellingXDRString, buyingXDRString, limit)
+	if err != nil {
+		return errors.Wrap(err, 1)
+	}
+
+	return nil
+}
+
 func init() {
-	orderbookQueryTemplate = template.Must(template.New("sql").Parse(`
+	orderbookQueryTemplateSchema8 = template.Must(template.New("sql").Parse(`
 SELECT
 	*,
 	(pricen :: double precision / priced :: double precision) as pricef
@@ -166,4 +201,62 @@ FROM
 
 ORDER BY type, pricef
 `))
+
+	orderbookQuerySchema9 = `
+SELECT
+	*,
+	(pricen :: double precision / priced :: double precision) as pricef
+
+FROM
+((
+	-- This query returns the "asks" portion of the summary, and it is very straightforward
+	SELECT
+		'ask' as type,
+		co.pricen,
+		co.priced,
+		SUM(co.amount) as amount
+
+	FROM  offers co
+
+	WHERE 1=1
+	AND   sellingasset = $1
+	AND   buyingasset = $2
+
+	GROUP BY
+		co.pricen,
+		co.priced,
+		co.price
+
+	ORDER BY co.price ASC
+
+	LIMIT $3
+
+) UNION (
+	-- This query returns the "bids" portion, inverting the where clauses
+	-- and the pricen/priced.  This inversion is necessary to produce the "bid"
+	-- view of a given offer (which are stored in the db as an offer to sell)
+	SELECT
+		'bid'  as type,
+		co.priced as pricen,
+		co.pricen as priced,
+		SUM(co.amount) as amount
+
+	FROM offers co
+
+	WHERE 1=1
+	AND   sellingasset = $2
+	AND   buyingasset = $1
+
+	GROUP BY
+		co.pricen,
+		co.priced,
+		co.price
+
+	ORDER BY co.price ASC
+	
+	LIMIT $3
+)) summary
+
+ORDER BY type, pricef
+`
 }

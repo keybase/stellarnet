@@ -4,7 +4,7 @@ set -e
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 GOTOP="$( cd "$DIR/../../../../../../../.." && pwd )"
 PACKAGES=$(find $GOTOP/src/github.com/stellar/go/services/horizon/internal/test/scenarios -iname '*.rb' -not -name '_common_accounts.rb')
-# PACKAGES=$(find $GOTOP/src/github.com/stellar/go/services/horizon/internal/test/scenarios -iname 'kahuna.rb')
+#PACKAGES=$(find $GOTOP/src/github.com/stellar/go/services/horizon/internal/test/scenarios -iname 'failed_transactions.rb')
 
 go install github.com/stellar/go/services/horizon
 
@@ -16,12 +16,14 @@ export DATABASE_URL="postgres://localhost/horizon_scenarios?sslmode=disable"
 export NETWORK_PASSPHRASE="Test SDF Network ; September 2015"
 export STELLAR_CORE_URL="http://localhost:8080"
 export SKIP_CURSOR_UPDATE="true"
+export INGEST_FAILED_TRANSACTIONS=true
 
 # run all scenarios
 for i in $PACKAGES; do
+  echo $i
   CORE_SQL="${i%.rb}-core.sql"
   HORIZON_SQL="${i%.rb}-horizon.sql"
-  bundle exec scc -r $i --dump-root-db > $CORE_SQL
+  scc -r $i --allow-failed-transactions --dump-root-db > $CORE_SQL
 
   # load the core scenario
   psql $STELLAR_CORE_DATABASE_URL < $CORE_SQL
@@ -32,7 +34,8 @@ for i in $PACKAGES; do
 
   # import the core data into horizon
   $GOTOP/bin/horizon db init
-  $GOTOP/bin/horizon db reingest
+  $GOTOP/bin/horizon db init-asset-stats
+  $GOTOP/bin/horizon db rebase
 
   # write horizon data to sql file
   pg_dump $DATABASE_URL \

@@ -3,6 +3,7 @@ package db
 import (
 	"reflect"
 	"sort"
+	"strings"
 
 	"github.com/jmoiron/sqlx/reflectx"
 )
@@ -33,6 +34,13 @@ func columnsForStruct(dest interface{}) []string {
 
 	var keys []string
 	for k := range typmap.Names {
+		// If a struct contains another struct (ex. sql.NullString) mapper.TypeMap
+		// will return the fields of an internal struct (like: "payment_id.String",
+		// "payment_id.Valid").
+		// This will break the query so skip these fields.
+		if strings.Contains(k, ".") {
+			continue
+		}
 		keys = append(keys, k)
 	}
 

@@ -14,7 +14,8 @@ type AddressEvent string
 const (
 	TransactionReceivedAddressEvent AddressEvent = "transaction_received"
 	AccountCreatedAddressEvent      AddressEvent = "account_created"
-	AccountCreditedAddressEvent     AddressEvent = "account_credited"
+	ExchangedEvent                  AddressEvent = "exchanged"
+	ExchangedTimelockedEvent        AddressEvent = "exchanged_timelocked"
 )
 
 type Server struct {

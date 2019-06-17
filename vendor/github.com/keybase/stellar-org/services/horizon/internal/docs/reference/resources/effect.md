@@ -8,23 +8,26 @@ directly reflected in the [ledger](https://www.stellar.org/developers/learn/conc
 
 ## Effect types
 
-We can distinguish 4 effect groups:
+We can distinguish 6 effect groups:
 - Account effects
 - Signer effects
 - Trustline effects
 - Trading effects
+- Data effects
+- Misc effects
 
 ### Account effects
 
 | Type                        | Operation                                             |
 | --- | --- |
-| Account Created             | create_account                                        |
-| Account Removed             | merge_account                                         |
-| Account Credited            | create_account, payment, path_payment, merge_account  |
-| Account Debited             | create_account, payment, path_payment, merge_account  |
-| Account Thresholds Updated  | set_options                                           |
-| Account Home Domain Updated | set_options                                           |
-| Account Flags Updated       | set_options                                           |
+| Account Created                       | create_account                                        |
+| Account Removed                       | merge_account                                         |
+| Account Credited                      | create_account, payment, path_payment, merge_account  |
+| Account Debited                       | create_account, payment, path_payment, merge_account  |
+| Account Thresholds Updated            | set_options                                           |
+| Account Home Domain Updated           | set_options                                           |
+| Account Flags Updated                 | set_options                                           |
+| Account Inflation Destination Updated | set_options                                           |
 
 ### Signer effects
 
@@ -48,11 +51,24 @@ We can distinguish 4 effect groups:
 
 | Type          | Operation                                        |
 | --- | --- |
-| Offer Created | manage_offer, create_passive_offer               |
-| Offer Removed | manage_offer, create_passive_offer, path_payment |
-| Offer Updated | manage_offer, create_passive_offer, path_payment |
-| Trade         | manage_offer, create_passive_offer, path_payment |
+| Offer Created | manage_buy_offer, manage_offer (manage_sell_offer from v0.19.0), create_passive_offer (create_passive_sell_offer from v0.19.0)               |
+| Offer Removed | manage_buy_offer, manage_offer (manage_sell_offer from v0.19.0), create_passive_offer (create_passive_sell_offer from v0.19.0), path_payment |
+| Offer Updated | manage_buy_offer, manage_offer (manage_sell_offer from v0.19.0), create_passive_offer (create_passive_sell_offer from v0.19.0), path_payment |
+| Trade         | manage_buy_offer, manage_offer (manage_sell_offer from v0.19.0), create_passive_offer (create_passive_sell_offer from v0.19.0), path_payment |
 
+### Data effects
+
+| Type          | Operation                                        |
+| --- | --- |
+| Data Created | manage_data |
+| Data Removed | manage_data |
+| Data Updated | manage_data |
+
+### Misc effects
+
+| Type          | Operation                                        |
+| --- | --- |
+| Sequence Bumped | bump_sequence |
 
 ## Attributes
 

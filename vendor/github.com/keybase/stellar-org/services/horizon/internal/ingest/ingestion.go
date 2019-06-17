@@ -3,9 +3,8 @@ package ingest
 import (
 	"encoding/json"
 	"fmt"
-	"time"
-
 	"math"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/guregu/null"
@@ -28,35 +27,31 @@ func (ingest *Ingestion) Clear(start int64, end int64) error {
 
 	err := clear(start, end, "history_effects", "history_operation_id")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error clearing history_effects")
 	}
 	err = clear(start, end, "history_operation_participants", "history_operation_id")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error clearing history_operation_participants")
 	}
 	err = clear(start, end, "history_operations", "id")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error clearing history_operations")
 	}
 	err = clear(start, end, "history_transaction_participants", "history_transaction_id")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error clearing history_transaction_participants")
 	}
 	err = clear(start, end, "history_transactions", "id")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error clearing history_transactions")
 	}
 	err = clear(start, end, "history_ledgers", "id")
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error clearing history_ledgers")
 	}
 	err = clear(start, end, "history_trades", "history_operation_id")
 	if err != nil {
-		return err
-	}
-	err = clear(start, end, "asset_stats", "id")
-	if err != nil {
-		return err
+		return errors.Wrap(err, "Error clearing history_trades")
 	}
 
 	return nil
@@ -71,7 +66,7 @@ func (ingest *Ingestion) Close() error {
 func (ingest *Ingestion) Effect(address Address, opid int64, order int, typ history.EffectType, details interface{}) error {
 	djson, err := json.Marshal(details)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error marshaling details")
 	}
 
 	ingest.builders[EffectsTableName].Values(address, opid, order, typ, djson)
@@ -105,7 +100,7 @@ func (ingest *Ingestion) Flush() error {
 
 	err = ingest.commit()
 	if err != nil {
-		return err
+		return errors.Wrap(err, "ingest.commit error")
 	}
 
 	return ingest.Start()
@@ -137,7 +132,7 @@ func (ingest *Ingestion) UpdateAccountIDs(tables []TableName) error {
 	dbAccounts := make([]history.Account, 0, len(addresses))
 	err := q.AccountsByAddresses(&dbAccounts, addresses)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "q.AccountsByAddresses error")
 	}
 
 	for _, row := range dbAccounts {
@@ -157,7 +152,7 @@ func (ingest *Ingestion) UpdateAccountIDs(tables []TableName) error {
 		dbAccounts = make([]history.Account, 0, len(addresses))
 		err = q.CreateAccounts(&dbAccounts, addresses)
 		if err != nil {
-			return err
+			return errors.Wrap(err, "q.CreateAccounts error")
 		}
 
 		for _, row := range dbAccounts {
@@ -177,7 +172,8 @@ func (ingest *Ingestion) UpdateAccountIDs(tables []TableName) error {
 func (ingest *Ingestion) Ledger(
 	id int64,
 	header *core.LedgerHeader,
-	txs int,
+	successTxsCount int,
+	failedTxsCount int,
 	ops int,
 ) {
 	ingest.builders[LedgersTableName].Values(
@@ -194,7 +190,9 @@ func (ingest *Ingestion) Ledger(
 		time.Unix(header.CloseTime, 0).UTC(),
 		time.Now().UTC(),
 		time.Now().UTC(),
-		txs,
+		successTxsCount, // `transaction_count`
+		successTxsCount, // `successful_transaction_count`
+		failedTxsCount,
 		ops,
 		header.Data.LedgerVersion,
 		header.DataXDR(),
@@ -214,7 +212,7 @@ func (ingest *Ingestion) Operation(
 ) error {
 	djson, err := json.Marshal(details)
 	if err != nil {
-		return err
+		return errors.Wrap(err, "Error marshaling details")
 	}
 
 	ingest.builders[OperationsTableName].Values(id, txid, order, source.Address(), typ, djson)
@@ -309,21 +307,23 @@ func (ingest *Ingestion) Trade(
 // Transaction ingests the provided transaction data into a new row in the
 // `history_transactions` table
 func (ingest *Ingestion) Transaction(
+	successful bool,
 	id int64,
 	tx *core.Transaction,
 	fee *core.TransactionFee,
-) {
+) error {
 	// Enquote empty signatures
 	signatures := tx.Base64Signatures()
 
-	ingest.builders[TransactionsTableName].Values(
+	return ingest.builders[TransactionsTableName].Values(
 		id,
 		tx.TransactionHash,
 		tx.LedgerSequence,
 		tx.Index,
 		tx.SourceAddress(),
 		tx.Sequence(),
-		tx.Fee(),
+		tx.MaxFee(),
+		tx.FeeCharged(),
 		len(tx.Envelope.Tx.Operations),
 		tx.EnvelopeXDR(),
 		tx.ResultXDR(),
@@ -335,6 +335,7 @@ func (ingest *Ingestion) Transaction(
 		tx.Memo(),
 		time.Now().UTC(),
 		time.Now().UTC(),
+		successful,
 	)
 }
 
@@ -367,6 +368,8 @@ func (ingest *Ingestion) createInsertBuilders() {
 			"created_at",
 			"updated_at",
 			"transaction_count",
+			"successful_transaction_count",
+			"failed_transaction_count",
 			"operation_count",
 			"protocol_version",
 			"ledger_header",
@@ -382,7 +385,8 @@ func (ingest *Ingestion) createInsertBuilders() {
 			"application_order",
 			"account",
 			"account_sequence",
-			"fee_paid",
+			"max_fee",
+			"fee_charged",
 			"operation_count",
 			"tx_envelope",
 			"tx_result",
@@ -394,6 +398,7 @@ func (ingest *Ingestion) createInsertBuilders() {
 			"memo",
 			"created_at",
 			"updated_at",
+			"successful",
 		},
 	}
 
@@ -452,17 +457,6 @@ func (ingest *Ingestion) createInsertBuilders() {
 			"base_is_seller",
 		},
 	}
-
-	ingest.builders[AssetStatsTableName] = &BatchInsertBuilder{
-		TableName: AssetStatsTableName,
-		Columns: []string{
-			"id",
-			"amount",
-			"num_accounts",
-			"flags",
-			"toml",
-		},
-	}
 }
 
 func (ingest *Ingestion) commit() error {
@@ -480,8 +474,13 @@ func (ingest *Ingestion) formatTimeBounds(bounds *xdr.TimeBounds) interface{} {
 	}
 
 	if bounds.MaxTime == 0 {
-		return sq.Expr("?::int8range", fmt.Sprintf("[%d,]", bounds.MinTime))
+		return sq.Expr("int8range(?,?)", bounds.MinTime, nil)
 	}
 
-	return sq.Expr("?::int8range", fmt.Sprintf("[%d,%d]", bounds.MinTime, bounds.MaxTime))
+	maxTime := bounds.MaxTime
+	if maxTime > math.MaxInt64 {
+		maxTime = math.MaxInt64
+	}
+
+	return sq.Expr("int8range(?,?)", bounds.MinTime, maxTime)
 }

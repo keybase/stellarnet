@@ -74,6 +74,12 @@ func (l *Listener) processBlocks(blockNumber uint64) {
 		lastBlockSeen = time.Now()
 		noBlockWarningLogged = false
 
+		if block.NumberU64() == 0 {
+			l.log.Error("Etheruem node is not synced yet. Unable to process blocks")
+			time.Sleep(30 * time.Second)
+			continue
+		}
+
 		err = l.processBlock(block)
 		if err != nil {
 			l.log.WithFields(log.F{"err": err, "blockNumber": block.NumberU64()}).Error("Error processing block")

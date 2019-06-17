@@ -72,6 +72,8 @@ This endpoint responds with a single Ledger.  See [ledger resource](../resources
   "prev_hash": "4b0b8bace3b2438b2404776ce57643966855487ba6384724a3c664c7aa4cd9e4",
   "sequence": 69859,
   "transaction_count": 0,
+  "successful_transaction_count": 0,
+  "failed_transaction_count": 0,
   "operation_count": 0,
   "closed_at": "2015-07-20T15:51:52Z",
   "total_coins": "100000000000.0000000",

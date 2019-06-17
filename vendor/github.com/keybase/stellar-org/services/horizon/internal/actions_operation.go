@@ -1,24 +1,30 @@
 package horizon
 
 import (
-	"errors"
 	"fmt"
 
+	"github.com/stellar/go/services/horizon/internal/actions"
 	"github.com/stellar/go/services/horizon/internal/db2"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/ledger"
-	"github.com/stellar/go/services/horizon/internal/render/hal"
 	"github.com/stellar/go/services/horizon/internal/render/problem"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
-	"github.com/stellar/go/services/horizon/internal/resource"
+	"github.com/stellar/go/services/horizon/internal/resourceadapter"
 	"github.com/stellar/go/services/horizon/internal/toid"
-	halRender "github.com/stellar/go/support/render/hal"
+	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/support/render/hal"
+	supportProblem "github.com/stellar/go/support/render/problem"
+	"github.com/stellar/go/xdr"
 )
 
 // This file contains the actions:
 //
 // OperationIndexAction: pages of operations
 // OperationShowAction: single operation by id
+
+// Interface verifications
+var _ actions.JSONer = (*OperationIndexAction)(nil)
+var _ actions.EventStreamer = (*OperationIndexAction)(nil)
 
 // OperationIndexAction renders a page of operations resources, identified by
 // a normal page query and optionally filtered by an account, ledger, or
@@ -30,26 +36,27 @@ type OperationIndexAction struct {
 	TransactionFilter string
 	PagingParams      db2.PageQuery
 	Records           []history.Operation
-	Ledgers           history.LedgerCache
+	Ledgers           *history.LedgerCache
 	Page              hal.Page
+	IncludeFailed     bool
 }
 
 // JSON is a method for actions.JSON
-func (action *OperationIndexAction) JSON() {
+func (action *OperationIndexAction) JSON() error {
 	action.Do(
 		action.EnsureHistoryFreshness,
 		action.loadParams,
 		action.ValidateCursorWithinHistory,
 		action.loadRecords,
 		action.loadLedgers,
-		action.loadPage)
-	action.Do(func() {
-		halRender.Render(action.W, action.Page)
-	})
+		action.loadPage,
+		func() { hal.Render(action.W, action.Page) },
+	)
+	return action.Err
 }
 
 // SSE is a method for actions.SSE
-func (action *OperationIndexAction) SSE(stream sse.Stream) {
+func (action *OperationIndexAction) SSE(stream *sse.Stream) error {
 	action.Setup(
 		action.EnsureHistoryFreshness,
 		action.loadParams,
@@ -61,19 +68,16 @@ func (action *OperationIndexAction) SSE(stream sse.Stream) {
 		func() {
 			stream.SetLimit(int(action.PagingParams.Limit))
 			records := action.Records[stream.SentCount():]
-
 			for _, record := range records {
 				ledger, found := action.Ledgers.Records[record.LedgerSequence()]
 				if !found {
-					msg := fmt.Sprintf("could not find ledger data for sequence %d", record.LedgerSequence())
-					stream.Err(errors.New(msg))
+					action.Err = errors.New(fmt.Sprintf("could not find ledger data for sequence %d", record.LedgerSequence()))
 					return
 				}
 
-				res, err := resource.NewOperation(action.Ctx, record, ledger)
-
+				res, err := resourceadapter.NewOperation(action.R.Context(), record, ledger)
 				if err != nil {
-					stream.Err(err)
+					action.Err = err
 					return
 				}
 
@@ -82,16 +86,48 @@ func (action *OperationIndexAction) SSE(stream sse.Stream) {
 					Data: res,
 				})
 			}
-		})
+		},
+	)
 
+	return action.Err
 }
 
 func (action *OperationIndexAction) loadParams() {
 	action.ValidateCursorAsDefault()
-	action.AccountFilter = action.GetString("account_id")
+	action.AccountFilter = action.GetAddress("account_id")
 	action.LedgerFilter = action.GetInt32("ledger_id")
-	action.TransactionFilter = action.GetString("tx_id")
+	action.TransactionFilter = action.GetStringFromURLParam("tx_id")
 	action.PagingParams = action.GetPageQuery()
+	action.IncludeFailed = action.GetBool("include_failed")
+
+	filters, err := countNonEmpty(
+		action.AccountFilter,
+		action.LedgerFilter,
+		action.TransactionFilter,
+	)
+
+	if err != nil {
+		action.Err = errors.Wrap(err, "Error in countNonEmpty")
+		return
+	}
+
+	if filters > 1 {
+		action.Err = supportProblem.BadRequest
+		return
+	}
+
+	// Double check TransactionFilter as it's used to determine if failed txs should be returned
+	if action.TransactionFilter != "" && !isValidTransactionHash(action.TransactionFilter) {
+		action.Err = supportProblem.MakeInvalidFieldProblem("tx_id", errors.New("Invalid transaction hash"))
+		return
+	}
+
+	if action.IncludeFailed == true && !action.App.config.IngestFailedTransactions {
+		err := errors.New("`include_failed` parameter is unavailable when Horizon is not ingesting failed " +
+			"transactions. Set `INGEST_FAILED_TRANSACTIONS=true` to start ingesting them.")
+		action.Err = supportProblem.MakeInvalidFieldProblem("include_failed", err)
+		return
+	}
 }
 
 func (action *OperationIndexAction) loadRecords() {
@@ -107,21 +143,50 @@ func (action *OperationIndexAction) loadRecords() {
 		ops.ForTransaction(action.TransactionFilter)
 	}
 
+	// When querying operations for transaction return both successful
+	// and failed operations. We assume that because user is querying
+	// this specific transactions, she knows it's status.
+	if action.TransactionFilter != "" || action.IncludeFailed {
+		ops.IncludeFailed()
+	}
+
 	action.Err = ops.Page(action.PagingParams).Select(&action.Records)
+	if action.Err != nil {
+		return
+	}
+
+	for _, o := range action.Records {
+		if !action.IncludeFailed && action.TransactionFilter == "" {
+			if !o.IsTransactionSuccessful() {
+				action.Err = errors.Errorf("Corrupted data! `include_failed=false` but returned transaction in /operations is failed: %s", o.TransactionHash)
+				return
+			}
+
+			var resultXDR xdr.TransactionResult
+			action.Err = xdr.SafeUnmarshalBase64(o.TxResult, &resultXDR)
+			if action.Err != nil {
+				return
+			}
+
+			if resultXDR.Result.Code != xdr.TransactionResultCodeTxSuccess {
+				action.Err = errors.Errorf("Corrupted data! `include_failed=false` but returned transaction /operations is failed: %s %s", o.TransactionHash, o.TxResult)
+				return
+			}
+		}
+	}
 }
 
 // loadLedgers populates the ledger cache for this action
 func (action *OperationIndexAction) loadLedgers() {
+	action.Ledgers = &history.LedgerCache{}
 	for _, op := range action.Records {
 		action.Ledgers.Queue(op.LedgerSequence())
 	}
-
 	action.Err = action.Ledgers.Load(action.HistoryQ())
 }
 
 func (action *OperationIndexAction) loadPage() {
 	for _, record := range action.Records {
-
 		ledger, found := action.Ledgers.Records[record.LedgerSequence()]
 		if !found {
 			msg := fmt.Sprintf("could not find ledger data for sequence %d", record.LedgerSequence())
@@ -130,7 +195,7 @@ func (action *OperationIndexAction) loadPage() {
 		}
 
 		var res hal.Pageable
-		res, action.Err = resource.NewOperation(action.Ctx, record, ledger)
+		res, action.Err = resourceadapter.NewOperation(action.R.Context(), record, ledger)
 		if action.Err != nil {
 			return
 		}
@@ -143,6 +208,9 @@ func (action *OperationIndexAction) loadPage() {
 	action.Page.Order = action.PagingParams.Order
 	action.Page.PopulateLinks()
 }
+
+// Interface verification
+var _ actions.JSONer = (*OperationShowAction)(nil)
 
 // OperationShowAction renders a ledger found by its sequence number.
 type OperationShowAction struct {
@@ -166,11 +234,11 @@ func (action *OperationShowAction) loadLedger() {
 }
 
 func (action *OperationShowAction) loadResource() {
-	action.Resource, action.Err = resource.NewOperation(action.Ctx, action.Record, action.Ledger)
+	action.Resource, action.Err = resourceadapter.NewOperation(action.R.Context(), action.Record, action.Ledger)
 }
 
 // JSON is a method for actions.JSON
-func (action *OperationShowAction) JSON() {
+func (action *OperationShowAction) JSON() error {
 	action.Do(
 		action.EnsureHistoryFreshness,
 		action.loadParams,
@@ -178,10 +246,9 @@ func (action *OperationShowAction) JSON() {
 		action.loadRecord,
 		action.loadLedger,
 		action.loadResource,
+		func() { hal.Render(action.W, action.Resource) },
 	)
-	action.Do(func() {
-		halRender.Render(action.W, action.Resource)
-	})
+	return action.Err
 }
 
 func (action *OperationShowAction) verifyWithinHistory() {

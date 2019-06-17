@@ -1,6 +1,6 @@
 package main
 
-// See README.md for a description of this script
+// This is a build script that Travis uses to build Stellar release packages.
 
 import (
 	"flag"
@@ -45,7 +45,7 @@ func main() {
 	if os.Getenv("TRAVIS_EVENT_TYPE") == "cron" {
 		buildNightlies()
 		os.Exit(0)
-	} else if os.Getenv("TRAVIS_TAG") != "" {
+	} else if os.Getenv("CIRCLE_TAG") != "" {
 		buildByTag()
 		os.Exit(0)
 	} else {
@@ -74,7 +74,7 @@ func binNamesForDir(dir string) []string {
 
 	result := []string{}
 	for _, file := range files {
-		if file.IsDir() {
+		if file.IsDir() && file.Name() != "internal" {
 			result = append(result, filepath.Join(dir, file.Name()))
 		}
 	}
@@ -142,12 +142,18 @@ func buildNightlies() {
 }
 
 func buildByTag() {
-	bin, version := extractFromTag(os.Getenv("TRAVIS_TAG"))
+	bin, version := extractFromTag(os.Getenv("CIRCLE_TAG"))
 	pkg := packageName(bin)
 	repo := repoName()
 
 	if bin == "" {
-		log.Info("could not extract info from TRAVIS_TAG: skipping artifact packaging")
+		log.Info("could not extract info from CIRCLE_TAG: skipping artifact packaging")
+		os.Exit(0)
+	}
+
+	// Don't build anything if no package can be found
+	if pkg == "" {
+		log.Infof("could not find `%s` in expected binary locations: skipping artifact packaging", bin)
 		os.Exit(0)
 	}
 
@@ -206,11 +212,11 @@ func buildSnapshots() {
 
 // extractFromTag extracts the name of the binary that should be packaged in the
 // course of execution this script as well as the version it should be packaged
-// as, based on the name of the tag in the TRAVIS_TAG environment variable.
+// as, based on the name of the tag in the CIRCLE_TAG environment variable.
 // Tags must be of the form `NAME-vSEMVER`, such as `horizon-v1.0.0` to be
 // matched by this function.
 //
-// In the event that the TRAVIS_TAG is missing or the match fails, an empty
+// In the event that the CIRCLE_TAG is missing or the match fails, an empty
 // string will be returned.
 func extractFromTag(tag string) (string, string) {
 	match := extractBinName.FindStringSubmatch(tag)
@@ -238,7 +244,7 @@ func getBuildConfigs() (result []buildConfig) {
 }
 
 // packageArchive tars or zips `dest`, depending upon the OS, then removes
-// `dest`, in preparation of travis uploading all artifacts to github releases.
+// `dest`, in preparation of Circle uploading all artifacts to github releases.
 func packageArchive(dest, buildOS string) {
 	release := filepath.Base(dest)
 	dir := filepath.Dir(dest)

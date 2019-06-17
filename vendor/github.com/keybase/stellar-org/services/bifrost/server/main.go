@@ -16,7 +16,7 @@ import (
 
 // ProtocolVersion is the version of the protocol that Bifrost server and
 // JS SDK use to communicate.
-const ProtocolVersion int = 1
+const ProtocolVersion int = 2
 
 type Server struct {
 	BitcoinListener            *bitcoin.Listener            `inject:""`
@@ -31,6 +31,7 @@ type Server struct {
 
 	MinimumValueBtc string
 	MinimumValueEth string
+	SignerPublicKey string
 
 	minimumValueSat int64
 	minimumValueWei *big.Int
@@ -42,4 +43,5 @@ type GenerateAddressResponse struct {
 	ProtocolVersion int    `json:"protocol_version"`
 	Chain           string `json:"chain"`
 	Address         string `json:"address"`
+	Signer          string `json:"signer"`
 }

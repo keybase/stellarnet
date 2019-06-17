@@ -4,10 +4,20 @@ clientData:
   laboratoryUrl: https://www.stellar.org/laboratory/#explorer?resource=payments&endpoint=for_account
 ---
 
-This endpoint responds with a collection of [Payment operations](../resources/operation.md) where the given [account](../resources/account.md) was either the sender or receiver.
+This endpoint responds with a collection of payment-related operations where the given
+[account](../resources/account.md) was either the sender or receiver.
 
-This endpoint can also be used in [streaming](../responses.md#streaming) mode so it is possible to use it to listen for new payments to or from an account as they get made in the Stellar network.
-If called in streaming mode Horizon will start at the earliest known payment unless a `cursor` is set. In that case it will start from the `cursor`. You can also set `cursor` value to `now` to only stream payments created since your request time.
+This endpoint can also be used in [streaming](../streaming.md) mode so it is possible to use it to
+listen for new payments to or from an account as they get made in the Stellar network.
+If called in streaming mode Horizon will start at the earliest known payment unless a `cursor` is
+set. In that case it will start from the `cursor`. You can also set `cursor` value to `now` to only
+stream payments created since your request time.
+
+The operations that can be returned in by this endpoint are:
+- `create_account`
+- `payment`
+- `path_payment`
+- `account_merge`
 
 ## Request
 
@@ -17,23 +27,24 @@ GET /accounts/{id}/payments{?cursor,limit,order}
 
 ### Arguments
 
-|  name  |  notes  | description | example |
-| ------ | ------- | ----------- | ------- |
-| `id`      | required, string | The account id of the account used to constrain results. | `GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ` |
-| `?cursor` | optional, default _null_ | A payment paging token specifying from where to begin results. When streaming this can be set to `now` to stream object created since your request time. | `8589934592`                                          |
-| `?limit`  | optional, number, default `10`  | Specifies the count of records at most to return. | `200` |
+| name | notes | description | example |
+| ---- | ----- | ----------- | ------- |
+| `id` | required, string | The account id of the account used to constrain results. | `GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ` |
+| `?cursor` | optional, default _null_ | A payment paging token specifying from where to begin results. When streaming this can be set to `now` to stream object created since your request time. | `8589934592` |
+| `?limit` | optional, number, default `10` | Specifies the count of records at most to return. | `200` |
 | `?order` | optional, string, default `asc` | Specifies order of returned results. `asc` means older payments first, `desc` mean newer payments first. | `desc` |
+| `?include_failed` | optional, bool, default: `false` | Set to `true` to include payments of failed transactions in results. | `true` |
 
 ### curl Example Request
 
 ```bash
 # Retrieve the 25 latest payments for a specific account.
-curl "https://horizon-testnet.stellar.org/account/GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ/payments?limit=25&order=desc"
+curl "https://horizon-testnet.stellar.org/accounts/GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ/payments?limit=25&order=desc"
 ```
 
 ### JavaScript Example Request
 
-```js
+```javascript
 var StellarSdk = require('stellar-sdk');
 var server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
 
@@ -47,6 +58,25 @@ server.payments()
     console.error(err);
   })
 ```
+
+### JavaScript Streaming Example
+
+```javascript
+var StellarSdk = require('stellar-sdk')
+var server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+
+var paymentHandler = function (paymentResponse) {
+  console.log(paymentResponse);
+};
+
+var es = server.payments()
+  .forAccount("GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ")
+  .cursor('now')
+  .stream({
+    onmessage: paymentHandler
+  })
+```
+
 ## Response
 
 This endpoint responds with a [page](../resources/page.md) of [payment operations](../resources/operation.md).
@@ -65,11 +95,11 @@ This endpoint responds with a [page](../resources/page.md) of [payment operation
           "href": "/transaction/6391dd190f15f7d1665ba53c63842e368f485651a53d8d852ed442a446d1c69a"
         },
         "precedes": {
-          "href": "/account/GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ/payments?cursor=12884905984&order=asc{?limit}",
+          "href": "/accounts/GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ/payments?cursor=12884905984&order=asc{?limit}",
           "templated": true
         },
         "succeeds": {
-          "href": "/account/GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ/payments?cursor=12884905984&order=desc{?limit}",
+          "href": "/accounts/GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ/payments?cursor=12884905984&order=desc{?limit}",
           "templated": true
         }
       },
@@ -89,11 +119,11 @@ This endpoint responds with a [page](../resources/page.md) of [payment operation
 },
 "_links": {
   "next": {
-    "href": "/account/GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ/payments?cursor=12884905984&order=asc{?limit}",
+    "href": "/accounts/GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ/payments?cursor=12884905984&order=asc{?limit}",
     "templated": true
   },
   "self": {
-    "href": "/account/GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ/payments"
+    "href": "/accounts/GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ/payments"
   }
 }
 }
@@ -130,7 +160,6 @@ This endpoint responds with a [page](../resources/page.md) of [payment operation
   "type": "create_account"
 }
 ```
-
 
 ## Possible Errors
 

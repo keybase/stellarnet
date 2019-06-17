@@ -10,6 +10,14 @@ import (
 	"github.com/stellar/go/xdr"
 )
 
+func (t *Operation) IsTransactionSuccessful() bool {
+	if t.TransactionSuccessful == nil {
+		return true
+	}
+
+	return *t.TransactionSuccessful
+}
+
 // LedgerSequence return the ledger in which the effect occurred.
 func (r *Operation) LedgerSequence() int32 {
 	id := toid.Parse(r.ID)
@@ -30,12 +38,38 @@ func (r *Operation) UnmarshalDetails(dest interface{}) error {
 	return err
 }
 
+// OperationFeeStats returns operation fee stats for the last 5 ledgers.
+// Currently, we hard code the query to return the last 5 ledgers worth of transactions.
+// TODO: make the number of ledgers configurable.
+func (q *Q) OperationFeeStats(currentSeq int32, dest *FeeStats) error {
+	return q.GetRaw(dest, `
+		SELECT
+			ceil(min(max_fee/operation_count))::bigint AS "min",
+			ceil(mode() within group (order by max_fee/operation_count))::bigint AS "mode",
+			ceil(percentile_cont(0.10) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p10",
+			ceil(percentile_cont(0.20) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p20",
+			ceil(percentile_cont(0.30) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p30",
+			ceil(percentile_cont(0.40) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p40",
+			ceil(percentile_cont(0.50) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p50",
+			ceil(percentile_cont(0.60) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p60",
+			ceil(percentile_cont(0.70) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p70",
+			ceil(percentile_cont(0.80) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p80",
+			ceil(percentile_cont(0.90) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p90",
+			ceil(percentile_cont(0.95) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p95",
+			ceil(percentile_cont(0.99) WITHIN GROUP (ORDER BY max_fee/operation_count))::bigint AS "p99"
+		FROM history_transactions
+		WHERE ledger_sequence > $1 AND ledger_sequence <= $2
+	`, currentSeq-5, currentSeq)
+}
+
 // Operations provides a helper to filter the operations table with pre-defined
 // filters.  See `OperationsQ` for the available filters.
 func (q *Q) Operations() *OperationsQ {
 	return &OperationsQ{
-		parent: q,
-		sql:    selectOperation,
+		parent:        q,
+		sql:           selectOperation,
+		opIdCol:       "hop.id",
+		includeFailed: false,
 	}
 }
 
@@ -60,6 +94,9 @@ func (q *OperationsQ) ForAccount(aid string) *OperationsQ {
 		"history_operation_participants hopp ON "+
 			"hopp.history_operation_id = hop.id",
 	).Where("hopp.history_account_id = ?", account.ID)
+
+	// in order to use history_operation_participants.hist_op_p_id index
+	q.opIdCol = "hopp.history_operation_id"
 
 	return q
 }
@@ -118,13 +155,19 @@ func (q *OperationsQ) OnlyPayments() *OperationsQ {
 	return q
 }
 
+// IncludeFailed changes the query to include failed transactions.
+func (q *OperationsQ) IncludeFailed() *OperationsQ {
+	q.includeFailed = true
+	return q
+}
+
 // Page specifies the paging constraints for the query being built by `q`.
 func (q *OperationsQ) Page(page db2.PageQuery) *OperationsQ {
 	if q.Err != nil {
 		return q
 	}
 
-	q.sql, q.Err = page.ApplyTo(q.sql, "hop.id")
+	q.sql, q.Err = page.ApplyTo(q.sql, q.opIdCol)
 	return q
 }
 
@@ -134,8 +177,49 @@ func (q *OperationsQ) Select(dest interface{}) error {
 		return q.Err
 	}
 
+	if q.includeFailed == false {
+		q.sql = q.sql.
+			Where("(ht.successful = true OR ht.successful IS NULL)")
+	}
+
 	q.Err = q.parent.Select(dest, q.sql)
-	return q.Err
+	if q.Err != nil {
+		return q.Err
+	}
+
+	operations, ok := dest.(*[]Operation)
+	if !ok {
+		return errors.New("dest is not *[]Operation")
+	}
+
+	for _, o := range *operations {
+		var resultXDR xdr.TransactionResult
+		err := xdr.SafeUnmarshalBase64(o.TxResult, &resultXDR)
+		if err != nil {
+			return err
+		}
+
+		if !q.includeFailed {
+			if !o.IsTransactionSuccessful() {
+				return errors.Errorf("Corrupted data! `include_failed=false` but returned transaction is failed: %s", o.TransactionHash)
+			}
+
+			if resultXDR.Result.Code != xdr.TransactionResultCodeTxSuccess {
+				return errors.Errorf("Corrupted data! `include_failed=false` but returned transaction is failed: %s %s", o.TransactionHash, o.TxResult)
+			}
+		}
+
+		// Check if `successful` equals resultXDR
+		if o.IsTransactionSuccessful() && resultXDR.Result.Code != xdr.TransactionResultCodeTxSuccess {
+			return errors.Errorf("Corrupted data! `successful=true` but returned transaction is not success: %s %s", o.TransactionHash, o.TxResult)
+		}
+
+		if !o.IsTransactionSuccessful() && resultXDR.Result.Code == xdr.TransactionResultCodeTxSuccess {
+			return errors.Errorf("Corrupted data! `successful=false` but returned transaction is success: %s %s", o.TransactionHash, o.TxResult)
+		}
+	}
+
+	return nil
 }
 
 var selectOperation = sq.Select(
@@ -145,6 +229,8 @@ var selectOperation = sq.Select(
 		"hop.type, " +
 		"hop.details, " +
 		"hop.source_account, " +
-		"ht.transaction_hash").
+		"ht.transaction_hash, " +
+		"ht.tx_result, " +
+		"ht.successful as transaction_successful").
 	From("history_operations hop").
 	LeftJoin("history_transactions ht ON ht.id = hop.transaction_id")

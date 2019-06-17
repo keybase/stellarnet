@@ -22,9 +22,7 @@ var AssetTypeMap = map[string]xdr.AssetType{
 
 //Parse creates an asset from the provided strings.  See AssetTypeMap for valid strings for aType.
 func Parse(aType string) (result xdr.AssetType, err error) {
-
 	result, ok := AssetTypeMap[aType]
-
 	if !ok {
 		err = errors.New(ErrInvalidString)
 	}

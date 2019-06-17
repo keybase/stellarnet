@@ -3,8 +3,13 @@ title: Rate Limiting
 ---
 
 In order to provide service stability, Horizon limits the number of requests a
-client can perform within a one hour window.  By default this is set to 3600
-requests per hour—an average of one request per second.
+client (single IP) can perform within a one hour window.  By default this is set to 3600
+requests per hour—an average of one request per second. Also, while streaming
+every update of the stream (what happens every time there's a new ledger) is
+counted. Ex. if there were 12 new ledgers in a minute, 12 requests will be
+subtracted from the limit.
+
+Horizon is using [GCRA](https://brandur.org/rate-limiting#gcra) algorithm.
 
 ## Response headers for rate limiting
 

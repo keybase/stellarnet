@@ -2,39 +2,40 @@
 title: Not Acceptable
 ---
 
-When your client only accepts certain formats of data from Horizon and Horizon cannot fulfill that request, Horizon will return a not_acceptable error. This is analogous to the [HTTP 406 Error](https://developer.mozilla.org/en-US/docs/Web/HTTP/Response_codes).
+When your client only accepts certain formats of data from Horizon and Horizon cannot fulfill that
+request, Horizon will return a `not_acceptable` error. This is analogous to a
+[HTTP 406 Error](https://developer.mozilla.org/en-US/docs/Web/HTTP/Response_codes).
 
-If you are encountering this error, please check to make sure the criteria for content you’ll accept is correct.
+For example, if your client only accepts an XML response (`Accept: application/xml`), Horizon will
+respond with a `not_acceptable` error.
 
+If you are encountering this error, please check to make sure the criteria for content you’ll
+accept is correct.
 
 ## Attributes
 
+As with all errors Horizon returns, `not_acceptable` follows the
+[Problem Details for HTTP APIs](https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00)
+draft specification guide and thus has the following attributes:
 
-As with all errors Horizon returns, `not_acceptable` follows the [Problem Details for HTTP APIs](https://tools.ietf.org/html/draft-ietf-appsawg-http-problem-00) draft specification guide and thus has the following attributes:
-
-| Attribute | Type   | Description                                                                                                                     |
-| --------- | ----   | ------------------------------------------------------------------------------------------------------------------------------- |
-| Type      | URL    | The identifier for the error.  This is a URL that can be visited in the browser.                                                |
-| Title     | String | A short title describing the error.                                                                                             |
-| Status    | Number | An HTTP status code that maps to the error.                                                                                     |
-| Detail    | String | A more detailed description of the error.                                                                                       |
-| Instance  | String | A token that uniquely identifies this request. Allows server administrators to correlate a client report with server log files  |
-
+| Attribute   | Type   | Description                                                                     |
+| ----------- | ------ | ------------------------------------------------------------------------------- |
+| `type`      | URL    | The identifier for the error.  This is a URL that can be visited in the browser.|
+| `title`     | String | A short title describing the error.                                             |
+| `status`    | Number | An HTTP status code that maps to the error.                                     |
+| `detail`    | String | A more detailed description of the error.                                       |
 
 ## Example
 
-```bash
+```shell
 $ curl -X GET -H "Accept: application/xml" "https://horizon-testnet.stellar.org/accounts/GALWEV6GY73RJ255JC7XUOZ2L7WZ5JJDTKATB2MUK7F3S67DVT2A6R5G"
 {
-  "type": "not_acceptable",
+  "type": "https://stellar.org/horizon-errors/not_acceptable",
   "title": "An acceptable response content-type could not be provided for this request",
-  "status": 406,
-  "instance": "horizon-testnet-001.prd.stellar001.internal.stellar-ops.com/hCYL7oezXs-062662"
+  "status": 406
 }
 ```
 
 ## Related
 
-[Not Found](./not-found.md)
-
-[Forbidden](./forbidden.md)
+- [Not Found](./not-found.md)

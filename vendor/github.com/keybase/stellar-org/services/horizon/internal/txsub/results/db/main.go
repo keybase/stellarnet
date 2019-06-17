@@ -25,6 +25,8 @@ var _ txsub.ResultProvider = &DB{}
 
 // ResultByHash implements txsub.ResultProvider
 func (rp *DB) ResultByHash(ctx context.Context, hash string) txsub.Result {
+	historyLatest := ledger.CurrentState().HistoryLatest
+
 	// query history database
 	var hr history.Transaction
 	err := rp.History.TransactionByHash(&hr, hash)
@@ -38,7 +40,18 @@ func (rp *DB) ResultByHash(ctx context.Context, hash string) txsub.Result {
 
 	// query core database
 	var cr core.Transaction
-	err = rp.Core.TransactionByHashAfterLedger(&cr, hash, ledger.CurrentState().HistoryLatest)
+	// In the past we were searching for the transaction in core DB *after* the
+	// latest ingested ledger. This was incorrect because history DB contains
+	// successful transactions only. So it was possible that the transaction was
+	// never found and clients were receiving Timeout errors.
+	// However we can't change it to simply find a transaction by hash because
+	// `txhistory` table does not have an index on `txid` field. Because of this
+	// we query the last 120 ledgers (~10 minutes) to not kill the DB by searching
+	// for a value on a table with millions of rows but also to support returning
+	// the failed tx result (when resubmitting) for 10 minutes (or before core
+	// clears `txhistory` table, whatever is first).
+	// If you are modifying the code here, please do not make this error again.
+	err = rp.Core.TransactionByHashAfterLedger(&cr, hash, historyLatest-120)
 	if err == nil {
 		return txResultFromCore(cr)
 	}
@@ -52,7 +65,18 @@ func (rp *DB) ResultByHash(ctx context.Context, hash string) txsub.Result {
 }
 
 func txResultFromHistory(tx history.Transaction) txsub.Result {
+	var txResult xdr.TransactionResult
+	err := xdr.SafeUnmarshalBase64(tx.TxResult, &txResult)
+	if err == nil {
+		if txResult.Result.Code != xdr.TransactionResultCodeTxSuccess {
+			err = &txsub.FailedTransactionError{
+				ResultXDR: tx.TxResult,
+			}
+		}
+	}
+
 	return txsub.Result{
+		Err:            err,
 		Hash:           tx.TransactionHash,
 		LedgerSequence: tx.LedgerSequence,
 		EnvelopeXDR:    tx.TxEnvelope,

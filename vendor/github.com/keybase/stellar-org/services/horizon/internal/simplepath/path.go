@@ -5,20 +5,17 @@ import (
 	"fmt"
 
 	"github.com/stellar/go/services/horizon/internal/db2/core"
-	"github.com/stellar/go/services/horizon/internal/paths"
 	"github.com/stellar/go/xdr"
 )
 
-// pathNode implements the paths.Path interface and represents a path
-// as a linked list pointing from source to destination.
+// pathNode represents a path as a linked list pointing from source to destination
 type pathNode struct {
-	Asset xdr.Asset
-	Tail  *pathNode
-	Q     *core.Q
+	Asset      xdr.Asset
+	Tail       *pathNode
+	Q          *core.Q
+	CachedCost *xdr.Int64
+	Depth      uint
 }
-
-// check interface compatibility
-var _ paths.Path = &pathNode{}
 
 func (p *pathNode) String() string {
 	if p == nil {
@@ -38,7 +35,7 @@ func (p *pathNode) String() string {
 	return out.String()
 }
 
-// Destination implements paths.Path.Destination interface method
+// Destination returns the destination of the pathNode
 func (p *pathNode) Destination() xdr.Asset {
 	cur := p
 	for cur.Tail != nil {
@@ -47,13 +44,30 @@ func (p *pathNode) Destination() xdr.Asset {
 	return cur.Asset
 }
 
-// Source implements paths.Path.Source interface method
+// IsOnPath returns true if a given asset is in the path.
+func (p *pathNode) IsOnPath(asset xdr.Asset) bool {
+	cur := p
+	for cur.Tail != nil {
+		if asset.Equals(cur.Asset) {
+			return true
+		}
+		cur = cur.Tail
+	}
+
+	if asset.Equals(cur.Asset) {
+		return true
+	}
+
+	return false
+}
+
+// Source returns the source asset in the pathNode
 func (p *pathNode) Source() xdr.Asset {
 	// the destination for path is the head of the linked list
 	return p.Asset
 }
 
-// Path implements paths.Path.Path interface method
+// Path returns the path of the list excluding the source and destination assets
 func (p *pathNode) Path() []xdr.Asset {
 	path := p.Flatten()
 
@@ -66,52 +80,51 @@ func (p *pathNode) Path() []xdr.Asset {
 	return path[1 : len(path)-1]
 }
 
-// Cost implements the paths.Path.Cost interface method
-func (p *pathNode) Cost(amount xdr.Int64) (result xdr.Int64, err error) {
-	result = amount
-
+// Cost computes the units of the source asset needed to send the amount in the destination asset
+// This is an expensive operation so callers should reuse the result where appropriate
+func (p *pathNode) Cost(amount xdr.Int64) (xdr.Int64, error) {
 	if p.Tail == nil {
-		return
+		return amount, nil
 	}
 
-	cur := p
+	if p.CachedCost != nil {
+		return *p.CachedCost, nil
+	}
 
+	// The first element of the current path is the current source asset.
+	// The last element (with `Tail` = nil) of the current path is the destination
+	// asset. To make the calculations correct we start by selling destination
+	// asset to the second from the end asset and continue until we reach the current
+	// source asset.
+	cur := p
+	stack := make([]*pathNode, 0, p.Depth)
 	for cur.Tail != nil {
+		stack = append(stack, cur)
+		cur = cur.Tail
+	}
+
+	var err error
+	result := amount
+
+	for i := len(stack) - 1; i >= 0; i-- {
+		cur = stack[i]
+
+		if cur.CachedCost != nil {
+			result = *cur.CachedCost
+			continue
+		}
+
 		ob := cur.OrderBook()
-		result, err = ob.Cost(cur.Tail.Asset, result)
+		result, err = ob.CostToConsumeLiquidity(result)
 		if err != nil {
-			return
+			return result, err
 		}
-		cur = cur.Tail
 	}
 
-	return
-}
+	// Cache the result
+	cur.CachedCost = &result
 
-// Depth returns the length of the list
-func (p *pathNode) Depth() int {
-	depth := 0
-	cur := p
-	for {
-		if cur == nil {
-			return depth
-		}
-		cur = cur.Tail
-		depth++
-	}
-}
-
-// Flatten walks the list and returns a slice of assets
-func (p *pathNode) Flatten() (result []xdr.Asset) {
-	cur := p
-
-	for {
-		if cur == nil {
-			return
-		}
-		result = append(result, cur.Asset)
-		cur = cur.Tail
-	}
+	return result, nil
 }
 
 func (p *pathNode) OrderBook() *orderBook {
@@ -120,8 +133,19 @@ func (p *pathNode) OrderBook() *orderBook {
 	}
 
 	return &orderBook{
-		Selling: p.Tail.Asset,
-		Buying:  p.Asset,
+		Selling: p.Tail.Asset, // offer is selling this asset
+		Buying:  p.Asset,      // offer is buying this asset
 		Q:       p.Q,
 	}
+}
+
+// Flatten walks the list and returns a slice of assets
+func (p *pathNode) Flatten() []xdr.Asset {
+	result := []xdr.Asset{}
+	cur := p
+	for cur != nil {
+		result = append(result, cur.Asset)
+		cur = cur.Tail
+	}
+	return result
 }

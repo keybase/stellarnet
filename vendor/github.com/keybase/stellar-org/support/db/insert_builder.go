@@ -16,6 +16,18 @@ func (ib *InsertBuilder) Exec() (sql.Result, error) {
 
 	template := ib.rows[0]
 	cols := columnsForStruct(template)
+
+	if ib.ignoredCols != nil {
+		finalCols := make([]string, 0, len(cols))
+		for _, col := range cols {
+			if ib.ignoredCols[col] {
+				continue
+			}
+			finalCols = append(finalCols, col)
+		}
+		cols = finalCols
+	}
+
 	sql := ib.sql.Columns(cols...)
 
 	// add rows onto the builder
@@ -43,6 +55,17 @@ func (ib *InsertBuilder) Exec() (sql.Result, error) {
 	}
 
 	return r, nil
+}
+
+// IgnoreCols adds colums to ignore list (will not be inserted)
+func (ib *InsertBuilder) IgnoreCols(cols ...string) *InsertBuilder {
+	if ib.ignoredCols == nil {
+		ib.ignoredCols = make(map[string]bool)
+	}
+	for _, col := range cols {
+		ib.ignoredCols[col] = true
+	}
+	return ib
 }
 
 // Rows appends more rows onto the insert statement

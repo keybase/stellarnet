@@ -30,17 +30,25 @@ const (
 var (
 	// ErrInvalidOrder is an error that occurs when a user-provided order string
 	// is invalid
-	ErrInvalidOrder = errors.New("Invalid order")
+	ErrInvalidOrder = &InvalidFieldError{"order"}
 	// ErrInvalidLimit is an error that occurs when a user-provided limit num
 	// is invalid
-	ErrInvalidLimit = errors.New("Invalid limit")
+	ErrInvalidLimit = &InvalidFieldError{"limit"}
 	// ErrInvalidCursor is an error that occurs when a user-provided cursor string
 	// is invalid
-	ErrInvalidCursor = errors.New("Invalid cursor")
+	ErrInvalidCursor = &InvalidFieldError{"cursor"}
 	// ErrNotPageable is an error that occurs when the records provided to
 	// PageQuery.GetContinuations cannot be cast to Pageable
 	ErrNotPageable = errors.New("Records provided are not Pageable")
 )
+
+type InvalidFieldError struct {
+	Name string
+}
+
+func (e *InvalidFieldError) Error() string {
+	return fmt.Sprintf("%s: invalid value", e.Name)
+}
 
 // ApplyTo returns a new SelectBuilder after applying the paging effects of
 // `p` to `sql`.  This method provides the default case for paging: int64
@@ -152,7 +160,6 @@ func (p PageQuery) CursorInt64() (int64, error) {
 
 // CursorInt64Pair parses this query's Cursor string as two int64s, separated by the provided separator
 func (p PageQuery) CursorInt64Pair(sep string) (l int64, r int64, err error) {
-
 	if p.Cursor == "" {
 		switch p.Order {
 		case OrderAscending:
@@ -208,6 +215,7 @@ func (p PageQuery) CursorInt64Pair(sep string) (l int64, r int64, err error) {
 // cursor are set to the appropriate defaults and are valid.
 func NewPageQuery(
 	cursor string,
+	validateCursor bool,
 	order string,
 	limit uint64,
 ) (result PageQuery, err error) {
@@ -223,7 +231,15 @@ func NewPageQuery(
 		return
 	}
 
+	// Set cursor
 	result.Cursor = cursor
+	if validateCursor {
+		_, _, err = result.CursorInt64Pair(DefaultPairSep)
+		if err != nil {
+			err = ErrInvalidCursor
+			return
+		}
+	}
 
 	// Set limit
 	switch {
@@ -241,8 +257,8 @@ func NewPageQuery(
 }
 
 // MustPageQuery behaves as NewPageQuery, but panics upon error
-func MustPageQuery(cursor string, order string, limit uint64) PageQuery {
-	r, err := NewPageQuery(cursor, order, limit)
+func MustPageQuery(cursor string, validateCursor bool, order string, limit uint64) PageQuery {
+	r, err := NewPageQuery(cursor, validateCursor, order, limit)
 	if err != nil {
 		panic(err)
 	}

@@ -18,12 +18,7 @@ func (r *Effect) UnmarshalDetails(dest interface{}) error {
 		return nil
 	}
 
-	err := json.Unmarshal([]byte(r.DetailsString.String), &dest)
-	if err != nil {
-		err = errors.Wrap(err, "unmarshal failed")
-	}
-
-	return err
+	return errors.Wrap(json.Unmarshal([]byte(r.DetailsString.String), &dest), "unmarshal effect details failed")
 }
 
 // ID returns a lexically ordered id for this effect record

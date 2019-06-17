@@ -1,20 +1,26 @@
 package horizon
 
 import (
-	"errors"
+	"fmt"
 	"regexp"
 
+	"github.com/stellar/go/services/horizon/internal/actions"
 	"github.com/stellar/go/services/horizon/internal/db2"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
-	"github.com/stellar/go/services/horizon/internal/render/hal"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
-	"github.com/stellar/go/services/horizon/internal/resource"
-	halRender "github.com/stellar/go/support/render/hal"
+	"github.com/stellar/go/services/horizon/internal/resourceadapter"
+	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/support/render/hal"
+	"github.com/stellar/go/support/render/problem"
 )
 
 // This file contains the actions:
 //
 // EffectIndexAction: pages of effects
+
+// Interface verifications
+var _ actions.JSONer = (*EffectIndexAction)(nil)
+var _ actions.EventStreamer = (*EffectIndexAction)(nil)
 
 // EffectIndexAction renders a page of effect resources, identified by
 // a normal page query and optionally filtered by an account, ledger,
@@ -29,25 +35,25 @@ type EffectIndexAction struct {
 	PagingParams db2.PageQuery
 	Records      []history.Effect
 	Page         hal.Page
+	Ledgers      *history.LedgerCache
 }
 
 // JSON is a method for actions.JSON
-func (action *EffectIndexAction) JSON() {
+func (action *EffectIndexAction) JSON() error {
 	action.Do(
 		action.EnsureHistoryFreshness,
 		action.loadParams,
 		action.ValidateCursorWithinHistory,
 		action.loadRecords,
+		action.loadLedgers,
 		action.loadPage,
+		func() { hal.Render(action.W, action.Page) },
 	)
-
-	action.Do(func() {
-		halRender.Render(action.W, action.Page)
-	})
+	return action.Err
 }
 
 // SSE is a method for actions.SSE
-func (action *EffectIndexAction) SSE(stream sse.Stream) {
+func (action *EffectIndexAction) SSE(stream *sse.Stream) error {
 	action.Setup(
 		action.EnsureHistoryFreshness,
 		action.loadParams,
@@ -56,15 +62,21 @@ func (action *EffectIndexAction) SSE(stream sse.Stream) {
 
 	action.Do(
 		action.loadRecords,
+		action.loadLedgers,
 		func() {
 			stream.SetLimit(int(action.PagingParams.Limit))
 			records := action.Records[stream.SentCount():]
 
 			for _, record := range records {
-				res, err := resource.NewEffect(action.Ctx, record)
+				ledger, found := action.Ledgers.Records[record.LedgerSequence()]
+				if !found {
+					action.Err = errors.New(fmt.Sprintf("could not find ledger data for sequence %d", record.LedgerSequence()))
+					return
+				}
 
+				res, err := resourceadapter.NewEffect(action.R.Context(), record, ledger)
 				if err != nil {
-					stream.Err(action.Err)
+					action.Err = err
 					return
 				}
 
@@ -75,15 +87,45 @@ func (action *EffectIndexAction) SSE(stream sse.Stream) {
 			}
 		},
 	)
+
+	return action.Err
+}
+
+// loadLedgers populates the ledger cache for this action
+func (action *EffectIndexAction) loadLedgers() {
+	action.Ledgers = &history.LedgerCache{}
+
+	for _, eff := range action.Records {
+		action.Ledgers.Queue(eff.LedgerSequence())
+	}
+
+	action.Err = action.Ledgers.Load(action.HistoryQ())
 }
 
 func (action *EffectIndexAction) loadParams() {
 	action.ValidateCursor()
 	action.PagingParams = action.GetPageQuery()
-	action.AccountFilter = action.GetString("account_id")
+	action.AccountFilter = action.GetAddress("account_id")
 	action.LedgerFilter = action.GetInt32("ledger_id")
 	action.TransactionFilter = action.GetString("tx_id")
 	action.OperationFilter = action.GetInt64("op_id")
+
+	filters, err := countNonEmpty(
+		action.AccountFilter,
+		action.LedgerFilter,
+		action.TransactionFilter,
+		action.OperationFilter,
+	)
+
+	if err != nil {
+		action.Err = errors.Wrap(err, "Error in countNonEmpty")
+		return
+	}
+
+	if filters > 1 {
+		action.Err = problem.BadRequest
+		return
+	}
 }
 
 // loadRecords populates action.Records
@@ -107,8 +149,15 @@ func (action *EffectIndexAction) loadRecords() {
 // loadPage populates action.Page
 func (action *EffectIndexAction) loadPage() {
 	for _, record := range action.Records {
+		ledger, found := action.Ledgers.Records[record.LedgerSequence()]
+		if !found {
+			msg := fmt.Sprintf("could not find ledger data for sequence %d", record.LedgerSequence())
+			action.Err = errors.New(msg)
+			return
+		}
+
 		var res hal.Pageable
-		res, action.Err = resource.NewEffect(action.Ctx, record)
+		res, action.Err = resourceadapter.NewEffect(action.R.Context(), record, ledger)
 		if action.Err != nil {
 			return
 		}
@@ -127,7 +176,6 @@ func (action *EffectIndexAction) loadPage() {
 // represents the the cursor directly after the last closed ledger
 func (action *EffectIndexAction) ValidateCursor() {
 	c := action.GetString("cursor")
-
 	if c == "" {
 		return
 	}
@@ -140,8 +188,5 @@ func (action *EffectIndexAction) ValidateCursor() {
 
 	if !ok {
 		action.SetInvalidField("cursor", errors.New("invalid format"))
-		return
 	}
-
-	return
 }

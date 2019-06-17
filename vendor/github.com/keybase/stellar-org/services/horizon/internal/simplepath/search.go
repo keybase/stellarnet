@@ -1,9 +1,14 @@
 package simplepath
 
 import (
+	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/services/horizon/internal/paths"
 	"github.com/stellar/go/xdr"
 )
+
+// MaxPathLength is a maximum path length as defined in XDR file (includes source and
+// destination assets).
+const MaxPathLength uint = 7
 
 // search represents a single query against the simple finder.  It provides
 // a place to store the results of the query, mostly for the purposes of code
@@ -16,18 +21,33 @@ import (
 // 3.  Call Run() to perform the search.
 //
 type search struct {
-	Query  paths.Query
-	Finder *Finder
+	Query     paths.Query
+	Q         *core.Q
+	MaxLength uint
 
 	// Fields below are initialized by a call to Init() after
 	// setting the fields above
-	queue   []*pathNode
+	queue   []computedNode
 	targets map[string]bool
-	visited map[string]bool
 
 	//This fields below are initialized after the search is run
 	Err     error
 	Results []paths.Path
+}
+
+// computedNode represents a pathNode with the computed cost
+type computedNode struct {
+	path pathNode
+	cost xdr.Int64
+}
+
+func (c computedNode) asPath() paths.Path {
+	return paths.Path{
+		Path:        c.path.Path(),
+		Source:      c.path.Source(),
+		Destination: c.path.Destination(),
+		Cost:        c.cost,
+	}
 }
 
 const maxResults = 20
@@ -35,11 +55,23 @@ const maxResults = 20
 // Init initialized the search, setting fields on the struct used to
 // hold state needed during the actual search.
 func (s *search) Init() {
-	s.queue = []*pathNode{
-		&pathNode{
-			Asset: s.Query.DestinationAsset,
-			Tail:  nil,
-			Q:     s.Finder.Q,
+	p0 := pathNode{
+		Asset: s.Query.DestinationAsset,
+		Tail:  nil,
+		Q:     s.Q,
+		Depth: 1,
+	}
+	var c0 xdr.Int64
+	// `Cost` on destination node does not use DB connection.
+	c0, s.Err = p0.Cost(s.Query.DestinationAmount)
+	if s.Err != nil {
+		return
+	}
+
+	s.queue = []computedNode{
+		computedNode{
+			path: p0,
+			cost: c0,
 		},
 	}
 
@@ -51,7 +83,6 @@ func (s *search) Init() {
 		s.targets[a.String()] = true
 	}
 
-	s.visited = map[string]bool{}
 	s.Err = nil
 	s.Results = nil
 }
@@ -63,13 +94,32 @@ func (s *search) Run() {
 		return
 	}
 
+	s.Err = s.Q.Begin()
+	if s.Err != nil {
+		return
+	}
+
+	defer s.Q.Rollback()
+
+	// We need REPEATABLE READ here to have a stable view of the offers
+	// table. Without it, it's possible that search started in ledger X
+	// and finished in ledger X+1 would give invalid results.
+	//
+	// https://www.postgresql.org/docs/9.1/static/transaction-iso.html
+	// > Note that only updating transactions might need to be retried;
+	// > read-only transactions will never have serialization conflicts.
+	_, s.Err = s.Q.ExecRaw("SET TRANSACTION ISOLATION LEVEL REPEATABLE READ, READ ONLY")
+	if s.Err != nil {
+		return
+	}
+
 	for s.hasMore() {
 		s.runOnce()
 	}
 }
 
 // pop removes the head from the search queue, returning it to the caller
-func (s *search) pop() *pathNode {
+func (s *search) pop() computedNode {
 	next := s.queue[0]
 	s.queue = s.queue[1:]
 	return next
@@ -95,59 +145,57 @@ func (s *search) isTarget(id string) bool {
 	return found
 }
 
-// visit returns true if the asset id provided has not been
-// visited on this search, after marking the id as visited
-func (s *search) visit(id string) bool {
-	if _, found := s.visited[id]; found {
-		return false
-	}
-
-	s.visited[id] = true
-	return true
-}
-
 // runOnce processes the head of the search queue, findings results
 // and extending the search as necessary.
 func (s *search) runOnce() {
 	cur := s.pop()
-	id := cur.Asset.String()
+	id := cur.path.Asset.String()
 
 	if s.isTarget(id) {
-		s.Results = append(s.Results, cur)
+		s.Results = append(s.Results, cur.asPath())
 	}
 
-	if !s.visit(id) {
+	if cur.path.Depth == s.MaxLength {
 		return
 	}
 
-	// A PathPaymentOp's path cannot be over 5 elements in length, and so
-	// we abort our search if the current linked list is over 7 (since the list
-	// includes both source and destination in addition to the path)
-	if cur.Depth() > 7 {
-		return
-	}
-
-	s.extendSearch(cur)
-
+	s.extendSearch(cur.path)
 }
 
-func (s *search) extendSearch(cur *pathNode) {
+func (s *search) extendSearch(p pathNode) {
 	// find connected assets
 	var connected []xdr.Asset
-	s.Err = s.Finder.Q.ConnectedAssets(&connected, cur.Asset)
+	s.Err = s.Q.ConnectedAssets(&connected, p.Asset)
 	if s.Err != nil {
 		return
 	}
 
 	for _, a := range connected {
-		newPath := &pathNode{
+		// If asset already exists on the path, continue to the next one.
+		// We don't want the same asset on the path twice as buying and
+		// then selling the asset will be a bad deal in most cases
+		// (especially A -> B -> A trades).
+		if p.IsOnPath(a) {
+			continue
+		}
+
+		// If the connected asset is not our target and the current length
+		// of the path is MaxLength-1 then it does not make sense to extend
+		// such path.
+		if p.Depth == s.MaxLength-1 && !s.isTarget(a.String()) {
+			continue
+		}
+
+		newPath := pathNode{
 			Asset: a,
-			Tail:  cur,
-			Q:     s.Finder.Q,
+			Tail:  &p,
+			Q:     s.Q,
+			Depth: p.Depth + 1,
 		}
 
 		var hasEnough bool
-		hasEnough, s.Err = s.hasEnoughDepth(newPath)
+		var cost xdr.Int64
+		hasEnough, cost, s.Err = s.hasEnoughDepth(&newPath)
 		if s.Err != nil {
 			return
 		}
@@ -156,14 +204,14 @@ func (s *search) extendSearch(cur *pathNode) {
 			continue
 		}
 
-		s.queue = append(s.queue, newPath)
+		s.queue = append(s.queue, computedNode{newPath, cost})
 	}
 }
 
-func (s *search) hasEnoughDepth(path *pathNode) (bool, error) {
-	_, err := path.Cost(s.Query.DestinationAmount)
+func (s *search) hasEnoughDepth(path *pathNode) (bool, xdr.Int64, error) {
+	cost, err := path.Cost(s.Query.DestinationAmount)
 	if err == ErrNotEnough {
-		return false, nil
+		return false, 0, nil
 	}
-	return true, err
+	return true, cost, err
 }

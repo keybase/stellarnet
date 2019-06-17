@@ -9,8 +9,32 @@ title: Orderbook
 |--------------|------------------|------------------------------------------------------------------------------------------------------------------------|
 | bids | object     |  Array of {`price_r`, `price`, `amount`} objects (see [offers](./offer.md)).  These represent prices and amounts accounts are willing to buy for the given `selling` and `buying` pair. |
 | asks | object |  Array of {`price_r`, `price`, `amount`} objects (see [offers](./offer.md)).  These represent prices and amounts accounts are willing to sell for the given `selling` and `buying` pair.|
-| selling | [Asset](http://stellar.org/developers/learn/concepts/assets.html) | The Asset this offer wants to sell.|
-| buying | [Asset](http://stellar.org/developers/learn/concepts/assets.html) | The Asset this offer wants to buy.|
+| base | [Asset](http://stellar.org/developers/learn/concepts/assets.html) | The Asset this offer wants to sell.|
+| counter | [Asset](http://stellar.org/developers/learn/concepts/assets.html) | The Asset this offer wants to buy.|
+
+#### Bid Object
+|    Attribute     |  Type  |                                                                                                                                |
+| ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| price_r              | object | An object of a number numerator and number denominator that represents the bid price. |
+| price               | string | The bid price of the asset. A number representing the decimal form of price_r |
+| amount              | string | The amount of asset bid offer.  |
+
+#### Ask Object
+|    Attribute     |  Type  |                                                                                                                                |
+| ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| price_r              | object | An object of a number numerator and number denominator that represents the ask price. |
+| price               | string | The ask price of the asset. A number representing the decimal form of price_r |
+| amount              | string | The amount of asset ask offer.  |
+
+#### Price_r Object
+Price_r is a more precise representation of a bid/ask offer.
+
+|    Attribute     |  Type  |                                                                                                                                |
+| ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| n               | number | The numerator.   |
+| d              | number | The denominator.  |
+
+Thus to get price you would take n / d.
 
 ## Links
 
@@ -22,4 +46,4 @@ This resource has no links.
 | Resource                 | Type       | Resource URI Template                |
 |--------------------------|------------|--------------------------------------|
 | [Orderbook Details](../orderbook-details.md)       | Single | `/orderbook?{orderbook_params}`       |
-| [Trades for Orderbook](../trades-for-orderbook.md)       | Collection | `/orderbook/trades?{orderbook_params}`       |
+| [Trades](../trades.md)   | Collection | `/trades?{orderbook_params}`       |

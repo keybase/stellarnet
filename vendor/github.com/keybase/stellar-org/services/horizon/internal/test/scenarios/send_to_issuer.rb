@@ -16,3 +16,5 @@ payment :usd_gateway, :scott, ["USD", :usd_gateway, 10_000_000]
 close_ledger
 
 payment :scott, :usd_gateway, ["USD", :usd_gateway, 10_000]
+
+close_ledger

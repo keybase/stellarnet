@@ -4,7 +4,14 @@ clientData:
   laboratoryUrl: https://www.stellar.org/laboratory/#explorer?resource=transactions&endpoint=single
 ---
 
-The transaction details endpoint provides information on a single [transaction](../resources/transaction.md). The transaction hash provided in the `hash` argument specifies which transaction to load.
+The transaction details endpoint provides information on a single
+[transaction](../resources/transaction.md). The transaction hash provided in the `hash` argument
+specifies which transaction to load.
+
+### Warning - failed transactions
+
+Transaction can be successful or failed (failed transactions are also included in Stellar ledger).
+Always check it's status using `successful` field!
 
 ## Request
 
@@ -16,22 +23,22 @@ GET /transactions/{hash}
 
 |  name  |  notes  | description | example |
 | ------ | ------- | ----------- | ------- |
-| `hash` | required, string | A transaction hash, hex-encoded. | 6391dd190f15f7d1665ba53c63842e368f485651a53d8d852ed442a446d1c69a |
+| `hash` | required, string | A transaction hash, hex-encoded. | 264226cb06af3b86299031884175155e67a02e0a8ad0b3ab3a88b409a8c09d5c |
 
 ### curl Example Request
 
 ```sh
-curl "https://horizon-testnet.stellar.org/transactions/6391dd190f15f7d1665ba53c63842e368f485651a53d8d852ed442a446d1c69a"
+curl "https://horizon-testnet.stellar.org/transactions/264226cb06af3b86299031884175155e67a02e0a8ad0b3ab3a88b409a8c09d5c"
 ```
 
 ### JavaScript Example Request
 
-```js
+```javascript
 var StellarSdk = require('stellar-sdk');
 var server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
 
 server.transactions()
-  .transaction("3c8ef808df9d5d240ba0d495629df9da5653b1be2daf05d43b49c5bcbfe099bd")
+  .transaction("264226cb06af3b86299031884175155e67a02e0a8ad0b3ab3a88b409a8c09d5c")
   .call()
   .then(function (transactionResult) {
     console.log(transactionResult)
@@ -50,49 +57,53 @@ This endpoint responds with a single Transaction.  See [transaction resource](..
 ```json
 {
   "_links": {
-    "account": {
-      "href": "/accounts/GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K"
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/transactions/264226cb06af3b86299031884175155e67a02e0a8ad0b3ab3a88b409a8c09d5c"
     },
-    "effects": {
-      "href": "/transactions/fa78cb43d72171fdb2c6376be12d57daa787b1fa1a9fdd0e9453e1f41ee5f15a/effects{?cursor,limit,order}",
-      "templated": true
+    "account": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR"
     },
     "ledger": {
-      "href": "/ledgers/146970"
+      "href": "https://horizon-testnet.stellar.org/ledgers/697121"
     },
     "operations": {
-      "href": "/transactions/fa78cb43d72171fdb2c6376be12d57daa787b1fa1a9fdd0e9453e1f41ee5f15a/operations{?cursor,limit,order}",
+      "href": "https://horizon-testnet.stellar.org/transactions/264226cb06af3b86299031884175155e67a02e0a8ad0b3ab3a88b409a8c09d5c/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/transactions/264226cb06af3b86299031884175155e67a02e0a8ad0b3ab3a88b409a8c09d5c/effects{?cursor,limit,order}",
       "templated": true
     },
     "precedes": {
-      "href": "/transactions?cursor=631231343497216\u0026order=asc"
-    },
-    "self": {
-      "href": "/transactions/fa78cb43d72171fdb2c6376be12d57daa787b1fa1a9fdd0e9453e1f41ee5f15a"
+      "href": "https://horizon-testnet.stellar.org/transactions?order=asc&cursor=2994111896358912"
     },
     "succeeds": {
-      "href": "/transactions?cursor=631231343497216\u0026order=desc"
+      "href": "https://horizon-testnet.stellar.org/transactions?order=desc&cursor=2994111896358912"
     }
   },
-  "id": "fa78cb43d72171fdb2c6376be12d57daa787b1fa1a9fdd0e9453e1f41ee5f15a",
-  "paging_token": "631231343497216",
-  "hash": "fa78cb43d72171fdb2c6376be12d57daa787b1fa1a9fdd0e9453e1f41ee5f15a",
-  "ledger": 146970,
-  "created_at": "2015-09-24T10:07:09Z",
-  "account": "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
-  "account_sequence": 279172874343,
-  "max_fee": 0,
-  "fee_paid": 0,
+  "id": "264226cb06af3b86299031884175155e67a02e0a8ad0b3ab3a88b409a8c09d5c",
+  "paging_token": "2994111896358912",
+  "successful": true,
+  "hash": "264226cb06af3b86299031884175155e67a02e0a8ad0b3ab3a88b409a8c09d5c",
+  "ledger": 697121,
+  "created_at": "2019-04-09T20:14:25Z",
+  "source_account": "GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR",
+  "source_account_sequence": "4660039994869",
+  "fee_paid": 100,
   "operation_count": 1,
-  "result_code": 0,
-  "result_code_s": "tx_success",
-  "envelope_xdr": "AAAAAGXNhLrhGtltTwCpmqlarh7s1DB2hIkbP//jgzn4Fos/AAAACgAAAEEAAABnAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAA2ddmTOFAgr21Crs2RXRGLhiAKxicZb/IERyEZL/Y2kUAAAAXSHboAAAAAAAAAAAB+BaLPwAAAECDEEZmzbgBr5fc3mfJsCjWPDtL6H8/vf16me121CC09ONyWJZnw0PUvp4qusmRwC6ZKfLDdk8F3Rq41s+yOgQD",
-  "result_xdr": "AAAAAAAAAAoAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=",
-  "result_meta_xdr": "AAAAAAAAAAEAAAACAAAAAAACPhoAAAAAAAAAANnXZkzhQIK9tQq7NkV0Ri4YgCsYnGW/yBEchGS/2NpFAAAAF0h26AAAAj4aAAAAAAAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAAAAAAAQACPhoAAAAAAAAAAGXNhLrhGtltTwCpmqlarh7s1DB2hIkbP//jgzn4Fos/AABT8kS2c/oAAABBAAAAZwAAAAAAAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAAAAA"
+  "envelope_xdr": "AAAAABB90WssODNIgi6BHveqzxTRmIpvAFRyVNM+Hm2GVuCcAAAAZAAABD0AB031AAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAFIMRkFZ9gZifhRSlklQpsz/9P04Earv0dzS3MkIM1cYAAAAXSHboAAAAAAAAAAABhlbgnAAAAEA+biIjrDy8yi+SvhFElIdWGBRYlDscnSSHkPchePy2JYDJn4wvJYDBumXI7/NmttUey3+cGWbBFfnnWh1H5EoD",
+  "result_xdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=",
+  "result_meta_xdr": "AAAAAQAAAAIAAAADAAqjIQAAAAAAAAAAEH3Rayw4M0iCLoEe96rPFNGYim8AVHJU0z4ebYZW4JwBOLmYhGq/IAAABD0AB030AAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAABAAqjIQAAAAAAAAAAEH3Rayw4M0iCLoEe96rPFNGYim8AVHJU0z4ebYZW4JwBOLmYhGq/IAAABD0AB031AAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAABAAAAAwAAAAMACqMhAAAAAAAAAAAQfdFrLDgzSIIugR73qs8U0ZiKbwBUclTTPh5thlbgnAE4uZiEar8gAAAEPQAHTfUAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEACqMhAAAAAAAAAAAQfdFrLDgzSIIugR73qs8U0ZiKbwBUclTTPh5thlbgnAE4uYE789cgAAAEPQAHTfUAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAACqMhAAAAAAAAAAAUgxGQVn2BmJ+FFKWSVCmzP/0/TgRqu/R3NLcyQgzVxgAAABdIdugAAAqjIQAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA==",
+  "fee_meta_xdr": "AAAAAgAAAAMACqMgAAAAAAAAAAAQfdFrLDgzSIIugR73qs8U0ZiKbwBUclTTPh5thlbgnAE4uZiEar+EAAAEPQAHTfQAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEACqMhAAAAAAAAAAAQfdFrLDgzSIIugR73qs8U0ZiKbwBUclTTPh5thlbgnAE4uZiEar8gAAAEPQAHTfQAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA==",
+  "memo_type": "none",
+  "signatures": [
+    "Pm4iI6w8vMovkr4RRJSHVhgUWJQ7HJ0kh5D3IXj8tiWAyZ+MLyWAwbplyO/zZrbVHst/nBlmwRX551odR+RKAw=="
+  ]
 }
 ```
 
 ## Possible Errors
 
 - The [standard errors](../errors.md#Standard-Errors).
-- [not_found](../errors/not-found.md): A `not_found` error will be returned if there is no transaction whose ID matches the `hash` argument.
+- [not_found](../errors/not-found.md): A `not_found` error will be returned if there is no
+  transaction whose ID matches the `hash` argument.

@@ -4,37 +4,38 @@ clientData:
   laboratoryUrl: https://www.stellar.org/laboratory/#explorer?resource=operations&endpoint=for_ledger
 ---
 
-This endpoint returns all [operations](../resources/operation.md) that occurred in a given [ledger](../resources/ledger.md).
+This endpoint returns successful [operations](../resources/operation.md) that occurred in a given [ledger](../resources/ledger.md).
 
 ## Request
 
 ```
-GET /ledgers/{id}/operations{?cursor,limit,order}
+GET /ledgers/{sequence}/operations{?cursor,limit,order,include_failed}
 ```
 
 ### Arguments
 
-| name     | notes                          | description                                                      | example      |
-| ------   | -------                        | -----------                                                      | -------      |
-| `id`     | required, number               | Ledger ID                                                        | `69859`      |
-| `?cursor`| optional, default _null_       | A paging token, specifying where to start returning records from.| `12884905984`|
-| `?order` | optional, string, default `asc`| The order in which to return rows, "asc" or "desc".              | `asc`        |
-| `?limit` | optional, number, default `10` | Maximum number of records to return.                             | `200`        |
+| name | notes | description | example |
+| ---- | ----- | ----------- | ------- |
+| `sequence` | required, number | Ledger Sequence | `681637` |
+| `?cursor` | optional, default _null_ | A paging token, specifying where to start returning records from. | `12884905984` |
+| `?order` | optional, string, default `asc` | The order in which to return rows, "asc" or "desc". | `asc` |
+| `?limit` | optional, number, default `10` | Maximum number of records to return. | `200` |
+| `?include_failed` | optional, bool, default: `false` | Set to `true` to include operations of failed transactions in results. | `true` |
 
 ### curl Example Request
 
 ```sh
-curl "https://horizon-testnet.stellar.org/ledgers/69859/operations"
+curl "https://horizon-testnet.stellar.org/ledgers/681637/operations?limit=1"
 ```
 
 ### JavaScript Example Request
 
-```js
+```javascript
 var StellarSdk = require('stellar-sdk');
 var server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
 
 server.operations()
-  .forLedger("10866")
+  .forLedger("681637")
   .call()
   .then(function (operationsResult) {
     console.log(operationsResult.records);
@@ -52,47 +53,81 @@ This endpoint responds with a list of operations in a given ledger.  See [operat
 
 ```json
 {
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/ledgers/681637/operations?cursor=&limit=10&order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/ledgers/681637/operations?cursor=2927608622751745&limit=10&order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/ledgers/681637/operations?cursor=2927608622747649&limit=10&order=desc"
+    }
+  },
   "_embedded": {
     "records": [
       {
         "_links": {
-          "effects": {
-            "href": "/operations/77309415424/effects/{?cursor,limit,order}",
-            "templated": true
-          },
-          "precedes": {
-            "href": "/operations?cursor=77309415424&order=asc"
-          },
           "self": {
-            "href": "/operations/77309415424"
+            "href": "https://horizon-testnet.stellar.org/operations/2927608622747649"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/4a3365180521e16b478d9f0c9198b97a9434fc9cb07b34f83ecc32fc54d0ca8a"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/2927608622747649/effects"
           },
           "succeeds": {
-            "href": "/operations?cursor=77309415424&order=desc"
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc&cursor=2927608622747649"
           },
-          "transactions": {
-            "href": "/transactions/77309415424"
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc&cursor=2927608622747649"
           }
         },
-        "account": "GBIA4FH6TV64KSPDAJCNUQSM7PFL4ILGUVJDPCLUOPJ7ONMKBBVUQHRO",
-        "funder": "GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ",
-        "id": 77309415424,
-        "paging_token": "77309415424",
-        "starting_balance": 1e+14,
+        "id": "2927608622747649",
+        "paging_token": "2927608622747649",
+        "transaction_successful": true,
+        "source_account": "GCGXZPH2QNKJP4GI2J77EFQQUMP3NYY4PCUZ4UPKHR2XYBKRUYKQ2DS6",
+        "type": "payment",
+        "type_i": 1,
+        "created_at": "2019-04-08T21:59:27Z",
+        "transaction_hash": "4a3365180521e16b478d9f0c9198b97a9434fc9cb07b34f83ecc32fc54d0ca8a",
+        "asset_type": "native",
+        "from": "GCGXZPH2QNKJP4GI2J77EFQQUMP3NYY4PCUZ4UPKHR2XYBKRUYKQ2DS6",
+        "to": "GDGEQS64ISS6Y2KDM5V67B6LXALJX4E7VE4MIA54NANSUX5MKGKBZM5G",
+        "amount": "404.0000000"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/2927608622751745"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/fdabcee816bd439dd1d20bcb0abab5aa939c15cca5fccc1db060ba6096a5e0ed"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/2927608622751745/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc&cursor=2927608622751745"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc&cursor=2927608622751745"
+          }
+        },
+        "id": "2927608622751745",
+        "paging_token": "2927608622751745",
+        "transaction_successful": true,
+        "source_account": "GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR",
+        "type": "create_account",
         "type_i": 0,
-        "type": "create_account"
+        "created_at": "2019-04-08T21:59:27Z",
+        "transaction_hash": "fdabcee816bd439dd1d20bcb0abab5aa939c15cca5fccc1db060ba6096a5e0ed",
+        "starting_balance": "10000.0000000",
+        "funder": "GAIH3ULLFQ4DGSECF2AR555KZ4KNDGEKN4AFI4SU2M7B43MGK3QJZNSR",
+        "account": "GCD5UL3DHC5TQRQVJKFTM66CLFTHGULOQ2HEAXNSA2JWUGBCT36BP55F"
       }
     ]
-  },
-  "_links": {
-    "next": {
-      "href": "/ledgers/18/operations?order=asc&limit=10&cursor=77309415424"
-    },
-    "prev": {
-      "href": "/ledgers/18/operations?order=desc&limit=10&cursor=77309415424"
-    },
-    "self": {
-      "href": "/ledgers/18/operations?order=asc&limit=10&cursor="
-    }
   }
 }
 ```

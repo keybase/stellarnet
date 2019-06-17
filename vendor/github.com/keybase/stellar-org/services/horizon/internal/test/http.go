@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/zenazn/goji/web"
+	"github.com/go-chi/chi"
 )
 
 type RequestHelper interface {
@@ -15,7 +15,7 @@ type RequestHelper interface {
 }
 
 type requestHelper struct {
-	router *web.Mux
+	router *chi.Mux
 }
 
 func RequestHelperRemoteAddr(ip string) func(r *http.Request) {
@@ -38,7 +38,7 @@ func RequestHelperStreaming(r *http.Request) {
 	r.Header.Set("Accept", "text/event-stream")
 }
 
-func NewRequestHelper(router *web.Mux) RequestHelper {
+func NewRequestHelper(router *chi.Mux) RequestHelper {
 	return &requestHelper{router}
 }
 
@@ -75,11 +75,8 @@ func (rh *requestHelper) Execute(
 	}
 
 	w := httptest.NewRecorder()
-	c := web.C{
-		Env: map[interface{}]interface{}{},
-	}
 
-	rh.router.ServeHTTPC(c, w, req)
+	rh.router.ServeHTTP(w, req)
 	return w
 
 }

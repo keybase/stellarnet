@@ -9,3 +9,5 @@ create_account :bartek, :master
 close_ledger
 
 merge_account :scott, :bartek
+
+close_ledger
