@@ -2,113 +2,214 @@ package main
 
 import (
 	"fmt"
+	"net/http"
 	"os"
+	"runtime"
+	"time"
 
-	"goji.io"
-	"goji.io/pat"
+	log "github.com/sirupsen/logrus"
 
-	"github.com/rs/cors"
+	"github.com/facebookgo/inject"
+	"github.com/goji/httpauth"
 	"github.com/spf13/cobra"
-	complianceHandler "github.com/stellar/go/handlers/compliance"
-	complianceProtocol "github.com/stellar/go/protocols/compliance"
-	"github.com/stellar/go/support/app"
-	"github.com/stellar/go/support/config"
+	"github.com/stellar/go/clients/federation"
+	"github.com/stellar/go/clients/stellartoml"
+	"github.com/stellar/go/services/compliance/internal/config"
+	"github.com/stellar/go/services/compliance/internal/crypto"
+	"github.com/stellar/go/services/compliance/internal/db"
+	"github.com/stellar/go/services/compliance/internal/handlers"
+	supportConfig "github.com/stellar/go/support/config"
+	"github.com/stellar/go/support/db/schema"
 	"github.com/stellar/go/support/errors"
-	"github.com/stellar/go/support/http"
-	"github.com/stellar/go/support/log"
+	supportHttp "github.com/stellar/go/support/http"
 )
 
-// Config represents the configuration of a federation server
-type Config struct {
-	ExternalPort      int    `valid:"required" toml:"external_port"`
-	InternalPort      int    `valid:"required" toml:"internal_port"`
-	NeedsAuth         bool   `valid:"required" toml:"needs_auth"`
-	NetworkPassphrase string `valid:"required" toml:"network_passphrase"`
-	Keys              struct {
-		SigningSeed string `valid:"stellar_seed,required" toml:"signing_seed"`
-	} `valid:"required"`
-	Callbacks struct {
-		Sanctions   string `valid:"url,optional" toml:"sanctions"`
-		AskUser     string `valid:"url,optional" toml:"ask_user"`
-		GetUserData string `valid:"url,optional" toml:"get_user_data"`
-	} `valid:"optional"`
-	TLS struct {
-		CertificateFile string `valid:"required" toml:"certificate_file"`
-		PrivateKeyFile  string `valid:"required" toml:"private_key_file"`
-	} `valid:"required"`
-}
+var app *App
+var rootCmd *cobra.Command
+var migrateFlag bool
+var configFile string
+var versionFlag bool
+var version = "N/A"
 
 func main() {
-	rootCmd := &cobra.Command{
-		Use:   "compliance",
-		Short: "stellar compliance server",
-		Long:  "",
-		Run:   run,
-	}
-
-	rootCmd.PersistentFlags().String("conf", "./compliance.cfg", "config file path")
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	rootCmd.Execute()
 }
 
-func run(cmd *cobra.Command, args []string) {
-	var (
-		cfg     Config
-		cfgPath = cmd.PersistentFlags().Lookup("conf").Value.String()
-	)
-	err := config.Read(cfgPath, &cfg)
-	log.SetLevel(log.InfoLevel)
+func init() {
+	rootCmd = &cobra.Command{
+		Use:   "compliance",
+		Short: "stellar compliance server",
+		Long:  `stellar compliance server`,
+		Run:   run,
+	}
 
+	rootCmd.Flags().BoolVarP(&migrateFlag, "migrate-db", "", false, "migrate DB to the newest schema version")
+	rootCmd.Flags().StringVarP(&configFile, "config", "c", "compliance.cfg", "path to config file")
+	rootCmd.Flags().BoolVarP(&versionFlag, "version", "v", false, "displays compliance server version")
+}
+
+func run(cmd *cobra.Command, args []string) {
+	var cfg config.Config
+
+	err := supportConfig.Read(configFile, &cfg)
 	if err != nil {
 		switch cause := errors.Cause(err).(type) {
-		case *config.InvalidConfigError:
+		case *supportConfig.InvalidConfigError:
 			log.Error("config file: ", cause)
 		default:
 			log.Error(err)
 		}
-		os.Exit(1)
+		os.Exit(-1)
 	}
 
-	strategy := &complianceHandler.CallbackStrategy{
-		SanctionsCheckURL: cfg.Callbacks.Sanctions,
-		GetUserDataURL:    cfg.Callbacks.GetUserData,
+	err = cfg.Validate()
+	if err != nil {
+		log.Fatal(err.Error())
+		return
 	}
 
-	mux := initMux(strategy)
-	addr := fmt.Sprintf("0.0.0.0:%d", cfg.ExternalPort)
+	if cfg.LogFormat == "json" {
+		log.SetFormatter(&log.JSONFormatter{})
+	}
 
-	http.Run(http.Config{
-		ListenAddr: addr,
-		Handler:    mux,
-		TLSCert:    cfg.TLS.CertificateFile,
-		TLSKey:     cfg.TLS.PrivateKeyFile,
-		OnStarting: func() {
-			log.Infof("starting compliance server - %s", app.Version())
-			log.Infof("listening on %s", addr)
-		},
-	})
+	app, err = NewApp(cfg, migrateFlag, versionFlag, version)
+
+	if err != nil {
+		log.Fatal(err.Error())
+		return
+	}
+
+	app.Serve()
 }
 
-func initMux(strategy complianceHandler.Strategy) *goji.Mux {
-	mux := goji.NewMux()
+// App is the application object
+type App struct {
+	config         config.Config
+	requestHandler handlers.RequestHandler
+}
 
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedHeaders: []string{"*"},
-		AllowedMethods: []string{"*"},
-	})
-	mux.Use(c.Handler)
-	mux.Use(log.HTTPMiddleware)
+// NewApp constructs an new App instance from the provided config.
+func NewApp(config config.Config, migrateFlag bool, versionFlag bool, version string) (app *App, err error) {
+	var g inject.Graph
 
-	authHandler := &complianceHandler.AuthHandler{
-		Strategy: strategy,
-		PersistTransaction: func(data complianceProtocol.AuthData) error {
-			fmt.Println("Persist")
-			return nil
-		},
+	var database db.PostgresDatabase
+
+	if config.Database.URL != "" {
+		err = database.Open(config.Database.URL)
+		if err != nil {
+			err = fmt.Errorf("Cannot connect to a DB: %s", err)
+			return
+		}
 	}
 
-	mux.Handle(pat.Post("/auth"), authHandler)
-	mux.Handle(pat.Post("/auth/"), authHandler)
+	if migrateFlag {
+		var migrationsApplied int
+		migrationsApplied, err = schema.Migrate(
+			database.GetDB(),
+			db.Migrations,
+			schema.MigrateUp,
+			0,
+		)
+		if err != nil {
+			return
+		}
 
-	return mux
+		log.Info("Applied migrations: ", migrationsApplied)
+		os.Exit(0)
+		return
+	}
+
+	if versionFlag {
+		fmt.Printf("Compliance Server Version: %s \n", version)
+		os.Exit(0)
+		return
+	}
+
+	requestHandler := handlers.RequestHandler{}
+
+	httpClientWithTimeout := http.Client{
+		Timeout: 10 * time.Second,
+	}
+
+	stellartomlClient := stellartoml.Client{
+		HTTP: &httpClientWithTimeout,
+	}
+
+	federationClient := federation.Client{
+		HTTP:        &httpClientWithTimeout,
+		StellarTOML: &stellartomlClient,
+	}
+
+	err = g.Provide(
+		&inject.Object{Value: &requestHandler},
+		&inject.Object{Value: &config},
+		&inject.Object{Value: &database},
+		&inject.Object{Value: &crypto.SignerVerifier{}},
+		&inject.Object{Value: &stellartomlClient},
+		&inject.Object{Value: &federationClient},
+		&inject.Object{Value: &httpClientWithTimeout},
+		&inject.Object{Value: &handlers.NonceGenerator{}},
+	)
+
+	if err != nil {
+		log.Fatal("Injector: ", err)
+	}
+
+	if err := g.Populate(); err != nil {
+		log.Fatal("Injector: ", err)
+	}
+
+	app = &App{
+		config:         config,
+		requestHandler: requestHandler,
+	}
+	return
+}
+
+// Serve starts the server
+func (a *App) Serve() {
+	// External endpoints
+	external := supportHttp.NewAPIMux(false)
+
+	// Middlewares
+	headers := http.Header{}
+	headers.Set("Content-Type", "application/json")
+
+	external.Use(supportHttp.StripTrailingSlashMiddleware())
+	external.Use(supportHttp.HeadersMiddleware(headers))
+
+	external.Post("/", a.requestHandler.HandlerAuth)
+	if a.config.TxStatusAuth != nil {
+		external.Method("GET", "/tx_status", httpauth.SimpleBasicAuth(a.config.TxStatusAuth.Username, a.config.TxStatusAuth.Password)(http.HandlerFunc(a.requestHandler.HandlerTxStatus)))
+	}
+	go func() {
+		supportHttp.Run(supportHttp.Config{
+			ListenAddr: fmt.Sprintf(":%d", *a.config.ExternalPort),
+			Handler:    external,
+			TLS:        a.config.TLS,
+			OnStarting: func() {
+				log.Infof("External server listening on %d", *a.config.ExternalPort)
+			},
+		})
+	}()
+
+	// Internal endpoints
+	internal := supportHttp.NewAPIMux(false)
+
+	internal.Use(supportHttp.StripTrailingSlashMiddleware("/admin"))
+	internal.Use(supportHttp.HeadersMiddleware(headers, "/admin/"))
+
+	internal.Post("/send", a.requestHandler.HandlerSend)
+	internal.Post("/receive", a.requestHandler.HandlerReceive)
+	internal.Post("/allow_access", a.requestHandler.HandlerAllowAccess)
+	internal.Post("/remove_access", a.requestHandler.HandlerRemoveAccess)
+
+	supportHttp.Run(supportHttp.Config{
+		ListenAddr: fmt.Sprintf(":%d", *a.config.InternalPort),
+		Handler:    internal,
+		OnStarting: func() {
+			log.Infof("Internal server listening on %d", *a.config.InternalPort)
+		},
+	})
 }

@@ -8,7 +8,7 @@ A **path** resource contains information about a payment path.  A path can be us
 ## Attributes
 | Attribute                | Type             |                                                                                                                                |
 |--------------------------|------------------|--------------------------------------------------------------------------------------------------------------------------------|
-| path                     | array            | An array of assets that represents the intermediary assets this path hops through                                               |
+| path                     | array of objects            | An array of assets that represents the intermediary assets this path hops through                                               |
 | source_amount            | string           | An estimated cost for making a payment of destination_amount on this path. Suitable for use in a path payments `sendMax` field |
 | destination_amount       | string           | The destination amount specified in the search that found this path                                                            |
 | destination_asset_type   | string           | The type for the destination asset specified in the search that found this path                                                |
@@ -17,6 +17,13 @@ A **path** resource contains information about a payment path.  A path can be us
 | source_asset_type        | string           | The type for the source asset specified in the search that found this path                                                     |
 | source_asset_code        | optional, string | The code for the source asset specified in the search that found this path                                                     |
 | source_asset_issuer      | optional, string | The issuer for the source asset specified in the search that found this path                                                   |
+
+#### Asset Object
+| Attribute    | Type             |                                                                                                                        |
+|--------------|------------------|------------------------------------------------------------------------------------------------------------------------
+| asset_code     | optional, string           | The code for the asset.                       |
+| asset_type     | string           | Either native, credit_alphanum4, or credit_alphanum12.                        |
+| asset_issuer     | optional, string           | The stellar address of the given asset's issuer.  |
 
 ## Example
 

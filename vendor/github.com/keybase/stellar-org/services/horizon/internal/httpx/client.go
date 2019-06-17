@@ -1,19 +1,19 @@
 package httpx
 
 import (
+	"context"
 	"net/http"
 
-	"golang.org/x/net/context"
+	horizonContext "github.com/stellar/go/services/horizon/internal/context"
 )
 
-var clientContextKey = 0
 var defaultClient = &http.Client{}
 
 // ClientFromContext retrieves a http.Client that has been bound to this context
 // previously by a call to httpx.ClientContext, defaulting to a default Client
 // if none has been bound
 func ClientFromContext(ctx context.Context) *http.Client {
-	found := ctx.Value(&clientContextKey)
+	found := ctx.Value(&horizonContext.ClientContextKey)
 
 	if found == nil {
 		return defaultClient
@@ -30,5 +30,5 @@ func ClientContext(parent context.Context, client *http.Client) context.Context 
 		panic("Cannot bind nil *http.Client to context tree")
 	}
 
-	return context.WithValue(parent, &clientContextKey, client)
+	return context.WithValue(parent, &horizonContext.ClientContextKey, client)
 }

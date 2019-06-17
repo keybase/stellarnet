@@ -1,7 +1,7 @@
 package httpx
 
 import (
-	"golang.org/x/net/context"
+	"context"
 )
 
 var DefaultHost = ""

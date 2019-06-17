@@ -10,3 +10,5 @@ close_ledger
 trust :scott, :usd_gateway, "USD"              ; close_ledger
 change_trust :scott, :usd_gateway, "USD", 4000 ; close_ledger
 change_trust :scott, :usd_gateway, "USD", 0    ; close_ledger
+
+close_ledger

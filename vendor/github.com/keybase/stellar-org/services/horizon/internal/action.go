@@ -1,19 +1,22 @@
 package horizon
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"strings"
 
 	"github.com/stellar/go/services/horizon/internal/actions"
+	"github.com/stellar/go/services/horizon/internal/db2"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/httpx"
 	"github.com/stellar/go/services/horizon/internal/ledger"
-	"github.com/stellar/go/services/horizon/internal/log"
 	"github.com/stellar/go/services/horizon/internal/render/problem"
+	"github.com/stellar/go/services/horizon/internal/render/sse"
 	"github.com/stellar/go/services/horizon/internal/toid"
-	"github.com/zenazn/goji/web"
+	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/support/log"
 )
 
 // Action is the "base type" for all actions in horizon.  It provides
@@ -34,7 +37,7 @@ type Action struct {
 // CoreQ provides access to queries that access the stellar core database.
 func (action *Action) CoreQ() *core.Q {
 	if action.cq == nil {
-		action.cq = &core.Q{Session: action.App.CoreSession(action.Ctx)}
+		action.cq = &core.Q{Session: action.App.CoreSession(action.R.Context())}
 	}
 
 	return action.cq
@@ -44,20 +47,19 @@ func (action *Action) CoreQ() *core.Q {
 // horizon's database.
 func (action *Action) HistoryQ() *history.Q {
 	if action.hq == nil {
-		action.hq = &history.Q{Session: action.App.HorizonSession(action.Ctx)}
+		action.hq = &history.Q{Session: action.App.HorizonSession(action.R.Context())}
 	}
 
 	return action.hq
 }
 
-// Prepare sets the action's App field based upon the goji context
-func (action *Action) Prepare(c web.C, w http.ResponseWriter, r *http.Request) {
+// Prepare sets the action's App field based upon the context
+func (action *Action) Prepare(w http.ResponseWriter, r *http.Request) {
 	base := &action.Base
-	base.Prepare(c, w, r)
-	action.App = action.GojiCtx.Env["app"].(*App)
-
-	if action.Ctx != nil {
-		action.Log = log.Ctx(action.Ctx)
+	action.App = AppFromContext(r.Context())
+	base.Prepare(w, r, action.App.ctx, action.App.config.SSEUpdateFrequency)
+	if action.R.Context() != nil {
+		action.Log = log.Ctx(action.R.Context())
 	} else {
 		action.Log = log.DefaultLogger
 	}
@@ -112,7 +114,7 @@ func (action *Action) ValidateCursorWithinHistory() {
 	}
 
 	if err != nil {
-		action.Err = err
+		action.SetInvalidField("cursor", errors.New("invalid value"))
 		return
 	}
 
@@ -151,5 +153,56 @@ func (action *Action) FullURL() *url.URL {
 // baseURL returns the base url for this request, defined as a url containing
 // the Host and Scheme portions of the request uri.
 func (action *Action) baseURL() *url.URL {
-	return httpx.BaseURL(action.Ctx)
+	return httpx.BaseURL(action.R.Context())
+}
+
+// Fields of this struct are exported for json marshaling/unmarshaling in
+// support/render/hal package.
+type indexActionQueryParams struct {
+	AccountID        string
+	LedgerID         int32
+	PagingParams     db2.PageQuery
+	IncludeFailedTxs bool
+}
+
+// Fields of this struct are exported for json marshaling/unmarshaling in
+// support/render/hal package.
+type showActionQueryParams struct {
+	AccountID string
+	TxHash    string
+}
+
+// getAccountInfo returns the information about an account based on the provided param.
+func (w *web) getAccountInfo(ctx context.Context, qp *showActionQueryParams) (interface{}, error) {
+	return actions.AccountInfo(ctx, &core.Q{w.coreSession(ctx)}, qp.AccountID)
+}
+
+// getTransactionPage returns a page containing the transaction records of an account or a ledger.
+func (w *web) getTransactionPage(ctx context.Context, qp *indexActionQueryParams) (interface{}, error) {
+	horizonSession, err := w.horizonSession(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting horizon db session")
+	}
+
+	return actions.TransactionPage(ctx, &history.Q{horizonSession}, qp.AccountID, qp.LedgerID, qp.IncludeFailedTxs, qp.PagingParams)
+}
+
+// getTransactionRecord returns a single transaction resource.
+func (w *web) getTransactionResource(ctx context.Context, qp *showActionQueryParams) (interface{}, error) {
+	horizonSession, err := w.horizonSession(ctx)
+	if err != nil {
+		return nil, errors.Wrap(err, "getting horizon db session")
+	}
+
+	return actions.TransactionResource(ctx, &history.Q{horizonSession}, qp.TxHash)
+}
+
+// streamTransactions streams the transaction records of an account or a ledger.
+func (w *web) streamTransactions(ctx context.Context, s *sse.Stream, qp *indexActionQueryParams) error {
+	horizonSession, err := w.horizonSession(ctx)
+	if err != nil {
+		return errors.Wrap(err, "getting horizon db session")
+	}
+
+	return actions.StreamTransactions(ctx, s, &history.Q{horizonSession}, qp.AccountID, qp.LedgerID, qp.IncludeFailedTxs, qp.PagingParams)
 }

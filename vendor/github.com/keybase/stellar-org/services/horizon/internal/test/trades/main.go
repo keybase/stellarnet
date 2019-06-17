@@ -49,7 +49,7 @@ func IngestTestTrade(
 		D: xdr.Int32(amountSold),
 	}
 
-	return q.InsertTrade(opCounter, 0, buyer, trade, price, timestamp)
+	return q.InsertTrade(opCounter, 0, buyer, false, xdr.OfferEntry{}, trade, price, timestamp)
 }
 
 //PopulateTestTrades generates and ingests trades between two assets according to given parameters

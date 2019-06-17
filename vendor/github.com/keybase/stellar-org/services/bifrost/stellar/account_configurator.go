@@ -15,14 +15,21 @@ func (ac *AccountConfigurator) Start() error {
 	ac.log = common.CreateLogger("StellarAccountConfigurator")
 	ac.log.Info("StellarAccountConfigurator starting")
 
-	kp, err := keypair.Parse(ac.IssuerPublicKey)
+	_, err := keypair.Parse(ac.IssuerPublicKey)
 	if err != nil || (err == nil && ac.IssuerPublicKey[0] != 'G') {
 		err = errors.Wrap(err, "Invalid IssuerPublicKey")
 		ac.log.Error(err)
 		return err
 	}
 
-	kp, err = keypair.Parse(ac.SignerSecretKey)
+	_, err = keypair.Parse(ac.DistributionPublicKey)
+	if err != nil || (err == nil && ac.DistributionPublicKey[0] != 'G') {
+		err = errors.Wrap(err, "Invalid DistributionPublicKey")
+		ac.log.Error(err)
+		return err
+	}
+
+	kp, err := keypair.Parse(ac.SignerSecretKey)
 	if err != nil || (err == nil && ac.SignerSecretKey[0] != 'S') {
 		err = errors.Wrap(err, "Invalid SignerSecretKey")
 		ac.log.Error(err)
@@ -42,12 +49,14 @@ func (ac *AccountConfigurator) Start() error {
 		return errors.Errorf("Invalid network passphrase (have=%s, want=%s)", root.NetworkPassphrase, ac.NetworkPassphrase)
 	}
 
-	err = ac.updateSequence()
+	err = ac.updateSignerSequence()
 	if err != nil {
 		err = errors.Wrap(err, "Error loading issuer sequence number")
 		ac.log.Error(err)
 		return err
 	}
+
+	ac.accountStatus = make(map[string]Status)
 
 	go ac.logStats()
 	return nil
@@ -55,14 +64,14 @@ func (ac *AccountConfigurator) Start() error {
 
 func (ac *AccountConfigurator) logStats() {
 	for {
-		ac.log.WithField("currently_processing", ac.processingCount).Info("Stats")
+		ac.log.WithField("statuses", ac.accountStatus).Info("Stats")
 		time.Sleep(15 * time.Second)
 	}
 }
 
 // ConfigureAccount configures a new account that participated in ICO.
 // * First it creates a new account.
-// * Once a trusline exists, it credits it with received number of ETH or BTC.
+// * Once a signer is replaced on the account, it creates trust lines and exchanges assets.
 func (ac *AccountConfigurator) ConfigureAccount(destination, assetCode, amount string) {
 	localLog := ac.log.WithFields(log.F{
 		"destination": destination,
@@ -71,14 +80,9 @@ func (ac *AccountConfigurator) ConfigureAccount(destination, assetCode, amount s
 	})
 	localLog.Info("Configuring Stellar account")
 
-	ac.processingCountMutex.Lock()
-	ac.processingCount++
-	ac.processingCountMutex.Unlock()
-
+	ac.setAccountStatus(destination, StatusCreatingAccount)
 	defer func() {
-		ac.processingCountMutex.Lock()
-		ac.processingCount--
-		ac.processingCountMutex.Unlock()
+		ac.removeAccountStatus(destination)
 	}()
 
 	// Check if account exists. If it is, skip creating it.
@@ -95,7 +99,7 @@ func (ac *AccountConfigurator) ConfigureAccount(destination, assetCode, amount s
 		}
 
 		localLog.WithField("destination", destination).Info("Creating Stellar account")
-		err = ac.createAccount(destination)
+		err = ac.createAccountTransaction(destination)
 		if err != nil {
 			localLog.WithField("err", err).Error("Error creating Stellar account")
 			time.Sleep(2 * time.Second)
@@ -109,7 +113,9 @@ func (ac *AccountConfigurator) ConfigureAccount(destination, assetCode, amount s
 		ac.OnAccountCreated(destination)
 	}
 
-	// Wait for trust line to be created...
+	ac.setAccountStatus(destination, StatusWaitingForSigner)
+
+	// Wait for signer changes...
 	for {
 		account, err := ac.Horizon.LoadAccount(destination)
 		if err != nil {
@@ -118,43 +124,72 @@ func (ac *AccountConfigurator) ConfigureAccount(destination, assetCode, amount s
 			continue
 		}
 
-		if ac.trustlineExists(account, assetCode) {
+		if ac.signerExistsOnly(account) {
 			break
 		}
 
 		time.Sleep(2 * time.Second)
 	}
 
-	localLog.Info("Trust line found")
+	localLog.Info("Signer found")
 
-	// When trustline found check if needs to authorize, then send token
-	if ac.NeedsAuthorize {
-		localLog.Info("Authorizing trust line")
-		err := ac.allowTrust(destination, assetCode, ac.TokenAssetCode)
-		if err != nil {
-			localLog.WithField("err", err).Error("Error authorizing trust line")
-		}
-	}
+	ac.setAccountStatus(destination, StatusConfiguringAccount)
 
+	// When signer was created we can configure account in Bifrost without requiring
+	// the user to share the account's secret key.
 	localLog.Info("Sending token")
-	err := ac.sendToken(destination, assetCode, amount)
+	err := ac.configureAccountTransaction(destination, assetCode, amount, ac.NeedsAuthorize)
 	if err != nil {
-		localLog.WithField("err", err).Error("Error sending asset to account")
+		localLog.WithField("err", err).Error("Error configuring an account")
 		return
 	}
 
-	if ac.OnAccountCredited != nil {
-		ac.OnAccountCredited(destination, assetCode, amount)
+	ac.setAccountStatus(destination, StatusRemovingSigner)
+
+	if ac.LockUnixTimestamp == 0 {
+		localLog.Info("Removing temporary signer")
+		err = ac.removeTemporarySigner(destination)
+		if err != nil {
+			localLog.WithField("err", err).Error("Error removing temporary signer")
+			return
+		}
+
+		if ac.OnExchanged != nil {
+			ac.OnExchanged(destination)
+		}
+	} else {
+		localLog.Info("Creating unlock transaction to remove temporary signer")
+		transaction, err := ac.buildUnlockAccountTransaction(destination)
+		if err != nil {
+			localLog.WithField("err", err).Error("Error creating unlock transaction")
+			return
+		}
+
+		if ac.OnExchangedTimelocked != nil {
+			ac.OnExchangedTimelocked(destination, transaction)
+		}
 	}
 
 	localLog.Info("Account successully configured")
+}
+
+func (ac *AccountConfigurator) setAccountStatus(account string, status Status) {
+	ac.accountStatusMutex.Lock()
+	defer ac.accountStatusMutex.Unlock()
+	ac.accountStatus[account] = status
+}
+
+func (ac *AccountConfigurator) removeAccountStatus(account string) {
+	ac.accountStatusMutex.Lock()
+	defer ac.accountStatusMutex.Unlock()
+	delete(ac.accountStatus, account)
 }
 
 func (ac *AccountConfigurator) getAccount(account string) (horizon.Account, bool, error) {
 	var hAccount horizon.Account
 	hAccount, err := ac.Horizon.LoadAccount(account)
 	if err != nil {
-		if err, ok := err.(*horizon.Error); ok && err.Response.StatusCode == http.StatusNotFound {
+		if err2, ok := err.(*horizon.Error); ok && err2.Response.StatusCode == http.StatusNotFound {
 			return hAccount, false, nil
 		}
 		return hAccount, false, err
@@ -163,12 +198,23 @@ func (ac *AccountConfigurator) getAccount(account string) (horizon.Account, bool
 	return hAccount, true, nil
 }
 
-func (ac *AccountConfigurator) trustlineExists(account horizon.Account, assetCode string) bool {
-	for _, balance := range account.Balances {
-		if balance.Asset.Issuer == ac.IssuerPublicKey && balance.Asset.Code == assetCode {
-			return true
+// signerExistsOnly returns true if account has exactly one signer and it's
+// equal to `signerPublicKey`.
+func (ac *AccountConfigurator) signerExistsOnly(account horizon.Account) bool {
+	tempSignerFound := false
+
+	for _, signer := range account.Signers {
+		if signer.Key == ac.signerPublicKey {
+			if signer.Weight == 1 {
+				tempSignerFound = true
+			}
+		} else {
+			// For each other signer, weight should be equal 0
+			if signer.Weight != 0 {
+				return false
+			}
 		}
 	}
 
-	return false
+	return tempSignerFound
 }

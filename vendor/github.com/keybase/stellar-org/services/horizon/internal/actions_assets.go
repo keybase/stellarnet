@@ -3,16 +3,20 @@ package horizon
 import (
 	"fmt"
 
+	"github.com/stellar/go/protocols/horizon"
+	"github.com/stellar/go/services/horizon/internal/actions"
 	"github.com/stellar/go/services/horizon/internal/db2"
 	"github.com/stellar/go/services/horizon/internal/db2/assets"
-	"github.com/stellar/go/services/horizon/internal/render/hal"
-	"github.com/stellar/go/services/horizon/internal/resource"
-	halRender "github.com/stellar/go/support/render/hal"
+	"github.com/stellar/go/services/horizon/internal/resourceadapter"
+	"github.com/stellar/go/support/render/hal"
 )
 
 // This file contains the actions:
 //
 // AssetsAction: pages of assets
+
+// Interface verification
+var _ actions.JSONer = (*AssetsAction)(nil)
 
 // AssetsAction renders a page of Assets
 type AssetsAction struct {
@@ -27,15 +31,14 @@ type AssetsAction struct {
 const maxAssetCodeLength = 12
 
 // JSON is a method for actions.JSON
-func (action *AssetsAction) JSON() {
+func (action *AssetsAction) JSON() error {
 	action.Do(
 		action.loadParams,
 		action.loadRecords,
 		action.loadPage,
-		func() {
-			halRender.Render(action.W, action.Page)
-		},
+		func() { hal.Render(action.W, action.Page) },
 	)
+	return action.Err
 }
 
 func (action *AssetsAction) loadParams() {
@@ -52,7 +55,7 @@ func (action *AssetsAction) loadParams() {
 		}
 		action.AssetIssuer = issuerAccount.Address()
 	}
-	action.PagingParams = action.GetPageQuery()
+	action.PagingParams = action.GetPageQuery(actions.DisableCursorValidation)
 }
 
 func (action *AssetsAction) loadRecords() {
@@ -70,8 +73,12 @@ func (action *AssetsAction) loadRecords() {
 
 func (action *AssetsAction) loadPage() {
 	for _, record := range action.Records {
-		var res resource.AssetStat
-		res.Populate(action.Ctx, record)
+		var res horizon.AssetStat
+		err := resourceadapter.PopulateAssetStat(action.R.Context(), &res, record)
+		if err != nil {
+			action.Err = err
+			return
+		}
 		action.Page.Add(res)
 	}
 

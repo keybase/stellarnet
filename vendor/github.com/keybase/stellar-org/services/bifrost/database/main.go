@@ -20,6 +20,8 @@ func (s *Chain) Scan(src interface{}) error {
 }
 
 const (
+	SchemaVersion uint32 = 2
+
 	ChainBitcoin  Chain = "bitcoin"
 	ChainEthereum Chain = "ethereum"
 )

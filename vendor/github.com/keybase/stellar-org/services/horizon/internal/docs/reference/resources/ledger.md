@@ -8,25 +8,27 @@ To learn more about the concept of ledgers in the Stellar network, take a look a
 
 ## Attributes
 
-| Attribute               | Type   |                                                                                                                               |
-|-------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------|
-| id                      | string | The id is a unique identifier for this ledger.                                                                                |
-| paging_token            | number | A [paging token](./page.md) suitable for use as a `cursor` parameter.                                                         |
-| hash                    | string | A hex-encoded SHA-256 hash of the ledger's [XDR](../../learn/xdr.md)-encoded form.                                            |
-| prev_hash               | string | The hash of the ledger that chronologically came before this one.                                                             |
-| sequence                | number | Sequence number of this ledger, suitable for use as the as the :id parameter for url templates that require a ledger number.  |
-| transaction_count       | number | The number of transactions in this ledger.                                                                                    |
-| operation_count         | number | The number of operations in this ledger.                                                                                      |
-| closed_at               | string | An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) formatted string of when this ledger was closed.                        |
-| total_coins             | string | The total number of lumens in circulation.                                                                                    |
-| fee_pool                | string | The sum of all transaction fees *(in lumens)* since the last inflation operation. They are redistributed during [inflation].  |
-| base_fee                | number | The [fee] the network charges per operation in a transaction.                                                                 |
-| base_reserve            | string | The [reserve][fee] the network uses when calculating an account's minimum balance.                                            |
-| max_tx_set_size         | number | The maximum number of transactions validators have agreed to process in a given ledger.                                       |
-| protocol_version        | number | The protocol version that the stellar network was running when this ledger was committed.                                     |
-| header_xdr              | string | A base64 encoded string of the raw `LedgerHeader` xdr struct for this ledger.                                                 |
-| base_fee_in_stroops     | number | The [fee] the network charges per operation in a transaction.  Expressed in stroops.                                          |
-| base_reserve_in_stroops | number | The [reserve][fee] the network uses when calculating an account's minimum balance. Expressed in stroops.                      |
+| Attribute                    | Type   |                                                                                                                               |
+|------------------------------|--------|-------------------------------------------------------------------------------------------------------------------------------|
+| id                           | string | The id is a unique identifier for this ledger.                                                                                |
+| paging_token                 | number | A [paging token](./page.md) suitable for use as a `cursor` parameter.                                                         |
+| hash                         | string | A hex-encoded SHA-256 hash of the ledger's [XDR](../../learn/xdr.md)-encoded form.                                            |
+| prev_hash                    | string | The hash of the ledger that chronologically came before this one.                                                             |
+| sequence                     | number | Sequence number of this ledger, suitable for use as the as the :id parameter for url templates that require a ledger number.  |
+| transaction_count            | number | *REMOVED in 0.17.0: USE `successful_transaction_count` INSTEAD*. The number of successful transactions in this ledger.               |
+| successful_transaction_count | number | *From 0.16.0* The number of successful transactions in this ledger.                                                                         |
+| failed_transaction_count     | number | *From 0.16.0* The number of failed transactions in this ledger.                                                                             |
+| operation_count              | number | The number of operations applied in this ledger.                                                                              |
+| closed_at                    | string | An [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601) formatted string of when this ledger was closed.                        |
+| total_coins                  | string | The total number of lumens in circulation.                                                                                    |
+| fee_pool                     | string | The sum of all transaction fees *(in lumens)* since the last inflation operation. They are redistributed during [inflation].  |
+| base_fee                     | number | The [fee] the network charges per operation in a transaction.                                                                 |
+| base_reserve                 | string | The [reserve][fee] the network uses when calculating an account's minimum balance.                                            |
+| max_tx_set_size              | number | The maximum number of transactions validators have agreed to process in a given ledger.                                       |
+| protocol_version             | number | The protocol version that the stellar network was running when this ledger was committed.                                     |
+| header_xdr                   | string | A base64 encoded string of the raw `LedgerHeader` xdr struct for this ledger.                                                 |
+| base_fee_in_stroops          | number | The [fee] the network charges per operation in a transaction.  Expressed in stroops.                                          |
+| base_reserve_in_stroops      | number | The [reserve][fee] the network uses when calculating an account's minimum balance. Expressed in stroops.                      |
 
 ## Links
 |              | Example                                           | Relation                        | templated |
@@ -64,6 +66,8 @@ To learn more about the concept of ledgers in the Stellar network, take a look a
   "prev_hash": "b608e110c7cc58200c912140f121af50dc5ef407aabd53b76e1741080aca1cf0",
   "sequence": 500,
   "transaction_count": 0,
+  "successful_transaction_count": 0,
+  "failed_transaction_count": 0,
   "operation_count": 0,
   "closed_at": "2015-07-09T21:39:28Z",
   "total_coins": "100000000000.0000000",

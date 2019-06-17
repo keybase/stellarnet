@@ -26,6 +26,18 @@ into a ledger) will a resubmission to the network occur.
 
 Information about [building transactions](https://www.stellar.org/developers/js-stellar-base/learn/building-transactions.html) in JavaScript.
 
+### Timeout
+
+If you are encountering this error it means that either:
+
+* Horizon has not received a confirmation from the Core server that the transaction you are trying to submit to the network was included in a ledger in a timely manner or:
+* Horizon has not sent a response to a reverse-proxy before in a specified time.
+
+The former case may happen because there was no room for your transaction in the 3 consecutive ledgers. In such case, Core server removes a transaction from a queue. To solve this you can either:
+
+* Keep resubmitting the same transaction (with the same sequence number) and wait until it finally is added to a new ledger or:
+* Increase the [fee](/developers/guides/concepts/fees.html).
+
 ## Request
 
 ```
@@ -82,3 +94,4 @@ If the transaction failed or errored, then an error response will be returned. P
 - The [standard errors](../errors.md#Standard_Errors).
 - [transaction_failed](../errors/transaction-failed.md): The transaction failed and could not be applied to the ledger.
 - [transaction_malformed](../errors/transaction-malformed.md): The transaction could not be decoded and was not submitted to the network.
+- [timeout](../errors/timeout.md): No response from the Core server in a timely manner. Please check "Timeout" section above.

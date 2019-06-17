@@ -3,10 +3,10 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Fri, 07 Jun 2019 14:38:48 GMT
+Date: Mon, 17 Jun 2019 17:51:39 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 100
+X-Ratelimit-Remaining: 97
 X-Ratelimit-Reset: 1
 
 {
@@ -33,8 +33,8 @@ X-Ratelimit-Reset: 1
         "asset_code": "004d40",
         "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
         "paging_token": "004d40_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "51626.0000000",
-        "num_accounts": 854,
+        "amount": "54658.0000000",
+        "num_accounts": 856,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -51,8 +51,8 @@ X-Ratelimit-Reset: 1
         "asset_code": "006064",
         "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
         "paging_token": "006064_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "50624.0000000",
-        "num_accounts": 833,
+        "amount": "53441.0000000",
+        "num_accounts": 834,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -69,7 +69,7 @@ X-Ratelimit-Reset: 1
         "asset_code": "00695c",
         "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
         "paging_token": "00695c_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "52398.0000000",
+        "amount": "54966.0000000",
         "num_accounts": 852,
         "flags": {
           "auth_required": false,
@@ -87,8 +87,8 @@ X-Ratelimit-Reset: 1
         "asset_code": "00796b",
         "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
         "paging_token": "00796b_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "51357.0000000",
-        "num_accounts": 862,
+        "amount": "54429.0000000",
+        "num_accounts": 863,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -105,8 +105,8 @@ X-Ratelimit-Reset: 1
         "asset_code": "00838f",
         "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
         "paging_token": "00838f_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "54238.0000000",
-        "num_accounts": 890,
+        "amount": "57162.0000000",
+        "num_accounts": 891,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -123,8 +123,8 @@ X-Ratelimit-Reset: 1
         "asset_code": "00897b",
         "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
         "paging_token": "00897b_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "51928.0000000",
-        "num_accounts": 861,
+        "amount": "54923.0000000",
+        "num_accounts": 862,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -141,8 +141,8 @@ X-Ratelimit-Reset: 1
         "asset_code": "0091ea",
         "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
         "paging_token": "0091ea_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "51900.0000000",
-        "num_accounts": 872,
+        "amount": "54584.0000000",
+        "num_accounts": 873,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -159,7 +159,7 @@ X-Ratelimit-Reset: 1
         "asset_code": "009688",
         "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
         "paging_token": "009688_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "53738.0000000",
+        "amount": "56342.0000000",
         "num_accounts": 888,
         "flags": {
           "auth_required": false,
@@ -177,7 +177,7 @@ X-Ratelimit-Reset: 1
         "asset_code": "0097a7",
         "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
         "paging_token": "0097a7_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "51372.0000000",
+        "amount": "54396.0000000",
         "num_accounts": 849,
         "flags": {
           "auth_required": false,
@@ -195,8 +195,8 @@ X-Ratelimit-Reset: 1
         "asset_code": "00acc1",
         "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
         "paging_token": "00acc1_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "50251.0000000",
-        "num_accounts": 835,
+        "amount": "53412.0000000",
+        "num_accounts": 836,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,

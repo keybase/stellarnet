@@ -8,6 +8,8 @@ package txsub
 
 import (
 	"context"
+
+	"github.com/stretchr/testify/mock"
 )
 
 // MockSubmitter is a test helper that simplements the Submitter interface
@@ -43,11 +45,11 @@ func (results *MockResultProvider) ResultByHash(ctx context.Context, hash string
 // MockSequenceProvider is a test helper that simplements the SequenceProvider
 // interface
 type MockSequenceProvider struct {
-	Results map[string]uint64
-	Err     error
+	mock.Mock
 }
 
 // Get implements `txsub.SequenceProvider`
-func (results *MockSequenceProvider) Get(addresses []string) (map[string]uint64, error) {
-	return results.Results, results.Err
+func (o *MockSequenceProvider) Get(addresses []string) (map[string]uint64, error) {
+	args := o.Called(addresses)
+	return args.Get(0).(map[string]uint64), args.Error(1)
 }

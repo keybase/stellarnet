@@ -4,7 +4,6 @@ import (
 	"math/big"
 
 	"github.com/stellar/go/amount"
-	"github.com/stellar/go/xdr"
 )
 
 // InvertPricef returns the inverted price of the price-level, i.e. what the price would be if you were
@@ -20,6 +19,6 @@ func (p *PriceLevel) PriceAsString() string {
 
 // AmountAsString returns the amount as a string, formatted using
 // the amount.String() utility from github.com/stellar/go.
-func (p *PriceLevel) AmountAsString() string {
-	return amount.String(xdr.Int64(p.Amount))
+func (p *PriceLevel) AmountAsString() (string, error) {
+	return amount.IntStringToAmount(p.Amount)
 }

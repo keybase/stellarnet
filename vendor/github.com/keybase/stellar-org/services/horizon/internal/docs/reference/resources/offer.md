@@ -17,6 +17,20 @@ Horizon only returns offers that belong to a particular account.  When it does, 
 | amount | string | The amount of `selling` the account making this offer is willing to sell.|
 | price_r | object | An object of a number numerator and number denominator that represent the buy and sell price of the currencies on offer.|
 | price| string | How many units of `buying` it takes to get 1 unit of `selling`. A number representing the decimal form of `price_r`.|
+| last_modified_ledger| integer | sequence number for the latest ledger in which this offer was modified.||
+| last_modified_time| string | An ISO 8601 formatted string of last modification time.||
+
+#### Price_r Object
+Price_r is a more precise representation of a bid/ask offer.
+
+|    Attribute     |  Type  |                                                                                                                                |
+| ---------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| n               | number | The numerator.   |
+| d              | number | The denominator.  |
+
+Thus to get price you would take n / d.
+
+
 
 ## Links
 | rel          | Example                                                                                           | Description                                                | `templated` |

@@ -3,22 +3,28 @@
 package core
 
 import (
+	"strconv"
+
 	"github.com/guregu/null"
 	"github.com/stellar/go/strkey"
 	"github.com/stellar/go/support/db"
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
 // Account is a row of data from the `accounts` table
 type Account struct {
-	Accountid     string
-	Balance       xdr.Int64
-	Seqnum        string
-	Numsubentries int32
-	Inflationdest null.String
-	HomeDomain    null.String
-	Thresholds    xdr.Thresholds
-	Flags         xdr.AccountFlags
+	Accountid          string
+	Balance            xdr.Int64
+	Seqnum             string
+	Numsubentries      int32
+	Inflationdest      null.String
+	HomeDomain         null.String
+	Thresholds         xdr.Thresholds
+	Flags              xdr.AccountFlags
+	LastModified       uint32
+	BuyingLiabilities  xdr.Int64 `db:"buyingliabilities"`
+	SellingLiabilities xdr.Int64 `db:"sellingliabilities"`
 }
 
 // AccountData is a row of data from the `accountdata` table
@@ -43,13 +49,8 @@ type Offer struct {
 	SellerID string `db:"sellerid"`
 	OfferID  int64  `db:"offerid"`
 
-	SellingAssetType xdr.AssetType `db:"sellingassettype"`
-	SellingAssetCode null.String   `db:"sellingassetcode"`
-	SellingIssuer    null.String   `db:"sellingissuer"`
-
-	BuyingAssetType xdr.AssetType `db:"buyingassettype"`
-	BuyingAssetCode null.String   `db:"buyingassetcode"`
-	BuyingIssuer    null.String   `db:"buyingissuer"`
+	SellingAsset xdr.Asset `db:"sellingasset"`
+	BuyingAsset  xdr.Asset `db:"buyingasset"`
 
 	Amount       xdr.Int64 `db:"amount"`
 	Pricen       int32     `db:"pricen"`
@@ -57,6 +58,26 @@ type Offer struct {
 	Price        float64   `db:"price"`
 	Flags        int32     `db:"flags"`
 	Lastmodified int32     `db:"lastmodified"`
+}
+
+// get returns Offer. Useful in `internalOffer` context, when Offer is embedded.
+func (o Offer) get() Offer {
+	return o
+}
+
+// internalOffer is row of data from the `offers` table from stellar-core used
+// internally only to support schema <=8.
+type internalOffer struct {
+	Offer
+
+	// Schema v8 fields, for compatibility only.
+	SellingAssetType xdr.AssetType `db:"sellingassettype"`
+	SellingAssetCode null.String   `db:"sellingassetcode"`
+	SellingIssuer    null.String   `db:"sellingissuer"`
+
+	BuyingAssetType xdr.AssetType `db:"buyingassettype"`
+	BuyingAssetCode null.String   `db:"buyingassetcode"`
+	BuyingIssuer    null.String   `db:"buyingissuer"`
 }
 
 // OrderBookSummaryPriceLevel is a collapsed view of multiple offers at the same price that
@@ -82,7 +103,7 @@ type PriceLevel struct {
 	Pricen int32   `db:"pricen"`
 	Priced int32   `db:"priced"`
 	Pricef float64 `db:"pricef"`
-	Amount int64   `db:"amount"`
+	Amount string  `db:"amount"`
 }
 
 // SequenceProvider implements `txsub.SequenceProvider`
@@ -117,13 +138,16 @@ type TransactionFee struct {
 
 // Trustline is a row of data from the `trustlines` table from stellar-core
 type Trustline struct {
-	Accountid string
-	Assettype xdr.AssetType
-	Issuer    string
-	Assetcode string
-	Tlimit    xdr.Int64
-	Balance   xdr.Int64
-	Flags     int32
+	Accountid          string
+	Assettype          xdr.AssetType
+	Issuer             string
+	Assetcode          string
+	Tlimit             xdr.Int64
+	Balance            xdr.Int64
+	Flags              int32
+	LastModified       uint32
+	BuyingLiabilities  xdr.Int64 `db:"buyingliabilities"`
+	SellingLiabilities xdr.Int64 `db:"sellingliabilities"`
 }
 
 // AssetFromDB produces an xdr.Asset by combining the constituent type, code and
@@ -203,4 +227,15 @@ func (q *Q) ElderLedger(dest *int32) error {
 // LatestLedger loads the latest known ledger
 func (q *Q) LatestLedger(dest interface{}) error {
 	return q.GetRaw(dest, `SELECT COALESCE(MAX(ledgerseq), 0) FROM ledgerheaders`)
+}
+
+// SchemaVersion returns Core DB schema version
+func (q *Q) SchemaVersion() (int, error) {
+	var version string
+	err := q.GetRaw(&version, `SELECT state FROM storestate WHERE statename = 'databaseschema'`)
+	if err != nil {
+		return 0, errors.Wrap(err, "Error getting 'databaseschema'")
+	}
+
+	return strconv.Atoi(version)
 }

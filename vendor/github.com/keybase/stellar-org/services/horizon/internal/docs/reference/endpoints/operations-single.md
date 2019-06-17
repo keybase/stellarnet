@@ -4,7 +4,14 @@ clientData:
   laboratoryUrl: https://www.stellar.org/laboratory/#explorer?resource=operations&endpoint=single
 ---
 
-The operation details endpoint provides information on a single [operation](../resources/operation.md). The operation ID provided in the `id` argument specifies which operation to load.
+The operation details endpoint provides information on a single
+[operation](../resources/operation.md). The operation ID provided in the `id` argument specifies
+which operation to load.
+
+### Warning - failed transactions
+
+Operations can be part of successful or failed transactions (failed transactions are also included
+in Stellar ledger). Always check operation status using `transaction_successful` field!
 
 ## Request
 
@@ -14,24 +21,24 @@ GET /operations/{id}
 
 ### Arguments
 
-|  name  |  notes  | description | example |
-| ------ | ------- | ----------- | ------- |
-| `id` | required, number | An operation ID. | 77309415424 |
+| name | notes | description | example |
+| ---- | ----- | ----------- | ------- |
+| `id` | required, number | An operation ID. | 2927608622747649 |
 
 ### curl Example Request
 
 ```sh
-curl https://horizon-testnet.stellar.org/operations/77309415424
+curl https://horizon-testnet.stellar.org/operations/2927608622747649
 ```
 
 ### JavaScript Example Request
 
-```js
+```javascript
 var StellarSdk = require('stellar-sdk');
 var server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
 
 server.operations()
-  .operation('77309415424')
+  .operation('2927608622747649')
   .call()
   .then(function (operationsResult) {
     console.log(operationsResult)
@@ -39,8 +46,6 @@ server.operations()
   .catch(function (err) {
     console.log(err)
   })
-
-
 ```
 
 ## Response
@@ -52,34 +57,39 @@ This endpoint responds with a single Operation.  See [operation resource](../res
 ```json
 {
   "_links": {
-    "effects": {
-      "href": "/operations/77309415424/effects/{?cursor,limit,order}",
-      "templated": true
-    },
-    "precedes": {
-      "href": "/operations?cursor=77309415424&order=asc"
-    },
     "self": {
-      "href": "/operations/77309415424"
+      "href": "https://horizon-testnet.stellar.org/operations/2927608622747649"
+    },
+    "transaction": {
+      "href": "https://horizon-testnet.stellar.org/transactions/4a3365180521e16b478d9f0c9198b97a9434fc9cb07b34f83ecc32fc54d0ca8a"
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/operations/2927608622747649/effects"
     },
     "succeeds": {
-      "href": "/operations?cursor=77309415424&order=desc"
+      "href": "https://horizon-testnet.stellar.org/effects?order=desc&cursor=2927608622747649"
     },
-    "transactions": {
-      "href": "/transactions/77309415424"
+    "precedes": {
+      "href": "https://horizon-testnet.stellar.org/effects?order=asc&cursor=2927608622747649"
     }
   },
-  "account": "GBIA4FH6TV64KSPDAJCNUQSM7PFL4ILGUVJDPCLUOPJ7ONMKBBVUQHRO",
-  "funder": "GCEZWKCA5VLDNRLN3RPRJMRZOX3Z6G5CHCGSNFHEYVXM3XOJMDS674JZ",
-  "id": 77309415424,
-  "paging_token": "77309415424",
-  "starting_balance": 1e+14,
-  "type_i": 0,
-  "type": "create_account"
+  "id": "2927608622747649",
+  "paging_token": "2927608622747649",
+  "transaction_successful": true,
+  "source_account": "GCGXZPH2QNKJP4GI2J77EFQQUMP3NYY4PCUZ4UPKHR2XYBKRUYKQ2DS6",
+  "type": "payment",
+  "type_i": 1,
+  "created_at": "2019-04-08T21:59:27Z",
+  "transaction_hash": "4a3365180521e16b478d9f0c9198b97a9434fc9cb07b34f83ecc32fc54d0ca8a",
+  "asset_type": "native",
+  "from": "GCGXZPH2QNKJP4GI2J77EFQQUMP3NYY4PCUZ4UPKHR2XYBKRUYKQ2DS6",
+  "to": "GDGEQS64ISS6Y2KDM5V67B6LXALJX4E7VE4MIA54NANSUX5MKGKBZM5G",
+  "amount": "404.0000000"
 }
 ```
 
 ## Possible Errors
 
 - The [standard errors](../errors.md#Standard-Errors).
-- [not_found](../errors/not-found.md): A `not_found` error will be returned if there is no  whose ID matches the `account` argument.
+- [not_found](../errors/not-found.md): A `not_found` error will be returned if the
+  there is no operation that matches the ID argument, i.e. the operation does not exist.

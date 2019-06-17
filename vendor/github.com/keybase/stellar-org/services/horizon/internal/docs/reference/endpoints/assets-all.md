@@ -20,17 +20,33 @@ GET /assets{?asset_code,asset_issuer,cursor,limit,order}
 
 | name | notes | description | example |
 | ---- | ----- | ----------- | ------- |
-| `?asset_code`  | optional, string, default _null_ | Code of the Asset to filter by | `USD` |
-| `?asset_issuer`  | optional, string, default _null_ | Issuer of the Asset to filter by | `GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36` |
+| `?asset_code` | optional, string, default _null_ | Code of the Asset to filter by | `USD` |
+| `?asset_issuer` | optional, string, default _null_ | Issuer of the Asset to filter by | `GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36` |
 | `?cursor` | optional, any, default _null_ | A paging token, specifying where to start returning records from. | `1` |
-| `?order`  | optional, string, default `asc` | The order in which to return rows, "asc" or "desc", ordered by asset_code then by asset_issuer. | `asc` |
-| `?limit`  | optional, number, default: `10` | Maximum number of records to return. | `200` |
+| `?order` | optional, string, default `asc` | The order in which to return rows, "asc" or "desc", ordered by asset_code then by asset_issuer. | `asc` |
+| `?limit` | optional, number, default: `10` | Maximum number of records to return. | `200` |
 
 ### curl Example Request
 
 ```sh
 # Retrieve the 200 newest assets, ordered chronologically:
 curl "https://horizon-testnet.stellar.org/assets?limit=200&order=desc"
+```
+
+### JavaScript Example Request
+
+```javascript
+var StellarSdk = require('stellar-sdk');
+var server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+
+server.assets()
+  .call()
+  .then(function (result) {
+    console.log(result.records);
+  })
+  .catch(function (err) {
+    console.log(err)
+  })
 ```
 
 ## Response

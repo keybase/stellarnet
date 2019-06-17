@@ -15,6 +15,7 @@ import (
 // `resolution` parameter.
 var AllowedResolutions = map[time.Duration]struct{}{
 	time.Minute:        {}, //1 minute
+	time.Minute * 5:    {}, //5 minutes
 	time.Minute * 15:   {}, //15 minutes
 	time.Hour:          {}, //1 hour
 	time.Hour * 24:     {}, //day
@@ -23,14 +24,14 @@ var AllowedResolutions = map[time.Duration]struct{}{
 
 // StrictResolutionFiltering represents a simple feature flag to determine whether only
 // predetermined resolutions of trade aggregations are allowed.
-var StrictResolutionFiltering = false
+var StrictResolutionFiltering = true
 
 // TradeAggregation represents an aggregation of trades from the trades table
 type TradeAggregation struct {
 	Timestamp     int64     `db:"timestamp"`
 	TradeCount    int64     `db:"count"`
-	BaseVolume    int64     `db:"base_volume"`
-	CounterVolume int64     `db:"counter_volume"`
+	BaseVolume    string    `db:"base_volume"`
+	CounterVolume string    `db:"counter_volume"`
 	Average       float64   `db:"avg"`
 	High          xdr.Price `db:"high"`
 	Low           xdr.Price `db:"low"`
@@ -44,16 +45,19 @@ type TradeAggregationsQ struct {
 	baseAssetID    int64
 	counterAssetID int64
 	resolution     int64
+	offset         int64
 	startTime      strtime.Millis
 	endTime        strtime.Millis
 	pagingParams   db2.PageQuery
 }
 
 // GetTradeAggregationsQ initializes a TradeAggregationsQ query builder based on the required parameters
-func (q Q) GetTradeAggregationsQ(baseAssetID int64, counterAssetID int64, resolution int64, pagingParams db2.PageQuery) (*TradeAggregationsQ, error) {
+func (q Q) GetTradeAggregationsQ(baseAssetID int64, counterAssetID int64, resolution int64,
+	offset int64, pagingParams db2.PageQuery) (*TradeAggregationsQ, error) {
 
 	//convert resolution to a duration struct
 	resolutionDuration := time.Duration(resolution) * time.Millisecond
+	offsetDuration := time.Duration(offset) * time.Millisecond
 
 	//check if resolution allowed
 	if StrictResolutionFiltering {
@@ -61,27 +65,56 @@ func (q Q) GetTradeAggregationsQ(baseAssetID int64, counterAssetID int64, resolu
 			return &TradeAggregationsQ{}, errors.New("resolution is not allowed")
 		}
 	}
+	// check if offset is allowed. Offset must be 1) a multiple of an hour 2) less than the resolution and 3)
+	// less than 24 hours
+	if offsetDuration%time.Hour != 0 || offsetDuration >= time.Hour*24 || offsetDuration > resolutionDuration {
+		return &TradeAggregationsQ{}, errors.New("offset is not allowed.")
+	}
 
 	return &TradeAggregationsQ{
 		baseAssetID:    baseAssetID,
 		counterAssetID: counterAssetID,
 		resolution:     resolution,
+		offset:         offset,
 		pagingParams:   pagingParams,
 	}, nil
 }
 
-// WithStartTime adds an optional lower time boundary filter to the trades being aggregated
-func (q *TradeAggregationsQ) WithStartTime(startTime strtime.Millis) *TradeAggregationsQ {
-	// Round lower boundary up, if start time is in the middle of a bucket
-	q.startTime = startTime.RoundUp(q.resolution)
-	return q
+// WithStartTime adds an optional lower time boundary filter to the trades being aggregated.
+func (q *TradeAggregationsQ) WithStartTime(startTime strtime.Millis) (*TradeAggregationsQ, error) {
+	offsetMillis := strtime.MillisFromInt64(q.offset)
+	var adjustedStartTime strtime.Millis
+	// Round up to offset if the provided start time is less than the offset.
+	if startTime < offsetMillis {
+		adjustedStartTime = offsetMillis
+	} else {
+		adjustedStartTime = (startTime - offsetMillis).RoundUp(q.resolution) + offsetMillis
+	}
+	if !q.endTime.IsNil() && adjustedStartTime > q.endTime {
+		return &TradeAggregationsQ{}, errors.New("start time is not allowed")
+	} else {
+		q.startTime = adjustedStartTime
+		return q, nil
+	}
 }
 
-// WithEndTime adds an upper optional time boundary filter to the trades being aggregated
-func (q *TradeAggregationsQ) WithEndTime(endTime strtime.Millis) *TradeAggregationsQ {
+// WithEndTime adds an upper optional time boundary filter to the trades being aggregated.
+func (q *TradeAggregationsQ) WithEndTime(endTime strtime.Millis) (*TradeAggregationsQ, error) {
 	// Round upper boundary down, to not deliver partial bucket
-	q.endTime = endTime.RoundDown(q.resolution)
-	return q
+	offsetMillis := strtime.MillisFromInt64(q.offset)
+	var adjustedEndTime strtime.Millis
+	// the end time isn't allowed to be less than the offset
+	if endTime < offsetMillis {
+		return &TradeAggregationsQ{}, errors.New("end time is not allowed")
+	} else {
+		adjustedEndTime = (endTime - offsetMillis).RoundDown(q.resolution) + offsetMillis
+	}
+	if adjustedEndTime < q.startTime {
+		return &TradeAggregationsQ{}, errors.New("end time is not allowed")
+	} else {
+		q.endTime = adjustedEndTime
+		return q, nil
+	}
 }
 
 // GetSql generates a sql statement to aggregate Trades based on given parameters
@@ -91,9 +124,9 @@ func (q *TradeAggregationsQ) GetSql() sq.SelectBuilder {
 
 	var bucketSQL sq.SelectBuilder
 	if orderPreserved {
-		bucketSQL = bucketTrades(q.resolution)
+		bucketSQL = bucketTrades(q.resolution, q.offset)
 	} else {
-		bucketSQL = reverseBucketTrades(q.resolution)
+		bucketSQL = reverseBucketTrades(q.resolution, q.offset)
 	}
 
 	bucketSQL = bucketSQL.From("history_trades").
@@ -126,16 +159,18 @@ func (q *TradeAggregationsQ) GetSql() sq.SelectBuilder {
 }
 
 // formatBucketTimestampSelect formats a sql select clause for a bucketed timestamp, based on given resolution
-func formatBucketTimestampSelect(resolution int64) string {
-	return fmt.Sprintf("div(cast((extract(epoch from ledger_closed_at) * 1000 ) as bigint), %d)*%d as timestamp",
-		resolution, resolution)
+// and the offset. Given a time t, it gives it a timestamp defined by
+// f(t) = ((t - offset)/resolution)*resolution + offset.
+func formatBucketTimestampSelect(resolution int64, offset int64) string {
+	return fmt.Sprintf("div((cast((extract(epoch from ledger_closed_at) * 1000 ) as bigint) - %d), %d)*%d + %d as timestamp",
+		offset, resolution, resolution, offset)
 }
 
 // bucketTrades generates a select statement to filter rows from the `history_trades` table in
 // a compact form, with a timestamp rounded to resolution and reversed base/counter.
-func bucketTrades(resolution int64) sq.SelectBuilder {
+func bucketTrades(resolution int64, offset int64) sq.SelectBuilder {
 	return sq.Select(
-		formatBucketTimestampSelect(resolution),
+		formatBucketTimestampSelect(resolution, offset),
 		"history_operation_id",
 		"\"order\"",
 		"base_asset_id",
@@ -148,9 +183,9 @@ func bucketTrades(resolution int64) sq.SelectBuilder {
 
 // reverseBucketTrades generates a select statement to filter rows from the `history_trades` table in
 // a compact form, with a timestamp rounded to resolution and reversed base/counter.
-func reverseBucketTrades(resolution int64) sq.SelectBuilder {
+func reverseBucketTrades(resolution int64, offset int64) sq.SelectBuilder {
 	return sq.Select(
-		formatBucketTimestampSelect(resolution),
+		formatBucketTimestampSelect(resolution, offset),
 		"history_operation_id",
 		"\"order\"",
 		"counter_asset_id as base_asset_id",

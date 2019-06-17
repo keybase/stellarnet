@@ -3,13 +3,19 @@ package horizon
 import (
 	"net/http"
 
+	"github.com/stellar/go/protocols/horizon"
+	"github.com/stellar/go/services/horizon/internal/actions"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
-	"github.com/stellar/go/services/horizon/internal/resource"
+	"github.com/stellar/go/services/horizon/internal/resourceadapter"
 	"github.com/stellar/go/support/render/hal"
 	"github.com/stellar/go/support/render/problem"
 	"github.com/stellar/go/xdr"
 )
+
+// Interface verifications
+var _ actions.JSONer = (*OrderBookShowAction)(nil)
+var _ actions.SingleObjectStreamer = (*OrderBookShowAction)(nil)
 
 // OrderBookShowAction renders a account summary found by its address.
 type OrderBookShowAction struct {
@@ -17,7 +23,7 @@ type OrderBookShowAction struct {
 	Selling  xdr.Asset
 	Buying   xdr.Asset
 	Record   core.OrderBookSummary
-	Resource resource.OrderBookSummary
+	Resource horizon.OrderBookSummary
 	Limit    uint64
 }
 
@@ -53,8 +59,9 @@ func (action *OrderBookShowAction) LoadRecord() {
 
 // LoadResource populates action.Record
 func (action *OrderBookShowAction) LoadResource() {
-	action.Err = action.Resource.Populate(
-		action.Ctx,
+	action.Err = resourceadapter.PopulateOrderBookSummary(
+		action.R.Context(),
+		&action.Resource,
 		action.Selling,
 		action.Buying,
 		action.Record,
@@ -62,23 +69,17 @@ func (action *OrderBookShowAction) LoadResource() {
 }
 
 // JSON is a method for actions.JSON
-func (action *OrderBookShowAction) JSON() {
-	action.Do(action.LoadQuery, action.LoadRecord, action.LoadResource)
-
-	action.Do(func() {
-		hal.Render(action.W, action.Resource)
-	})
+func (action *OrderBookShowAction) JSON() error {
+	action.Do(
+		action.LoadQuery,
+		action.LoadRecord,
+		action.LoadResource,
+		func() { hal.Render(action.W, action.Resource) },
+	)
+	return action.Err
 }
 
-// SSE is a method for actions.SSE
-func (action *OrderBookShowAction) SSE(stream sse.Stream) {
+func (action *OrderBookShowAction) LoadEvent() (sse.Event, error) {
 	action.Do(action.LoadQuery, action.LoadRecord, action.LoadResource)
-
-	action.Do(func() {
-		stream.SetLimit(10)
-		stream.Send(sse.Event{
-			Data: action.Resource,
-		})
-	})
-
+	return sse.Event{Data: action.Resource}, action.Err
 }

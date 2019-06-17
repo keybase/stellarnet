@@ -42,7 +42,6 @@ func (handler *FriendbotHandler) doHandle(r *http.Request) (*horizon.Transaction
 	if err != nil {
 		return nil, problem.MakeInvalidFieldProblem("addr", err)
 	}
-
 	return handler.loadResult(address)
 }
 

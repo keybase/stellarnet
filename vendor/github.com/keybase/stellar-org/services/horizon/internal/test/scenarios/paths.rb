@@ -9,7 +9,7 @@ account :trader, Stellar::KeyPair.from_seed("SAAHOOTVIZJVXOEPCTNKYTYOTKZA3MFXJ3A
 
 use_manual_close
 
-create_account :gateway
+create_account :gateway, :master, 10000
 create_account :payer
 create_account :payee
 create_account :trader
@@ -18,6 +18,9 @@ close_ledger
 
 trust :payer, :gateway, "USD"
 trust :payee, :gateway, "EUR"
+
+trust :payer, :gateway, "AAA"
+trust :payee, :gateway, "CCC"
 
 trust :trader, :gateway, "USD"
 trust :trader, :gateway, "EUR"
@@ -33,6 +36,11 @@ trust :trader, :gateway, "31"
 trust :trader, :gateway, "32"
 trust :trader, :gateway, "33"
 
+# order test
+trust :trader, :gateway, "AAA"
+trust :trader, :gateway, "BBB"
+trust :trader, :gateway, "CCC"
+
 close_ledger
 
 payment :gateway, :payer,   ["USD", :gateway, 5000]
@@ -43,6 +51,9 @@ payment :gateway, :trader,  ["22", :gateway, 5000]
 payment :gateway, :trader,  ["31", :gateway, 5000]
 payment :gateway, :trader,  ["32", :gateway, 5000]
 payment :gateway, :trader,  ["33", :gateway, 5000]
+payment :gateway, :trader,  ["AAA", :gateway, 5000]
+payment :gateway, :trader,  ["BBB", :gateway, 5000]
+payment :gateway, :trader,  ["CCC", :gateway, 5000]
 
 close_ledger
 
@@ -63,3 +74,8 @@ offer :trader, {for:["32", :gateway], sell:["33", :gateway]}, 40, 2.0
 offer :trader, {for:["33", :gateway], sell:["EUR", :gateway]}, 40, 2.0
 
 offer :gateway, {for:["USD", :gateway], sell: :native}, 1000, 0.1
+
+offer :trader, {for:["AAA", :gateway], sell:["BBB", :gateway]}, 1, 11
+offer :trader, {for:["BBB", :gateway], sell:["CCC", :gateway]}, 10, 0.1
+
+close_ledger

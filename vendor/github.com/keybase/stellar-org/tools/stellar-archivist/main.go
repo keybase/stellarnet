@@ -12,11 +12,11 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/stellar/go/tools/stellar-archivist/internal"
+	"github.com/stellar/go/support/historyarchive"
 )
 
 func status(a string, opts *Options) {
-	arch := archivist.MustConnect(a, opts.ConnectOpts)
+	arch := historyarchive.MustConnect(a, opts.ConnectOpts)
 	state, e := arch.GetRootHAS()
 	if e != nil {
 		log.Fatal(e)
@@ -37,22 +37,22 @@ type Options struct {
 	High        uint32
 	Last        int
 	Profile     bool
-	CommandOpts archivist.CommandOptions
-	ConnectOpts archivist.ConnectOptions
+	CommandOpts historyarchive.CommandOptions
+	ConnectOpts historyarchive.ConnectOptions
 }
 
-func (opts *Options) SetRange(arch *archivist.Archive) {
+func (opts *Options) SetRange(arch *historyarchive.Archive) {
 	if arch != nil && opts.Last != -1 {
 		state, e := arch.GetRootHAS()
 		if e == nil {
 			low := state.CurrentLedger - uint32(opts.Last)
 			opts.CommandOpts.Range =
-				archivist.MakeRange(low, state.CurrentLedger)
+				historyarchive.MakeRange(low, state.CurrentLedger)
 			return
 		}
 	}
 	opts.CommandOpts.Range =
-		archivist.MakeRange(uint32(opts.Low),
+		historyarchive.MakeRange(uint32(opts.Low),
 			uint32(opts.High))
 
 }
@@ -66,7 +66,7 @@ func (opts *Options) MaybeProfile() {
 }
 
 func scan(a string, opts *Options) {
-	arch := archivist.MustConnect(a, opts.ConnectOpts)
+	arch := historyarchive.MustConnect(a, opts.ConnectOpts)
 	opts.SetRange(arch)
 	e1 := arch.Scan(&opts.CommandOpts)
 	e2 := arch.ReportMissing(&opts.CommandOpts)
@@ -83,22 +83,22 @@ func scan(a string, opts *Options) {
 }
 
 func mirror(src string, dst string, opts *Options) {
-	srcArch := archivist.MustConnect(src, opts.ConnectOpts)
-	dstArch := archivist.MustConnect(dst, opts.ConnectOpts)
+	srcArch := historyarchive.MustConnect(src, opts.ConnectOpts)
+	dstArch := historyarchive.MustConnect(dst, opts.ConnectOpts)
 	opts.SetRange(srcArch)
 	log.Printf("mirroring %v -> %v\n", src, dst)
-	e := archivist.Mirror(srcArch, dstArch, &opts.CommandOpts)
+	e := historyarchive.Mirror(srcArch, dstArch, &opts.CommandOpts)
 	if e != nil {
 		log.Fatal(e)
 	}
 }
 
 func repair(src string, dst string, opts *Options) {
-	srcArch := archivist.MustConnect(src, opts.ConnectOpts)
-	dstArch := archivist.MustConnect(dst, opts.ConnectOpts)
+	srcArch := historyarchive.MustConnect(src, opts.ConnectOpts)
+	dstArch := historyarchive.MustConnect(dst, opts.ConnectOpts)
 	opts.SetRange(srcArch)
 	log.Printf("repairing %v -> %v\n", src, dst)
-	e := archivist.Repair(srcArch, dstArch, &opts.CommandOpts)
+	e := historyarchive.Repair(srcArch, dstArch, &opts.CommandOpts)
 	if e != nil {
 		log.Fatal(e)
 	}
@@ -233,7 +233,7 @@ func main() {
 	rootCmd.AddCommand(&cobra.Command{
 		Use: "dumpxdr",
 		Run: func(cmd *cobra.Command, args []string) {
-			err := archivist.DumpXdrAsJson(args)
+			err := historyarchive.DumpXdrAsJson(args)
 			if err != nil {
 				log.Fatal(err)
 			}

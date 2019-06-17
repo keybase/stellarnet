@@ -1,10 +1,16 @@
 package horizon
 
 import (
+	"github.com/stellar/go/services/horizon/internal/actions"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
-	"github.com/stellar/go/support/render/hal"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
+	"github.com/stellar/go/support/render/hal"
 )
+
+// Interface verifications
+var _ actions.JSONer = (*DataShowAction)(nil)
+var _ actions.RawDataResponder = (*DataShowAction)(nil)
+var _ actions.EventStreamer = (*DataShowAction)(nil)
 
 // DataShowAction renders a account summary found by its address.
 type DataShowAction struct {
@@ -15,21 +21,17 @@ type DataShowAction struct {
 }
 
 // JSON is a method for actions.JSON
-func (action *DataShowAction) JSON() {
+func (action *DataShowAction) JSON() error {
 	action.Do(
 		action.loadParams,
 		action.loadRecord,
-		func() {
-
-			hal.Render(action.W, map[string]string{
-				"value": action.Data.Value,
-			})
-		},
+		func() { hal.Render(action.W, map[string]string{"value": action.Data.Value}) },
 	)
+	return action.Err
 }
 
 // Raw is a method for actions.Raw
-func (action *DataShowAction) Raw() {
+func (action *DataShowAction) Raw() error {
 	action.Do(
 		action.loadParams,
 		action.loadRecord,
@@ -43,10 +45,11 @@ func (action *DataShowAction) Raw() {
 			action.W.Write(raw)
 		},
 	)
+	return action.Err
 }
 
 // SSE is a method for actions.SSE
-func (action *DataShowAction) SSE(stream sse.Stream) {
+func (action *DataShowAction) SSE(stream *sse.Stream) error {
 	action.Do(
 		action.loadParams,
 		action.loadRecord,
@@ -54,17 +57,14 @@ func (action *DataShowAction) SSE(stream sse.Stream) {
 			stream.Send(sse.Event{Data: action.Data.Value})
 		},
 	)
+	return action.Err
 }
 
 func (action *DataShowAction) loadParams() {
-	action.Address = action.GetString("account_id")
+	action.Address = action.GetAddress("account_id", actions.RequiredParam)
 	action.Key = action.GetString("key")
 }
 
 func (action *DataShowAction) loadRecord() {
-	action.Err = action.CoreQ().
-		AccountDataByKey(&action.Data, action.Address, action.Key)
-	if action.Err != nil {
-		return
-	}
+	action.Err = action.CoreQ().AccountDataByKey(&action.Data, action.Address, action.Key)
 }

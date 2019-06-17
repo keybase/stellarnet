@@ -133,6 +133,7 @@ This command will create 3 server.Server's listening on ports 8000-8002.`,
 				HTTP: &http.Client{
 					Timeout: 60 * time.Second,
 				},
+				AppName: "bifrost",
 			},
 			NetworkPassphrase: cfg.Stellar.NetworkPassphrase,
 			UsersPerSecond:    usersPerSecond,
@@ -211,7 +212,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version number",
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("0.0.1")
+		fmt.Println("0.0.2")
 	},
 }
 
@@ -258,13 +259,31 @@ func readConfig(cfgPath string) config.Config {
 	return cfg
 }
 
+// createDatabase opens a DB connection and imports schema if DB is empty.
 func createDatabase(dsn string) (*database.PostgresDatabase, error) {
 	db := &database.PostgresDatabase{}
 	err := db.Open(dsn)
 	if err != nil {
 		return nil, err
 	}
-	return db, err
+
+	currentSchemaVersion, err := db.GetSchemaVersion()
+	if err != nil {
+		return nil, err
+	}
+
+	if currentSchemaVersion == 0 {
+		// DB clean, import
+		err := db.Import()
+		if err != nil {
+			return nil, errors.Wrap(err, "Error importing DB schema")
+		}
+	} else if currentSchemaVersion != database.SchemaVersion {
+		// Schema version invalid
+		return nil, errors.New("Schema version is invalid. Please create an empty DB and start Bifrost again.")
+	}
+
+	return db, nil
 }
 
 func createServer(cfg config.Config, stressTest bool) *server.Server {
@@ -276,7 +295,9 @@ func createServer(cfg config.Config, stressTest bool) *server.Server {
 		os.Exit(-1)
 	}
 
-	server := &server.Server{}
+	server := &server.Server{
+		SignerPublicKey: cfg.SignerPublicKey(),
+	}
 
 	bitcoinClient := &rpcclient.Client{}
 	bitcoinListener := &bitcoin.Listener{}
@@ -355,16 +376,26 @@ func createServer(cfg config.Config, stressTest bool) *server.Server {
 	}
 
 	stellarAccountConfigurator := &stellar.AccountConfigurator{
-		NetworkPassphrase: cfg.Stellar.NetworkPassphrase,
-		IssuerPublicKey:   cfg.Stellar.IssuerPublicKey,
-		SignerSecretKey:   cfg.Stellar.SignerSecretKey,
-		NeedsAuthorize:    cfg.Stellar.NeedsAuthorize,
-		TokenAssetCode:    cfg.Stellar.TokenAssetCode,
-		StartingBalance:   cfg.Stellar.StartingBalance,
+		NetworkPassphrase:     cfg.Stellar.NetworkPassphrase,
+		IssuerPublicKey:       cfg.Stellar.IssuerPublicKey,
+		DistributionPublicKey: cfg.Stellar.DistributionPublicKey,
+		SignerSecretKey:       cfg.Stellar.SignerSecretKey,
+		NeedsAuthorize:        cfg.Stellar.NeedsAuthorize,
+		TokenAssetCode:        cfg.Stellar.TokenAssetCode,
+		StartingBalance:       cfg.Stellar.StartingBalance,
+		LockUnixTimestamp:     cfg.Stellar.LockUnixTimestamp,
 	}
 
 	if cfg.Stellar.StartingBalance == "" {
-		stellarAccountConfigurator.StartingBalance = "41"
+		stellarAccountConfigurator.StartingBalance = "2.1"
+	}
+
+	if cfg.Bitcoin != nil {
+		stellarAccountConfigurator.TokenPriceBTC = cfg.Bitcoin.TokenPrice
+	}
+
+	if cfg.Ethereum != nil {
+		stellarAccountConfigurator.TokenPriceETH = cfg.Ethereum.TokenPrice
 	}
 
 	horizonClient := &horizon.Client{
@@ -372,6 +403,7 @@ func createServer(cfg config.Config, stressTest bool) *server.Server {
 		HTTP: &http.Client{
 			Timeout: 20 * time.Second,
 		},
+		AppName: "bifrost",
 	}
 
 	sseServer := &sse.Server{}

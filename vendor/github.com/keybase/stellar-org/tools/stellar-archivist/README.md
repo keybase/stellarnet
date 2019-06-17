@@ -83,6 +83,15 @@ For example, to check the current status of an archive in DigitalOcean Spaces (a
 $ stellar-archivist status --s3endpoint ams3.digitaloceanspaces.com s3://bucketname/prefix
 ```
 
+In order to use this backend with Google Cloud Storage, you need to enable interoperability access in
+the [Cloud Storage Settings](https://console.cloud.google.com/storage/settings) and generate interoperable 
+storage access keys.
+
+```
+$ export AWS_ACCESS_KEY_ID=<interoperable storage access key> AWS_SECRET_ACCESS_KEY=<interoperable storage secret key> 
+$ stellar-archivist status --s3endpoint https://storage.googleapis.com s3://google-storage-bucketname
+``` 
+
 ## Examples of use
 
 ### Reporting the current status of an archive:

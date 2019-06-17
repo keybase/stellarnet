@@ -37,9 +37,15 @@ func (b *BatchInsertBuilder) ReplaceAddressesWithIDs(mapping map[Address]int64) 
 	}
 }
 
-func (b *BatchInsertBuilder) Values(params ...interface{}) {
+func (b *BatchInsertBuilder) Values(params ...interface{}) error {
 	b.initOnce.Do(b.init)
+
+	if len(params) != len(b.Columns) {
+		return errors.New(fmt.Sprintf("Number of values doesn't match columns in %s", b.TableName))
+	}
+
 	b.rows = append(b.rows, params)
+	return nil
 }
 
 func (b *BatchInsertBuilder) Exec(DB *db.Session) error {

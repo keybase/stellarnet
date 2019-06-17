@@ -1,24 +1,22 @@
 # Changelog
+This repository adheres to [Semantic Versioning](http://semver.org/).
 
-All notable changes to this project will be documented in this
-file.  This project adheres to [Semantic Versioning](http://semver.org/).
+This monorepo contains a number of projects, individually versioned and released. Please consult the relevant changelog:
 
-As this project is pre 1.0, breaking changes may happen for minor version
-bumps.  A breaking change will get clearly notified in this log.
+* `horizon server` ([changelog](./services/horizon/CHANGELOG.md))
+* `horizonclient` ([changelog](./clients/horizonclient/CHANGELOG.md))
+* `txnbuild` ([changelog](./txnbuild/CHANGELOG.md))
+* `bridge` ([changelog](./services/bridge/CHANGELOG.md))
+* `compliance` ([changelog](./services/compliance/CHANGELOG.md))
+* `federation` ([changelog](./services/federation/CHANGELOG.md))
+* `bifrost` ([changelog](./services/bifrost/CHANGELOG.md))
+* `ticker` (experimental) ([changelog](./services/ticker/CHANGELOG.md))
+* `stellar-vanity-gen` ([changelog](./tools/stellar-vanity-gen/CHANGELOG.md))
+* `stellar-sign` ([changelog](./tools/stellar-sign/CHANGELOG.md))
+* `stellar-archivist` ([changelog](./tools/stellar-archivist/CHANGELOG.md))
+* `stellar-hd-wallet` ([changelog](./tools/stellar-hd-wallet/CHANGELOG.md))
 
-NOTE:  this changelog represents the changes that are associated with the library code in this repo (rather than the tools or services in this repo).  
+If a project is pre-v1.0, breaking changes may happen for minor version
+bumps.  A breaking change will be clearly notified in the corresponding changelog.
 
-## [Unreleased]
-
-### Added
-
-- xdr: added support for new signer types
-- build: `Signer` learned support for new signer types
-- strkey: added support for new signer types
-- network:  Added the `HashTransaction` helper func to get the hash of a transaction targetted to a specific stellar network.
-
-### Changed:
-
-- build: _BREAKING CHANGE_:  A transaction built and signed using the `build` package no longer default to the test network.
-
-[Unreleased]: https://github.com/stellar/go/commits/master
+Official project releases may be found here: https://github.com/stellar/go/releases

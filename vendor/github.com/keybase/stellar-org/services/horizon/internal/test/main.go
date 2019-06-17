@@ -5,17 +5,18 @@ package test
 
 import (
 	"bytes"
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	hlog "github.com/stellar/go/services/horizon/internal/log"
+	"github.com/stellar/go/services/horizon/internal/logmetrics"
 	tdb "github.com/stellar/go/services/horizon/internal/test/db"
+	"github.com/stellar/go/support/log"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"golang.org/x/net/context"
 )
 
 // StaticMockServer is a test helper that records it's last request
@@ -32,8 +33,8 @@ type T struct {
 	Ctx        context.Context
 	HorizonDB  *sqlx.DB
 	CoreDB     *sqlx.DB
-	Logger     *hlog.Entry
-	LogMetrics *hlog.Metrics
+	Logger     *log.Entry
+	LogMetrics *logmetrics.Metrics
 	LogBuffer  *bytes.Buffer
 }
 
@@ -41,7 +42,7 @@ type T struct {
 // a full App instance (in which case your tests should be using the app's
 // context).  This context has a logger bound to it suitable for testing.
 func Context() context.Context {
-	return hlog.Set(context.Background(), testLogger)
+	return log.Set(context.Background(), testLogger)
 }
 
 // Database returns a connection to the horizon test database
@@ -75,13 +76,13 @@ func LoadScenarioWithoutHorizon(scenarioName string) {
 // OverrideLogger sets the default logger used by horizon to `l`.  This is used
 // by the testing system so that we can collect output from logs during test
 // runs.  Panics if the logger is already overridden.
-func OverrideLogger(l *hlog.Entry) {
+func OverrideLogger(l *log.Entry) {
 	if oldDefault != nil {
 		panic("logger already overridden")
 	}
 
-	oldDefault = hlog.DefaultLogger
-	hlog.DefaultLogger = l
+	oldDefault = log.DefaultLogger
+	log.DefaultLogger = l
 }
 
 // RestoreLogger restores the default horizon logger after it is overridden
@@ -92,7 +93,7 @@ func RestoreLogger() {
 		panic("logger not overridden, cannot restore")
 	}
 
-	hlog.DefaultLogger = oldDefault
+	log.DefaultLogger = oldDefault
 	oldDefault = nil
 }
 
@@ -103,14 +104,14 @@ func Start(t *testing.T) *T {
 
 	result.T = t
 	result.LogBuffer = new(bytes.Buffer)
-	result.Logger, result.LogMetrics = hlog.New()
+	result.Logger, result.LogMetrics = logmetrics.New()
 	result.Logger.Logger.Out = result.LogBuffer
 	result.Logger.Logger.Formatter.(*logrus.TextFormatter).DisableColors = true
 	result.Logger.Logger.Level = logrus.DebugLevel
 
 	OverrideLogger(result.Logger)
 
-	result.Ctx = hlog.Set(context.Background(), result.Logger)
+	result.Ctx = log.Set(context.Background(), result.Logger)
 	result.HorizonDB = Database(t)
 	result.CoreDB = StellarCoreDatabase(t)
 	result.Assert = assert.New(t)
@@ -134,4 +135,4 @@ func StellarCoreDatabaseURL() string {
 	return tdb.StellarCoreURL()
 }
 
-var oldDefault *hlog.Entry = nil
+var oldDefault *log.Entry = nil

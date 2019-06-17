@@ -5,8 +5,8 @@ import (
 	"math/big"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/go-errors/errors"
 	"github.com/stellar/go/services/horizon/internal/db2"
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
@@ -24,7 +24,58 @@ func (r Offer) PriceAsString() string {
 // finding.  Given the input asset type, a list of xdr.Assets is returned that
 // each have some available trades for the input asset.
 func (q *Q) ConnectedAssets(dest interface{}, selling xdr.Asset) error {
+	schemaVersion, err := q.SchemaVersion()
+	if err != nil {
+		return err
+	}
 
+	if schemaVersion < 9 {
+		return q.connectedAssetsSchema8(dest, selling)
+	} else {
+		return q.connectedAssetsSchema9(dest, selling)
+	}
+}
+
+func (q *Q) connectedAssetsSchema9(dest interface{}, selling xdr.Asset) error {
+	assets, ok := dest.(*[]xdr.Asset)
+	if !ok {
+		return errors.New("dest is not *[]xdr.Asset")
+	}
+
+	sellingAssetXDRString, err := xdr.MarshalBase64(selling)
+	if err != nil {
+		return errors.Wrap(err, "Error marshaling selling")
+	}
+
+	sql := sq.Select("buyingasset").
+		From("offers").
+		Where(sq.Eq{"sellingasset": sellingAssetXDRString}).
+		GroupBy("buyingasset")
+
+	var rows []struct {
+		Asset xdr.Asset `db:"buyingasset"`
+	}
+
+	err = q.Select(&rows, sql)
+
+	if err != nil {
+		return err
+	}
+
+	results := make([]xdr.Asset, len(rows))
+	*assets = results
+
+	for i, r := range rows {
+		results[i] = r.Asset
+	}
+
+	return nil
+}
+
+// ConnectedAssets loads xdr.Asset records for the purposes of path
+// finding.  Given the input asset type, a list of xdr.Assets is returned that
+// each have some available trades for the input asset.
+func (q *Q) connectedAssetsSchema8(dest interface{}, selling xdr.Asset) error {
 	assets, ok := dest.(*[]xdr.Asset)
 	if !ok {
 		return errors.New("dest is not *[]xdr.Asset")
@@ -81,6 +132,13 @@ func (q *Q) ConnectedAssets(dest interface{}, selling xdr.Asset) error {
 // OffersByAddress loads a page of active offers for the given
 // address.
 func (q *Q) OffersByAddress(dest interface{}, addy string, pq db2.PageQuery) error {
+	schemaVersion, err := q.SchemaVersion()
+	if err != nil {
+		return err
+	}
+
+	offers := []internalOffer{}
+
 	sql := sq.Select("co.*").
 		From("offers co").
 		Where("co.sellerid = ?", addy).
@@ -98,5 +156,52 @@ func (q *Q) OffersByAddress(dest interface{}, addy string, pq db2.PageQuery) err
 		sql = sql.Where("co.offerid < ?", cursor).OrderBy("co.offerid desc")
 	}
 
-	return q.Select(dest, sql)
+	err = q.Select(&offers, sql)
+	if err != nil {
+		return err
+	}
+
+	newOffers := make([]Offer, len(offers))
+
+	for i, offer := range offers {
+		newOffers[i] = offer.get()
+	}
+
+	if schemaVersion >= 9 {
+		*dest.(*[]Offer) = newOffers
+		return nil
+	}
+
+	// Convert schema 8 results to xdr.Assets
+	for i, offer := range offers {
+		var sellingAsset, buyingAsset xdr.Asset
+
+		if offer.SellingAssetType == xdr.AssetTypeAssetTypeNative {
+			sellingAsset.SetNative()
+		} else {
+			var account xdr.AccountId
+			err := account.SetAddress(offer.SellingIssuer.String)
+			if err != nil {
+				return errors.Wrap(err, "Error setting offer.SellingIssuer")
+			}
+			sellingAsset.SetCredit(offer.SellingAssetCode.String, account)
+		}
+
+		if offer.BuyingAssetType == xdr.AssetTypeAssetTypeNative {
+			buyingAsset.SetNative()
+		} else {
+			var account xdr.AccountId
+			err := account.SetAddress(offer.BuyingIssuer.String)
+			if err != nil {
+				return errors.Wrap(err, "Error setting offer.BuyingIssuer")
+			}
+			buyingAsset.SetCredit(offer.BuyingAssetCode.String, account)
+		}
+
+		newOffers[i].SellingAsset = sellingAsset
+		newOffers[i].BuyingAsset = buyingAsset
+	}
+
+	*dest.(*[]Offer) = newOffers
+	return nil
 }

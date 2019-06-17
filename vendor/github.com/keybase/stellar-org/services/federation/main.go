@@ -4,10 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"goji.io"
-	"goji.io/pat"
-
-	"github.com/rs/cors"
+	"github.com/go-chi/chi"
 	"github.com/spf13/cobra"
 	"github.com/stellar/go/handlers/federation"
 	"github.com/stellar/go/support/app"
@@ -29,10 +26,7 @@ type Config struct {
 		Federation        string `valid:"required"`
 		ReverseFederation string `toml:"reverse-federation" valid:"optional"`
 	} `valid:"required"`
-	TLS struct {
-		CertificateFile string `toml:"certificate-file" valid:"required"`
-		PrivateKeyFile  string `toml:"private-key-file" valid:"required"`
-	} `valid:"optional"`
+	TLS *config.TLS `valid:"optional"`
 }
 
 func main() {
@@ -40,9 +34,9 @@ func main() {
 		Use:   "federation",
 		Short: "stellar federation server",
 		Long: `
-The stellar federation server let's you easily integrate the stellar federation 
-protocol with your organization.  This is achieved by connecting the 
-application to your customer database and providing the appropriate queries in 
+The stellar federation server let's you easily integrate the stellar federation
+protocol with your organization.  This is achieved by connecting the
+application to your customer database and providing the appropriate queries in
 the config file.
     `,
 		Run: run,
@@ -82,8 +76,7 @@ func run(cmd *cobra.Command, args []string) {
 	http.Run(http.Config{
 		ListenAddr: addr,
 		Handler:    mux,
-		TLSCert:    cfg.TLS.CertificateFile,
-		TLSKey:     cfg.TLS.PrivateKeyFile,
+		TLS:        cfg.TLS,
 		OnStarting: func() {
 			log.Infof("starting federation server - %s", app.Version())
 			log.Infof("listening on %s", addr)
@@ -121,28 +114,26 @@ func initDriver(cfg Config) (federation.Driver, error) {
 	}
 
 	rsqld := federation.ReverseSQLDriver{
-		SQLDriver:                sqld,
+		SQLDriver: federation.SQLDriver{
+			DB:                repo.DB.DB,
+			Dialect:           dialect,
+			LookupRecordQuery: cfg.Queries.Federation,
+		},
 		LookupReverseRecordQuery: cfg.Queries.ReverseFederation,
 	}
 
 	return &rsqld, nil
 }
 
-func initMux(driver federation.Driver) *goji.Mux {
-	mux := goji.NewMux()
+func initMux(driver federation.Driver) *chi.Mux {
+	mux := http.NewAPIMux(false)
 
-	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"*"},
-		AllowedHeaders: []string{"*"},
-		AllowedMethods: []string{"GET"},
-	})
-	mux.Use(c.Handler)
-	mux.Use(log.HTTPMiddleware)
+	fed := &federation.Handler{
+		Driver: driver,
+	}
 
-	fed := &federation.Handler{driver}
-
-	mux.Handle(pat.Get("/federation"), fed)
-	mux.Handle(pat.Get("/federation/"), fed)
+	mux.Get("/federation", fed.ServeHTTP)
+	mux.Get("/federation/", fed.ServeHTTP)
 
 	return mux
 }

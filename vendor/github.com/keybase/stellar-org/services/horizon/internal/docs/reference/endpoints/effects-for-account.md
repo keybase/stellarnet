@@ -4,10 +4,15 @@ clientData:
   laboratoryUrl: https://www.stellar.org/laboratory/#explorer?resource=effects&endpoint=for_account
 ---
 
-This endpoint represents all [effects](../resources/effect.md) that changed a given [account](../resources/account.md). It will return relevant effects from the creation of the account to the current ledger.
+This endpoint represents all [effects](../resources/effect.md) that changed a given
+[account](../resources/account.md). It will return relevant effects from the creation of the
+account to the current ledger.
 
-This endpoint can also be used in [streaming](../responses.md#streaming) mode so it is possible to use it to listen for new effects as transactions happen in the Stellar network.
-If called in streaming mode Horizon will start at the earliest known effect unless a `cursor` is set. In that case it will start from the `cursor`. You can also set `cursor` value to `now` to only stream effects created since your request time.
+This endpoint can also be used in [streaming](../streaming.md) mode so it is possible to use it to
+listen for new effects as transactions happen in the Stellar network.
+If called in streaming mode Horizon will start at the earliest known effect unless a `cursor` is
+set. In that case it will start from the `cursor`. You can also set `cursor` value to `now` to only
+stream effects created since your request time.
 
 ## Request
 
@@ -17,17 +22,17 @@ GET /accounts/{account}/effects{?cursor,limit,order}
 
 ## Arguments
 
-|  name  |  notes  | description | example |
-| ------ | ------- | ----------- | ------- |
+| name | notes | description | example |
+| ---- | ----- | ----------- | ------- |
 | `account` | required, string | Account ID | `GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36` |
 | `?cursor` | optional, default _null_ | A paging token, specifying where to start returning records from. When streaming this can be set to `now` to stream object created since your request time. | `12884905984` |
-| `?order`  | optional, string, default `asc` | The order in which to return rows, "asc" or "desc".               | `asc`         |
+| `?order`  | optional, string, default `asc` | The order in which to return rows, "asc" or "desc". | `asc` |
 | `?limit`  | optional, number, default `10` | Maximum number of records to return. | `200` |
 
 ### curl Example Request
 
 ```sh
-curl "https://horizon-testnet.stellar.org/accounts/GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36/effects"
+curl "https://horizon-testnet.stellar.org/accounts/GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36/effects?limit=1"
 ```
 
 ### JavaScript Example Request
@@ -37,16 +42,33 @@ var StellarSdk = require('stellar-sdk');
 var server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
 
 server.effects()
-  .forAccount("GD6VWBXI6NY3AOOR55RLVQ4MNIDSXE5JSAVXUTF35FRRI72LYPI3WL6Z")
+  .forAccount("GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36")
   .call()
   .then(function (effectResults) {
-    //page 1
+    // page 1
     console.log(effectResults.records)
   })
   .catch(function (err) {
     console.log(err)
   })
+```
 
+### JavaScript Streaming Example
+
+```javascript
+var StellarSdk = require('stellar-sdk')
+var server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+
+var effectHandler = function (effectResponse) {
+  console.log(effectResponse);
+};
+
+var es = server.effects()
+  .forAccount("GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36")
+  .cursor('now')
+  .stream({
+    onmessage: effectHandler
+  })
 ```
 
 ## Response
@@ -57,57 +79,40 @@ The list of effects.
 
 ```json
 {
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36/effects?cursor=&limit=1&order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36/effects?cursor=1919197546291201-1&limit=1&order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36/effects?cursor=1919197546291201-1&limit=1&order=desc"
+    }
+  },
   "_embedded": {
     "records": [
       {
         "_links": {
           "operation": {
-            "href": "/operations/214748368897"
-          },
-          "precedes": {
-            "href": "/effects?cursor=214748368897-1\u0026order=asc"
+            "href": "https://horizon-testnet.stellar.org/operations/1919197546291201"
           },
           "succeeds": {
-            "href": "/effects?cursor=214748368897-1\u0026order=desc"
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc&cursor=1919197546291201-1"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc&cursor=1919197546291201-1"
           }
         },
-        "account": "GC6NFQDTVH2YMVZSXJIVLCRHLFAOVOT32JMDFZJZ34QFSSVT7M5G2XFK",
-        "paging_token": "214748368897-1",
-        "starting_balance": "100.0",
+        "id": "0001919197546291201-0000000001",
+        "paging_token": "1919197546291201-1",
+        "account": "GA2HGBJIJKI6O4XEM7CZWY5PS6GKSXL6D34ERAJYQSPYA6X6AI7HYW36",
+        "type": "account_created",
         "type_i": 0,
-        "type": "account_created"
-      },
-      {
-        "_links": {
-          "operation": {
-            "href": "/operations/214748368897"
-          },
-          "precedes": {
-            "href": "/effects?cursor=214748368897-3\u0026order=asc"
-          },
-          "succeeds": {
-            "href": "/effects?cursor=214748368897-3\u0026order=desc"
-          }
-        },
-        "account": "GC6NFQDTVH2YMVZSXJIVLCRHLFAOVOT32JMDFZJZ34QFSSVT7M5G2XFK",
-        "paging_token": "214748368897-3",
-        "public_key": "GC6NFQDTVH2YMVZSXJIVLCRHLFAOVOT32JMDFZJZ34QFSSVT7M5G2XFK",
-        "type_i": 10,
-        "type": "signer_created",
-        "weight": 2
+        "created_at": "2019-03-25T22:43:38Z",
+        "starting_balance": "10000.0000000"
       }
     ]
-  },
-  "_links": {
-    "next": {
-      "href": "/accounts/GC6NFQDTVH2YMVZSXJIVLCRHLFAOVOT32JMDFZJZ34QFSSVT7M5G2XFK/effects?order=asc\u0026limit=10\u0026cursor=214748368897-3"
-    },
-    "prev": {
-      "href": "/accounts/GC6NFQDTVH2YMVZSXJIVLCRHLFAOVOT32JMDFZJZ34QFSSVT7M5G2XFK/effects?order=desc\u0026limit=10\u0026cursor=214748368897-1"
-    },
-    "self": {
-      "href": "/accounts/GC6NFQDTVH2YMVZSXJIVLCRHLFAOVOT32JMDFZJZ34QFSSVT7M5G2XFK/effects?order=asc\u0026limit=10\u0026cursor="
-    }
   }
 }
 ```

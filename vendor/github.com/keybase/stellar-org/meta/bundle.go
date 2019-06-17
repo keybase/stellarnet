@@ -104,34 +104,47 @@ func (b *Bundle) StateBefore(key xdr.LedgerKey, opidx int) (*xdr.LedgerEntry, er
 	}
 }
 
-// changes returns any changes within the bundle that apply to the entry
-// identified by `key` that occurred at or before `maxOp`.
-func (b *Bundle) changes(target xdr.LedgerKey, maxOp int) (ret []xdr.LedgerEntryChange) {
-	for _, change := range b.FeeMeta {
+//OperationMetas retrieves all operation metas from a transaction bundle
+func (b *Bundle) OperationsMetas() []xdr.OperationMeta {
+	switch b.TransactionMeta.V {
+	case 0:
+		return b.TransactionMeta.MustOperations()
+	default:
+		return b.TransactionMeta.V1.Operations
+	}
+}
+
+//filterChanges takes a LedgerEntryChange slice and filters out changes that don't match the given target ledger key
+func filterChanges(changes []xdr.LedgerEntryChange, target xdr.LedgerKey) (filteredChanges []xdr.LedgerEntryChange) {
+	for _, change := range changes {
 		key := change.LedgerKey()
 
 		if !key.Equals(target) {
 			continue
 		}
 
-		ret = append(ret, change)
+		filteredChanges = append(filteredChanges, change)
+	}
+	return filteredChanges
+}
+
+// changes returns any changes within the bundle that apply to the entry
+// identified by `key` that occurred at or before `maxOp`.
+func (b *Bundle) changes(target xdr.LedgerKey, maxOp int) []xdr.LedgerEntryChange {
+
+	//allChanges accumulates all ledger changes
+	allChanges := b.FeeMeta
+
+	if b.TransactionMeta.V > 0 {
+		allChanges = append(allChanges, b.TransactionMeta.V1.TxChanges...)
 	}
 
-	for i, op := range b.TransactionMeta.MustOperations() {
+	for i, op := range b.OperationsMetas() {
 		if i > maxOp {
 			break
 		}
-
-		for _, change := range op.Changes {
-			key := change.LedgerKey()
-
-			if !key.Equals(target) {
-				continue
-			}
-
-			ret = append(ret, change)
-		}
+		allChanges = append(allChanges, op.Changes...)
 	}
 
-	return
+	return filterChanges(allChanges, target)
 }

@@ -2,14 +2,22 @@
 title: Trades
 ---
 
-People on the Stellar network can make [offers](../resources/offer.md) to buy or sell assets. When an offer is fully or partially fulfilled, a [trade](../resources/trade.md) happens.
+People on the Stellar network can make [offers](../resources/offer.md) to buy or sell assets. When
+an offer is fully or partially fulfilled, a [trade](../resources/trade.md) happens.
 
-Trades can be filtered for specific orderbook, defined by an asset pair: `base` and `counter`. 
+Trades can be filtered for a specific orderbook, defined by an asset pair: `base` and `counter`.
+
+This endpoint can also be used in [streaming](../streaming.md) mode, making it possible to listen
+for new trades as they occur on the Stellar network.
+
+If called in streaming mode Horizon will start at the earliest known trade unless a `cursor` is
+set. In that case it will start from the `cursor`. You can also set `cursor` value to `now` to only
+stream trades created since your request time.
 
 ## Request
 
 ```
-GET /trades?base_asset_type={base_asset_type}&base_asset_code={base_asset_code}&base_asset_issuer={base_asset_issuer}&counter_asset_type={counter_asset_type}&counter_asset_code={counter_asset_code}&counter_asset_issuer={counter_asset_issuer}&resolution={resolution}&start_time={start_time}&end_time={end_time}
+GET /trades?base_asset_type={base_asset_type}&base_asset_code={base_asset_code}&base_asset_issuer={base_asset_issuer}&counter_asset_type={counter_asset_type}&counter_asset_code={counter_asset_code}&counter_asset_issuer={counter_asset_issuer}
 ```
 
 ### Arguments
@@ -28,8 +36,41 @@ GET /trades?base_asset_type={base_asset_type}&base_asset_code={base_asset_code}&
 | `?limit`  | optional, number, default: `10` | Maximum number of records to return. | `200` |
 
 ### curl Example Request
-```sh 
+```sh
 curl https://horizon.stellar.org/trades?base_asset_type=native&counter_asset_code=SLT&counter_asset_issuer=GCKA6K5PCQ6PNF5RQBF7PQDJWRHO6UOGFMRLK3DYHDOI244V47XKQ4GP&counter_asset_type=credit_alphanum4&limit=2&order=desc
+```
+
+### JavaScript Example Request
+
+```javascript
+var StellarSdk = require('stellar-sdk');
+var server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+
+server.trades()
+  .call()
+  .then(function (tradesResult) {
+    console.log(tradesResult.records);
+  })
+  .catch(function (err) {
+    console.log(err)
+  })
+```
+
+### JavaScript Example Streaming Request
+
+```javascript
+var StellarSdk = require('stellar-sdk')
+var server = new StellarSdk.Server('https://horizon-testnet.stellar.org');
+
+var tradesHandler = function (tradeResponse) {
+  console.log(tradeResponse);
+};
+
+var es = server.trades()
+  .cursor('now')
+  .stream({
+  onmessage: tradesHandler
+})
 ```
 
 ## Response
@@ -41,75 +82,89 @@ The list of trades. `base` and `counter` in the records will match the asset pai
 {
   "_links": {
     "self": {
-      "href": "https://horizon.stellar.org/trades?base_asset_type=native\u0026counter_asset_code=SLT\u0026counter_asset_issuer=GCKA6K5PCQ6PNF5RQBF7PQDJWRHO6UOGFMRLK3DYHDOI244V47XKQ4GP\u0026counter_asset_type=credit_alphanum4\u0026cursor=\u0026limit=2\u0026order=desc"
+      "href": "https://horizon-testnet.stellar.org/trades?cursor=&limit=10&order=asc"
     },
     "next": {
-      "href": "https://horizon.stellar.org/trades?base_asset_type=native\u0026counter_asset_code=SLT\u0026counter_asset_issuer=GCKA6K5PCQ6PNF5RQBF7PQDJWRHO6UOGFMRLK3DYHDOI244V47XKQ4GP\u0026counter_asset_type=credit_alphanum4\u0026cursor=68836785177763841-0\u0026limit=2\u0026order=desc"
+      "href": "https://horizon-testnet.stellar.org/trades?cursor=6025839120434-0&limit=10&order=asc"
     },
     "prev": {
-      "href": "https://horizon.stellar.org/trades?base_asset_type=native\u0026counter_asset_code=SLT\u0026counter_asset_issuer=GCKA6K5PCQ6PNF5RQBF7PQDJWRHO6UOGFMRLK3DYHDOI244V47XKQ4GP\u0026counter_asset_type=credit_alphanum4\u0026cursor=68836918321750017-0\u0026limit=2\u0026order=asc"
+      "href": "https://horizon-testnet.stellar.org/trades?cursor=6012954218535-0&limit=10&order=desc"
     }
   },
   "_embedded": {
     "records": [
       {
         "_links": {
+          "self": {
+            "href": ""
+          },
           "base": {
-            "href": "https://horizon.stellar.org/accounts/GBZXCJIUEPDXGHMS64UBJHUVKV6ETWYOVHADLTBXJNJFUC7A7RU5B3GN"
+            "href": "https://horizon-testnet.stellar.org/accounts/GAQHWQYBBW272OOXNQMMLCA5WY2XAZPODGB7Q3S5OKKIXVESKO55ZQ7C"
           },
           "counter": {
-            "href": "https://horizon.stellar.org/accounts/GBHKUQDYXGK5IEYORI7DZMMXANOIEHHOF364LNT4Q7EWPUL7FOO2SP6D"
+            "href": "https://horizon-testnet.stellar.org/accounts/GCYN7MI6VXVRP74KR6MKBAW2ELLCXL6QCY5H4YQ62HVWZWMCE6Y232UC"
           },
           "operation": {
-            "href": "https://horizon.stellar.org/operations/68836918321750017"
+            "href": "https://horizon-testnet.stellar.org/operations/6012954218535"
           }
         },
-        "id": "68836918321750017-0",
-        "paging_token": "68836918321750017-0",
-        "ledger_close_time": "2018-02-02T00:20:10Z",
-        "offer_id": "695254",
-        "base_account": "GBZXCJIUEPDXGHMS64UBJHUVKV6ETWYOVHADLTBXJNJFUC7A7RU5B3GN",
-        "base_amount": "0.1217566",
-        "base_asset_type": "native",
-        "counter_account": "GBHKUQDYXGK5IEYORI7DZMMXANOIEHHOF364LNT4Q7EWPUL7FOO2SP6D",
-        "counter_amount": "0.0199601",
+        "id": "6012954218535-0",
+        "paging_token": "6012954218535-0",
+        "ledger_close_time": "2019-02-27T11:54:53Z",
+        "offer_id": "37",
+        "base_offer_id": "4611692031381606439",
+        "base_account": "GAQHWQYBBW272OOXNQMMLCA5WY2XAZPODGB7Q3S5OKKIXVESKO55ZQ7C",
+        "base_amount": "25.6687300",
+        "base_asset_type": "credit_alphanum4",
+        "base_asset_code": "DSQ",
+        "base_asset_issuer": "GBDQPTQJDATT7Z7EO4COS4IMYXH44RDLLI6N6WIL5BZABGMUOVMLWMQF",
+        "counter_offer_id": "37",
+        "counter_account": "GCYN7MI6VXVRP74KR6MKBAW2ELLCXL6QCY5H4YQ62HVWZWMCE6Y232UC",
+        "counter_amount": "1.0265563",
         "counter_asset_type": "credit_alphanum4",
-        "counter_asset_code": "SLT",
-        "counter_asset_issuer": "GCKA6K5PCQ6PNF5RQBF7PQDJWRHO6UOGFMRLK3DYHDOI244V47XKQ4GP",
-        "base_is_seller": true,
+        "counter_asset_code": "USD",
+        "counter_asset_issuer": "GAA4MFNZGUPJAVLWWG6G5XZJFZDHLKQNG3Q6KB24BAD6JHNNVXDCF4XG",
+        "base_is_seller": false,
         "price": {
-          "N": 10,
-          "D": 61
+          "n": 10000000,
+          "d": 250046977
         }
       },
       {
         "_links": {
+          "self": {
+            "href": ""
+          },
           "base": {
-            "href": "https://horizon.stellar.org/accounts/GCUODCZAU6CSXEKKWZZNWQXDITIWLWCDK6M4IZ7H5PACLC3QAWEJSOTR"
+            "href": "https://horizon-testnet.stellar.org/accounts/GAQHWQYBBW272OOXNQMMLCA5WY2XAZPODGB7Q3S5OKKIXVESKO55ZQ7C"
           },
           "counter": {
-            "href": "https://horizon.stellar.org/accounts/GBHKUQDYXGK5IEYORI7DZMMXANOIEHHOF364LNT4Q7EWPUL7FOO2SP6D"
+            "href": "https://horizon-testnet.stellar.org/accounts/GCYN7MI6VXVRP74KR6MKBAW2ELLCXL6QCY5H4YQ62HVWZWMCE6Y232UC"
           },
           "operation": {
-            "href": "https://horizon.stellar.org/operations/68836785177763841"
+            "href": "https://horizon-testnet.stellar.org/operations/6025839120385"
           }
         },
-        "id": "68836785177763841-0",
-        "paging_token": "68836785177763841-0",
-        "ledger_close_time": "2018-02-02T00:18:00Z",
-        "offer_id": "695244",
-        "base_account": "GCUODCZAU6CSXEKKWZZNWQXDITIWLWCDK6M4IZ7H5PACLC3QAWEJSOTR",
-        "base_amount": "0.0000050",
-        "base_asset_type": "native",
-        "counter_account": "GBHKUQDYXGK5IEYORI7DZMMXANOIEHHOF364LNT4Q7EWPUL7FOO2SP6D",
-        "counter_amount": "0.0000009",
+        "id": "6025839120385-0",
+        "paging_token": "6025839120385-0",
+        "ledger_close_time": "2019-02-27T11:55:09Z",
+        "offer_id": "1",
+        "base_offer_id": "4611692044266508289",
+        "base_account": "GAQHWQYBBW272OOXNQMMLCA5WY2XAZPODGB7Q3S5OKKIXVESKO55ZQ7C",
+        "base_amount": "1434.4442973",
+        "base_asset_type": "credit_alphanum4",
+        "base_asset_code": "DSQ",
+        "base_asset_issuer": "GBDQPTQJDATT7Z7EO4COS4IMYXH44RDLLI6N6WIL5BZABGMUOVMLWMQF",
+        "counter_offer_id": "1",
+        "counter_account": "GCYN7MI6VXVRP74KR6MKBAW2ELLCXL6QCY5H4YQ62HVWZWMCE6Y232UC",
+        "counter_amount": "0.5622050",
         "counter_asset_type": "credit_alphanum4",
-        "counter_asset_code": "SLT",
-        "counter_asset_issuer": "GCKA6K5PCQ6PNF5RQBF7PQDJWRHO6UOGFMRLK3DYHDOI244V47XKQ4GP",
+        "counter_asset_code": "SXRT",
+        "counter_asset_issuer": "GAIOQ3UYK5NYIZY5ZFAG4JBN4O37NAVFKZM5YDYEB6YEFBZSZ5KDCUFO",
         "base_is_seller": false,
         "price": {
-          "N": 2,
-          "D": 11
+          "n": 642706,
+          "d": 1639839483
         }
       }
     ]
