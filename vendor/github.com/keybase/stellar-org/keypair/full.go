@@ -3,9 +3,10 @@ package keypair
 import (
 	"bytes"
 
-	ed25519 "github.com/keybase/stellar-agl-ed25519"
 	"github.com/stellar/go/strkey"
 	"github.com/stellar/go/xdr"
+
+	"golang.org/x/crypto/ed25519"
 )
 
 type Full struct {
