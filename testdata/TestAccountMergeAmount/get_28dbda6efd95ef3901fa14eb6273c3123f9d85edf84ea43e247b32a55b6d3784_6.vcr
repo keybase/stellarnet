@@ -1,0 +1,57 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Mon, 17 Jun 2019 17:42:31 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GASAVJ3KUZSKWM5FJGXZPBDVDKDM7MQHEWC4QG22KWKZ7TDV7FJDMHUE/payments?cursor=\u0026limit=1\u0026order=desc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GASAVJ3KUZSKWM5FJGXZPBDVDKDM7MQHEWC4QG22KWKZ7TDV7FJDMHUE/payments?cursor=3753801416708097\u0026limit=1\u0026order=desc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GASAVJ3KUZSKWM5FJGXZPBDVDKDM7MQHEWC4QG22KWKZ7TDV7FJDMHUE/payments?cursor=3753801416708097\u0026limit=1\u0026order=asc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/3753801416708097"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/a52075c3e20844af6354c33fde65fbb0b6ce9dfdc8714bb73aa1635ef713e5cf"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/3753801416708097/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=3753801416708097"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=3753801416708097"
+          }
+        },
+        "id": "3753801416708097",
+        "paging_token": "3753801416708097",
+        "transaction_successful": true,
+        "source_account": "GAFA2EKIZLLQYNZNFOUBD6FMJDVKCPIMRPUDWIGB3SCNDWPB7UWVL5IQ",
+        "type": "account_merge",
+        "type_i": 8,
+        "created_at": "2019-06-17T17:42:29Z",
+        "transaction_hash": "a52075c3e20844af6354c33fde65fbb0b6ce9dfdc8714bb73aa1635ef713e5cf",
+        "account": "GAFA2EKIZLLQYNZNFOUBD6FMJDVKCPIMRPUDWIGB3SCNDWPB7UWVL5IQ",
+        "into": "GASAVJ3KUZSKWM5FJGXZPBDVDKDM7MQHEWC4QG22KWKZ7TDV7FJDMHUE"
+      }
+    ]
+  }
+}
