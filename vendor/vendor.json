@@ -3,22 +3,16 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "3YcTIP7+Vtja2xSak7pVI2pZtUw=",
+			"path": "github.com/asaskevich/govalidator",
+			"revision": "f61b66f89f4a311bef65f13e575bcf1a2ffadda6",
+			"revisionTime": "2019-04-24T11:10:38Z"
+		},
+		{
 			"checksumSHA1": "kxja3mICEw4DKBlGQdK4tmIAkCQ=",
 			"path": "github.com/go-errors/errors",
 			"revision": "d98b870cc4e05f1545532a80e9909be8216095b6",
 			"revisionTime": "2018-08-13T16:29:53Z"
-		},
-		{
-			"checksumSHA1": "gE62HjsUfGG8H69WkrrXv5e3NZw=",
-			"path": "github.com/keybase/stellar-agl-ed25519",
-			"revision": "95bd4acae776f5f931d94ee2a22d950427a9fdac",
-			"revisionTime": "2018-03-22T21:11:54Z"
-		},
-		{
-			"checksumSHA1": "LHTJnhrxMPKNHNqNduuFKJaPaMg=",
-			"path": "github.com/keybase/stellar-agl-ed25519/edwards25519",
-			"revision": "95bd4acae776f5f931d94ee2a22d950427a9fdac",
-			"revisionTime": "2018-03-22T21:11:54Z"
 		},
 		{
 			"checksumSHA1": "b1s4Aqnl/hdRXGs54/is2OWS8SI=",
@@ -45,24 +39,24 @@
 			"revisionTime": "2016-01-26T18:01:36Z"
 		},
 		{
-			"checksumSHA1": "ey0M/IUb5rRhdKvNBQhkEXPjivc=",
-			"path": "github.com/nullstyle/go-xdr/xdr3",
-			"revision": "f4c839f750778158541decf4c318fc7625ec066b",
-			"revisionTime": "2018-07-26T16:54:26Z"
-		},
-		{
 			"checksumSHA1": "I7hloldMJZTqUx6hbVDp5nk9fZQ=",
 			"path": "github.com/pkg/errors",
 			"revision": "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7",
 			"revisionTime": "2019-02-27T00:00:51Z"
 		},
 		{
-			"checksumSHA1": "eMRKUcJmYoB4uq22ot4zexX3cLg=",
+			"checksumSHA1": "taEBeuO78f77cGfJWD9qmdkeXYU=",
 			"origin": "github.com/keybase/stellar-org",
 			"path": "github.com/stellar/go",
-			"revision": "bb7f31aa46daed546373c8e5b67279449367899d",
-			"revisionTime": "2019-06-17T20:45:08Z",
+			"revision": "e43266cae98f292a11218decae91a277a8489da2",
+			"revisionTime": "2019-06-21T18:08:33Z",
 			"tree": true
+		},
+		{
+			"checksumSHA1": "B2aJD2oZzIr70Gm0Ri32WosOw3w=",
+			"path": "github.com/stellar/go-xdr/xdr3",
+			"revision": "0bc96f33a18ef2f963e75431dbed042129eb421b",
+			"revisionTime": "2018-09-03T00:21:17Z"
 		},
 		{
 			"checksumSHA1": "IIsn0Wdi5rHU8xca+FzDd+YeYlc=",
@@ -75,12 +69,6 @@
 			"path": "github.com/stretchr/testify/require",
 			"revision": "34c6fa2dc70986bccbbffcc6130f6920a924b075",
 			"revisionTime": "2019-03-04T09:57:49Z"
-		},
-		{
-			"checksumSHA1": "GtamqiJoL7PGHsN454AoffBFMa8=",
-			"path": "golang.org/x/net/context",
-			"revision": "9ce7a6920f093fc0b908c4a5f66ae049110f417e",
-			"revisionTime": "2019-04-26T17:45:11Z"
 		}
 	],
 	"rootPath": "github.com/keybase/stellarnet"

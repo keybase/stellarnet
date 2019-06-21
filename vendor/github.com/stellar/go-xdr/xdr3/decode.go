@@ -485,9 +485,7 @@ func (d *Decoder) decodeArray(v reflect.Value, ignoreOpaque bool, maxSize int) (
 	if v.Cap() < sliceLen {
 		v.Set(reflect.MakeSlice(v.Type(), sliceLen, sliceLen))
 	}
-	if v.Len() < sliceLen {
-		v.SetLen(sliceLen)
-	}
+	v.SetLen(sliceLen)
 
 	// Treat []byte (byte is alias for uint8) as opaque data unless ignored.
 	if !ignoreOpaque && v.Type().Elem().Kind() == reflect.Uint8 {
