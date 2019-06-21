@@ -150,6 +150,15 @@ func TestValidStellarURIs(t *testing.T) {
 				t.Errorf("%d. valid tx operation but no xdr.Transaction", i)
 			}
 		}
+
+		od, err := UnvalidatedStellarURIOriginDomain(test.URI)
+		if err != nil {
+			t.Errorf("%d. expected no err, got %s", i, err)
+			continue
+		}
+		if od != test.OriginDomain {
+			t.Errorf("%d. unvalidated origin domain: %q, expected %q", i, od, test.OriginDomain)
+		}
 	}
 }
 
