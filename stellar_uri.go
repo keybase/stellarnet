@@ -102,6 +102,9 @@ func UnvalidatedStellarURIOriginDomain(uri string) (originDomain string, err err
 	if err != nil {
 		return "", err
 	}
+	if !isDomainName(uv.OriginDomain) {
+		return "", errors.New("invalid origin domain")
+	}
 	return uv.OriginDomain, nil
 }
 
