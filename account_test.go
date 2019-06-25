@@ -12,6 +12,7 @@ import (
 	"github.com/stellar/go/build"
 	"github.com/stellar/go/clients/horizon"
 	"github.com/stellar/go/keypair"
+	horizonProtocol "github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/require"
 )
@@ -718,7 +719,7 @@ func TestPathPayments(t *testing.T) {
 	}
 
 	match = false
-	var pathTx horizon.Transaction
+	var pathTx horizonProtocol.Transaction
 	for _, tx := range aliceTx {
 		if tx.ID == txID {
 			match = true
