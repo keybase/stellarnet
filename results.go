@@ -51,3 +51,33 @@ func PathPaymentSourceAmount(resultXDR string) (string, error) {
 
 	return StringFromStellarXdrAmount(total), nil
 }
+
+// PathPaymentIntermediatePath unpacks an envelope XDR string to
+// get the intermediate path assets.
+func PathPaymentIntermediatePath(envelopeXDR string) ([]AssetMinimal, error) {
+	var tx xdr.TransactionEnvelope
+	if err := xdr.SafeUnmarshalBase64(envelopeXDR, &tx); err != nil {
+		return nil, err
+	}
+	if len(tx.Tx.Operations) != 1 {
+		return nil, errors.New("cannot handle multi-operation result")
+	}
+	op := tx.Tx.Operations[0]
+	if op.Body.Type != xdr.OperationTypePathPayment {
+		return nil, errors.New("not a path payment")
+	}
+	pathOp, ok := op.Body.GetPathPaymentOp()
+	if !ok {
+		return nil, errors.New("not a path payment")
+	}
+	path := make([]AssetMinimal, len(pathOp.Path))
+	for i, a := range pathOp.Path {
+		am, err := XDRToAssetMinimal(a)
+		if err != nil {
+			return nil, err
+		}
+		path[i] = am
+	}
+
+	return path, nil
+}
