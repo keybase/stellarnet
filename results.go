@@ -54,6 +54,10 @@ func PathPaymentSourceAmount(resultXDR string) (string, error) {
 
 // PathPaymentIntermediatePath unpacks an envelope XDR string to
 // get the intermediate path assets.
+// These are the intermediate assets that we used to form a
+// payment path from the source asset to the destination asset.
+// Note that the source asset and destination asset are not in this list.
+// The order of the assets is from source asset to destination asset.
 func PathPaymentIntermediatePath(envelopeXDR string) ([]AssetMinimal, error) {
 	var tx xdr.TransactionEnvelope
 	if err := xdr.SafeUnmarshalBase64(envelopeXDR, &tx); err != nil {
