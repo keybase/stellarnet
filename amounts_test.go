@@ -304,3 +304,28 @@ func TestFeeString(t *testing.T) {
 		}
 	}
 }
+
+func TestGetStellarExchangeRate(t *testing.T) {
+	rate, err := GetStellarExchangeRate("1", "1")
+	require.NoError(t, err)
+	require.Equal(t, "1.0000000", rate)
+
+	rate, err = GetStellarExchangeRate("1", "10")
+	require.NoError(t, err)
+	require.Equal(t, "10.0000000", rate)
+
+	rate, err = GetStellarExchangeRate("10", "1")
+	require.NoError(t, err)
+	require.Equal(t, "0.1000000", rate)
+
+	_, err = GetStellarExchangeRate("0", "0.1384476")
+	require.Error(t, err)
+
+	rate, err = GetStellarExchangeRate("15.23", "0")
+	require.NoError(t, err)
+	require.Equal(t, "0.0000000", rate)
+
+	rate, err = GetStellarExchangeRate("0.0002122", "0.0001000")
+	require.NoError(t, err)
+	require.Equal(t, "0.4712535", rate)
+}
