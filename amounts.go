@@ -217,6 +217,5 @@ func GetStellarExchangeRate(source, destination string) (string, error) {
 	}
 
 	rate := big.NewRat(d, s)
-	fmt.Printf("rate = %+v\n", rate)
 	return rate.FloatString(7), nil
 }
