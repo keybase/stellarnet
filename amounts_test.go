@@ -318,10 +318,11 @@ func TestGetStellarExchangeRate(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "0.1000000", rate)
 
-	rate, err = GetStellarExchangeRate("0", "0.1384476")
+	_, err = GetStellarExchangeRate("0", "0.1384476")
 	require.Error(t, err)
 
 	rate, err = GetStellarExchangeRate("15.23", "0")
+	require.NoError(t, err)
 	require.Equal(t, "0.0000000", rate)
 
 	rate, err = GetStellarExchangeRate("0.0002122", "0.0001000")
