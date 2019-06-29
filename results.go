@@ -33,23 +33,10 @@ func PathPaymentSourceAmount(resultXDR string) (string, error) {
 	if !ok {
 		return "", errors.New("could not get PathPaymentResult out of tr")
 	}
-	success, ok := pathResult.GetSuccess()
-	if !ok {
-		return "", errors.New("path payment not successful, cannot calculate source amount")
-	}
 
-	if len(success.Offers) == 0 {
-		return StringFromStellarXdrAmount(success.Last.Amount), nil
-	}
+	sendAmount := pathResult.SendAmount()
 
-	// finally, we have the offers...the sum of the AmountBought values should
-	// be the total of the source asset that the sender spent.
-	var total xdr.Int64
-	for _, offer := range success.Offers {
-		total += offer.AmountBought
-	}
-
-	return StringFromStellarXdrAmount(total), nil
+	return StringFromStellarXdrAmount(sendAmount), nil
 }
 
 // PathPaymentIntermediatePath unpacks an envelope XDR string to
