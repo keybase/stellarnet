@@ -9,7 +9,7 @@ import (
 // PathPaymentSourceAmount unpacks a result XDR string and
 // calculates the amount of the source asset that was spent
 // by adding up all the offers.
-func PathPaymentSourceAmount(resultXDR string) (string, error) {
+func PathPaymentSourceAmount(resultXDR string, opIndex int) (string, error) {
 	var result xdr.TransactionResult
 	if err := xdr.SafeUnmarshalBase64(resultXDR, &result); err != nil {
 		return "", err
@@ -21,10 +21,10 @@ func PathPaymentSourceAmount(resultXDR string) (string, error) {
 	if !ok {
 		return "", errors.New("could not get tx result operations")
 	}
-	if len(ops) != 1 {
-		return "", errors.New("cannot handle multi-operation result")
+	if opIndex >= len(ops) {
+		return "", errors.New("opIndex is out of range")
 	}
-	op := ops[0]
+	op := ops[opIndex]
 	tr, ok := op.GetTr()
 	if !ok {
 		return "", errors.New("could not get OperationResultTr out of operation")
@@ -45,15 +45,15 @@ func PathPaymentSourceAmount(resultXDR string) (string, error) {
 // payment path from the source asset to the destination asset.
 // Note that the source asset and destination asset are not in this list.
 // The order of the assets is from source asset to destination asset.
-func PathPaymentIntermediatePath(envelopeXDR string) ([]AssetMinimal, error) {
+func PathPaymentIntermediatePath(envelopeXDR string, opIndex int) ([]AssetMinimal, error) {
 	var tx xdr.TransactionEnvelope
 	if err := xdr.SafeUnmarshalBase64(envelopeXDR, &tx); err != nil {
 		return nil, err
 	}
-	if len(tx.Tx.Operations) != 1 {
-		return nil, errors.New("cannot handle multi-operation result")
+	if opIndex >= len(tx.Tx.Operations) {
+		return nil, errors.New("opIndex out of range")
 	}
-	op := tx.Tx.Operations[0]
+	op := tx.Tx.Operations[opIndex]
 	if op.Body.Type != xdr.OperationTypePathPayment {
 		return nil, errors.New("not a path payment")
 	}
