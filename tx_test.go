@@ -1,10 +1,14 @@
 package stellarnet
 
 import (
+	"bytes"
+	"encoding/base64"
+	"fmt"
 	"testing"
 
 	"github.com/keybase/stellarnet/testclient"
 	"github.com/stellar/go/build"
+	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/require"
 )
 
@@ -97,4 +101,24 @@ func TestMultipleOps(t *testing.T) {
 	_, err = tx.Sign(seedStr(t, helper.Alice))
 	require.Error(t, err)
 	require.Equal(t, ErrNoOps, err)
+}
+
+// need a partial tx for sep7 testing...
+func TestPartialForSep7(t *testing.T) {
+	tx := &Tx{
+		baseFee: 100,
+		netPass: NetworkPassphrase(),
+	}
+	tx.AddCreateTrustlineOp("TOAD", "GDGHHBNYTCH45RQYQE4Z6F2E3JMMBFHFGMF3DBZ3JODDNT3UWEDP5AT4", "1000")
+
+	tx.internal.Fee = xdr.Uint32(tx.baseFee * uint64(len(tx.internal.Operations)))
+	envelope := xdr.TransactionEnvelope{Tx: tx.internal}
+
+	var buf bytes.Buffer
+	_, err := xdr.Marshal(&buf, envelope)
+	if err != nil {
+		t.Fatal(err)
+	}
+	b64 := base64.StdEncoding.EncodeToString(buf.Bytes())
+	fmt.Printf("xdr: %s\n", b64)
 }
