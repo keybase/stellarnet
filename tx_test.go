@@ -9,9 +9,7 @@ import (
 )
 
 func TestMultipleOps(t *testing.T) {
-	helper, client, network := testclient.Setup(t)
-	SetClientAndNetwork(client, network)
-	helper.SetState(t, "multiple_ops")
+	helper, sc := testSetup(t, "multiple_ops")
 
 	testclient.GetTestLumens(t, helper.Alice)
 	t.Log("alice account has been funded")
@@ -26,9 +24,9 @@ func TestMultipleOps(t *testing.T) {
 	_, err = Submit(r.Signed)
 	require.NoError(t, err)
 
-	acctAlice := NewAccount(addressStr(t, helper.Alice))
-	acctBob := NewAccount(addressStr(t, helper.Bob))
-	acctCharlie := NewAccount(addressStr(t, helper.Charlie))
+	acctAlice := NewAccount(sc, addressStr(t, helper.Alice))
+	acctBob := NewAccount(sc, addressStr(t, helper.Bob))
+	acctCharlie := NewAccount(sc, addressStr(t, helper.Charlie))
 	balance, err := acctAlice.BalanceXLM()
 	require.NoError(t, err)
 	require.Equal(t, "9969.9999800", balance)

@@ -123,12 +123,12 @@ func NewAccount(sc *StellarClient, address AddressStr) *Account {
 // load uses the horizon client to get the current account
 // information.
 func (a *Account) load() error {
-	internal, err := Client().LoadAccount(a.address.String())
+	internal, err := a.client.LoadAccount(a.address)
 	if err != nil {
-		return errMapAccount(err)
+		return err
 	}
 
-	a.internal = &internal
+	a.internal = internal
 
 	return nil
 }
@@ -278,8 +278,8 @@ func (a *Account) Details() (*AccountDetails, error) {
 // - The combined weight of all signers satisfies
 //   the minimum signing weight required to sign an operation.
 //   (Any operation at all, not necessarily payment)
-func IsMasterKeyActive(accountID AddressStr) (bool, error) {
-	a := NewAccount(accountID)
+func IsMasterKeyActive(sc *StellarClient, accountID AddressStr) (bool, error) {
+	a := NewAccount(sc, accountID)
 	err := a.load()
 	if err != nil {
 		if err == ErrSourceAccountNotFound {
@@ -334,9 +334,9 @@ func (a *Account) RecentPayments(cursor string, limit int) ([]horizon.Payment, e
 	link := a.paymentsLink(cursor, limit)
 
 	var page PaymentsPage
-	err := getDecodeJSONStrict(link, Client().HTTP.Get, &page)
+	err := a.client.GetJSON(link, &page)
 	if err != nil {
-		return nil, errMap(err)
+		return nil, err
 	}
 	return page.Embedded.Records, nil
 }
@@ -354,9 +354,9 @@ func (a *Account) Transactions(cursor string, limit int) (res []horizonProtocol.
 	link := a.transactionsLink(cursor, limit)
 
 	var page TransactionsPage
-	err = getDecodeJSONStrict(link, Client().HTTP.Get, &page)
+	err = a.client.GetJSON(link, &page)
 	if err != nil {
-		return nil, false, errMap(err)
+		return nil, false, err
 	}
 
 	finalPage = len(page.Embedded.Records) < limit
@@ -370,11 +370,11 @@ func (a *Account) Transactions(cursor string, limit int) (res []horizonProtocol.
 // RecentTransactionsAndOps returns the account's recent transactions, for
 // all types of transactions.
 func (a *Account) RecentTransactionsAndOps() ([]Transaction, error) {
-	link := Client().URL + "/accounts/" + a.address.String() + "/transactions"
+	link := "/accounts/" + a.address.String() + "/transactions"
 	var page TransactionsPage
-	err := getDecodeJSONStrict(link+"?order=desc&limit=10", Client().HTTP.Get, &page)
+	err := a.client.GetJSON(link+"?order=desc&limit=10", &page)
 	if err != nil {
-		return nil, errMap(err)
+		return nil, err
 	}
 
 	transactions := make([]Transaction, len(page.Embedded.Records))
@@ -394,11 +394,11 @@ func (a *Account) RecentTransactionsAndOps() ([]Transaction, error) {
 }
 
 func (a *Account) loadOperations(tx Transaction) ([]Operation, error) {
-	link := Client().URL + "/transactions/" + tx.Internal.ID + "/operations"
+	link := "/transactions/" + tx.Internal.ID + "/operations"
 	var page OperationsPage
-	err := getDecodeJSONStrict(link, Client().HTTP.Get, &page)
+	err := a.client.GetJSON(link, &page)
 	if err != nil {
-		return nil, errMap(err)
+		return nil, err
 	}
 	return page.Embedded.Records, nil
 }
@@ -977,7 +977,7 @@ func CreateCustomAssetWithKPs(source SeedStr, issuerPair, distPair *keypair.Full
 
 // paymentsLink returns the horizon endpoint to get payment information.
 func (a *Account) paymentsLink(cursor string, limit int) string {
-	link := Client().URL + "/accounts/" + a.address.String() + "/payments"
+	link := "/accounts/" + a.address.String() + "/payments"
 	if cursor != "" {
 		return fmt.Sprintf("%s?cursor=%s&order=desc&limit=%d", link, cursor, limit)
 	}
@@ -986,7 +986,7 @@ func (a *Account) paymentsLink(cursor string, limit int) string {
 
 // transactionsLink returns the horizon endpoint to get payment information.
 func (a *Account) transactionsLink(cursor string, limit int) string {
-	link := Client().URL + "/accounts/" + a.address.String() + "/transactions"
+	link := "/accounts/" + a.address.String() + "/transactions"
 	if cursor != "" {
 		return fmt.Sprintf("%s?cursor=%s&order=desc&limit=%d", link, cursor, limit)
 	}

@@ -100,13 +100,22 @@ func assertHorizonError(t *testing.T, err error, transactionCode string) {
 	}
 }
 
-func TestScenario(t *testing.T) {
+func testSetup(t *testing.T, stateName string) (*testclient.Helper, *StellarClient) {
 	helper, client, network := testclient.Setup(t)
+	sc := newStellarClientWithHorizon(client, network)
+	helper.SetState(t, stateName)
+
+	// XXX remove this once ready
 	SetClientAndNetwork(client, network)
-	helper.SetState(t, "scenario")
+
+	return helper, sc
+}
+
+func TestScenario(t *testing.T) {
+	helper, sc := testSetup(t, "scenario")
 
 	t.Log("alice key pair not an account yet")
-	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	acctAlice := NewAccount(sc, addressStr(t, helper.Alice))
 	_, err := acctAlice.BalanceXLM()
 	if err != ErrSourceAccountNotFound {
 		t.Fatalf("error: %q, expected %q (ErrSourceAccountNotFound)", err, ErrSourceAccountNotFound)
@@ -117,7 +126,7 @@ func TestScenario(t *testing.T) {
 		t.Fatalf("error: %q, expected %q (ErrSourceAccountNotFound)", err, ErrSourceAccountNotFound)
 	}
 
-	active, err := IsMasterKeyActive(addressStr(t, helper.Alice))
+	active, err := IsMasterKeyActive(sc, addressStr(t, helper.Alice))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -182,7 +191,7 @@ func TestScenario(t *testing.T) {
 	}
 
 	bobExpected := "10.0000000"
-	acctBob := NewAccount(addressStr(t, helper.Bob))
+	acctBob := NewAccount(sc, addressStr(t, helper.Bob))
 	balance, err = acctBob.BalanceXLM()
 	if err != nil {
 		t.Fatal(err)
@@ -259,7 +268,7 @@ func TestScenario(t *testing.T) {
 		t.Fatalf("id: %q, expected: %q", nextPayments[1].ID, alicePayments[2].ID)
 	}
 
-	active, err = IsMasterKeyActive(addressStr(t, helper.Alice))
+	active, err = IsMasterKeyActive(sc, addressStr(t, helper.Alice))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -329,9 +338,7 @@ func TestScenario(t *testing.T) {
 }
 
 func TestAccountMergeAmount(t *testing.T) {
-	helper, client, network := testclient.Setup(t)
-	SetClientAndNetwork(client, network)
-	helper.SetState(t, "TestAccountMergeAmount")
+	helper, sc := testSetup(t, "TestAccountMergeAmount")
 
 	t.Logf("gift -> alice")
 	testclient.GetTestLumens(t, helper.Alice)
@@ -354,7 +361,7 @@ func TestAccountMergeAmount(t *testing.T) {
 	}
 
 	t.Logf("read history of alice")
-	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	acctAlice := NewAccount(sc, addressStr(t, helper.Alice))
 	payments, err := acctAlice.RecentPayments("", 1)
 	require.NoError(t, err)
 	require.Len(t, payments, 1)
@@ -365,7 +372,7 @@ func TestAccountMergeAmount(t *testing.T) {
 	require.Equal(t, transferAmountMinusMergeFee, amount)
 
 	t.Logf("read history of bob")
-	acctBob := NewAccount(addressStr(t, helper.Bob))
+	acctBob := NewAccount(sc, addressStr(t, helper.Bob))
 	payments, err = acctBob.RecentPayments("", 50)
 	require.NoError(t, err)
 	require.Len(t, payments, 2)
@@ -378,12 +385,10 @@ func TestAccountMergeAmount(t *testing.T) {
 }
 
 func TestSetInflationDestination(t *testing.T) {
-	helper, client, network := testclient.Setup(t)
-	SetClientAndNetwork(client, network)
-	helper.SetState(t, "inflation")
+	helper, sc := testSetup(t, "inflation")
 
 	t.Log("alice key pair not an account yet")
-	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	acctAlice := NewAccount(sc, addressStr(t, helper.Alice))
 	_, err := acctAlice.BalanceXLM()
 	require.Error(t, err)
 	require.Equal(t, ErrSourceAccountNotFound, err)
@@ -392,7 +397,7 @@ func TestSetInflationDestination(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, ErrSourceAccountNotFound, err)
 
-	active, err := IsMasterKeyActive(addressStr(t, helper.Alice))
+	active, err := IsMasterKeyActive(sc, addressStr(t, helper.Alice))
 	require.NoError(t, err)
 	require.True(t, active)
 
@@ -421,9 +426,7 @@ func TestSetInflationDestination(t *testing.T) {
 }
 
 func TestTimeBounds(t *testing.T) {
-	helper, client, network := testclient.Setup(t)
-	SetClientAndNetwork(client, network)
-	helper.SetState(t, "timebounds")
+	helper, sc := testSetup(t, "timebounds")
 
 	testclient.GetTestLumens(t, helper.Alice)
 
@@ -479,7 +482,7 @@ func TestTimeBounds(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	acctBob := NewAccount(addressStr(t, helper.Bob))
+	acctBob := NewAccount(sc, addressStr(t, helper.Bob))
 	balance, err := acctBob.BalanceXLM()
 	if err != nil {
 		t.Fatal(err)
@@ -564,11 +567,9 @@ func TestConcurrentSubmit(t *testing.T) {
 }
 
 func TestTrustlines(t *testing.T) {
-	helper, client, network := testclient.Setup(t)
-	SetClientAndNetwork(client, network)
-	helper.SetState(t, "trustlines")
+	helper, sc := testSetup(t, "trustlines")
 
-	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	acctAlice := NewAccount(sc, addressStr(t, helper.Alice))
 	_, err := acctAlice.Trustlines()
 	if err == nil {
 		t.Errorf("expected an error getting trustlines on unestablished account")
@@ -622,14 +623,12 @@ func TestTrustlines(t *testing.T) {
 }
 
 func TestPathPayments(t *testing.T) {
-	helper, client, network := testclient.Setup(t)
-	SetClientAndNetwork(client, network)
-	helper.SetState(t, "pathpayments")
+	helper, sc := testSetup(t, "pathpayments")
 
-	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	acctAlice := NewAccount(sc, addressStr(t, helper.Alice))
 	testclient.GetTestLumens(t, helper.Alice)
 
-	acctBob := NewAccount(addressStr(t, helper.Bob))
+	acctBob := NewAccount(sc, addressStr(t, helper.Bob))
 	testclient.GetTestLumens(t, helper.Bob)
 
 	// alice is going to make a new asset
