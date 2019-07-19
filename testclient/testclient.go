@@ -41,6 +41,7 @@ type Config struct {
 
 // Helper makes managing the test users and state easier.
 type Helper struct {
+	Client      *StellarClient
 	Config      *Config
 	Alice       *keypair.Full
 	Bob         *keypair.Full
@@ -113,7 +114,7 @@ func (h *Helper) Keypair(t *testing.T, name string) *keypair.Full {
 	return kp
 }
 
-func testClient(t *testing.T, live, record bool) (*horizon.Client, *vcr.VCR) {
+func testClient(t *testing.T, live, record bool) (*StellarClient, *horizon.Client, *vcr.VCR) {
 	v := vcr.New("testdata")
 	switch {
 	case record:
@@ -126,10 +127,12 @@ func testClient(t *testing.T, live, record bool) (*horizon.Client, *vcr.VCR) {
 		t.Logf("playing recorded http requests")
 	}
 
-	return &horizon.Client{
-		URL:  "https://horizon-testnet.stellar.org",
-		HTTP: v,
-	}, v
+	// XXX StellarClient needs HTTP for vcr to work
+	return NewStellarClient("https://horizon-testnet.stellar.org", build.TestNetwork, v),
+		&horizon.Client{
+			URL:  "https://horizon-testnet.stellar.org",
+			HTTP: v,
+		}, v
 }
 
 func loadConfig(t *testing.T, subdir string) *Config {

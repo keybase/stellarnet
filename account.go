@@ -107,13 +107,17 @@ func NetworkPassphrase() string {
 
 // Account represents a Stellar account.
 type Account struct {
+	client   *StellarClient
 	address  AddressStr
 	internal *horizonProtocol.Account
 }
 
 // NewAccount makes a new Account item for address.
-func NewAccount(address AddressStr) *Account {
-	return &Account{address: address}
+func NewAccount(sc *StellarClient, address AddressStr) *Account {
+	return &Account{
+		client:  sc,
+		address: address,
+	}
 }
 
 // load uses the horizon client to get the current account
