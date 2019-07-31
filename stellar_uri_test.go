@@ -17,6 +17,7 @@ type validURITest struct {
 	URI          string
 	Operation    string
 	OriginDomain string
+	Signed 		 bool
 }
 
 var invalidTests = []invalidURITest{
@@ -27,10 +28,6 @@ var invalidTests = []invalidURITest{
 	{
 		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
 		Err: ErrMissingParameter{Key: "origin_domain"},
-	},
-	{
-		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=blah.com",
-		Err: ErrMissingParameter{Key: "signature"},
 	},
 	{
 		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com:8000&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKKzhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
@@ -87,22 +84,33 @@ var validTests = []validURITest{
 		URI:          "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=JTlGMGzxUv90P2SWxUY9xo%2BLlbXaDloend6gkpyylY8X4bUNf6%2F9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ%3D%3D",
 		Operation:    "pay",
 		OriginDomain: "someDomain.com",
+		Signed:       true,
 	},
 	{
 		URI:          "web+stellar:pay?amount=10&destination=GBZX4364PEPQTDICMIQDZ56K4T75QZCR4NBEYKO6PDRJAHZKGUOJPCXB&memo=12345&memo_type=MEMO_ID&origin_domain=blog.stathat.com&signature=B4OBgVKEtL4dzddGZRyIKcwvVxNI4Y8gVDN4ugCAszTNknsqYhKNMRCKHr85ULnfAr5lWoB%2BaJeial0y9QU8Cg%3D%3D",
 		Operation:    "pay",
 		OriginDomain: "blog.stathat.com",
+		Signed:       true,
 	},
 	{
 		URI:          "web+stellar:pay?amount=10&destination=GBZX4364PEPQTDICMIQDZ56K4T75QZCR4NBEYKO6PDRJAHZKGUOJPCXB&memo=MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEK&memo_type=MEMO_HASH&origin_domain=blog.stathat.com&signature=2NpUO1rf5yLse4PQBtNXz4KIim0YvjTbTt0gWuhGlrnfsi6MlQuzhx5NGYIaPnqK9Lc4V9eS%2BgU0HUTJs8wbDQ%3D%3D",
 		Operation:    "pay",
 		OriginDomain: "blog.stathat.com",
+		Signed:       true,
 	},
 	{
 		URI:          "web+stellar:tx?origin_domain=blog.stathat.com&xdr=AAAAAHN%2Bb9x5HwmNAmIgPPfK5P%2FYZFHjQkwp3njikB8qNRyXAAAAZAFb5rMAAAAlAAAAAAAAAAAAAAABAAAAAAAAAAYAAAABV0hBVAAAAABzfm%2FceR8JjQJiIDz3yuT%2F2GRR40JMKd544pAfKjUcl3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FAAAAAAAAAAA%3D&signature=sSA9%2BAm0SZQsd%2BQ7keCI9gP0t5rM%2BOahSVqF%2FkuNkJcKAc7kNYS1wprervmb2QTJmdKfvpQ2nRNMt9HmTNRNBQ%3D%3D",
 		Operation:    "tx",
 		OriginDomain: "blog.stathat.com",
+		Signed:       true,
 	},
+	{
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=blah.com",
+		Operation:    "pay",
+		OriginDomain: "blah.com",
+		Signed:       false,
+	},
+
 }
 
 func TestInvalidStellarURIs(t *testing.T) {
@@ -132,6 +140,10 @@ func TestValidStellarURIs(t *testing.T) {
 		if v.OriginDomain != test.OriginDomain {
 			t.Errorf("%d. origin domain: %q, expected %q", i, v.OriginDomain, test.OriginDomain)
 		}
+		if v.Signed != test.Signed {
+			t.Errorf("%d. signed: %v, expected %v", i, v.Signed, test.Signed)
+		}
+
 		switch v.Operation {
 		case "pay":
 			if v.Recipient == "" {
