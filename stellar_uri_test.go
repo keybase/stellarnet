@@ -46,6 +46,10 @@ var invalidTests = []invalidURITest{
 		Err: ErrInvalidOperation,
 	},
 	{
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com",
+		Err: ErrMissingParameter{Key: "signature"},
+	},
+	{
 		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=x%2BiZA4v8kkDj%2BiwoD1wEr%2BeFUcY2J8SgxCaYcNz4WEOuDJ4Sq0ps0rJpHfIKhrP4Gi1M58sTzlizpcVNX3DQ%3D%3D",
 		Err: ErrBadSignature,
 	},
@@ -77,6 +81,10 @@ var invalidTests = []invalidURITest{
 		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=someDomain.com&signature=JTlGMGzxUv90P2SWxUY9xo%2BLlbXaDloend6gkpyylY8X4bUNf6%2F9mFTMJs7JKqSDPRtejlK1kQvrsJfRZSJeAQ%3D%3D&amount=10000",
 		Err: ErrBadSignature,
 	},
+	{
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=blah.com",
+		Err: ErrMissingParameter{Key:"signature"},
+	},
 }
 
 var validTests = []validURITest{
@@ -105,9 +113,9 @@ var validTests = []validURITest{
 		Signed:       true,
 	},
 	{
-		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=blah.com",
+		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens",
 		Operation:    "pay",
-		OriginDomain: "blah.com",
+		OriginDomain: "",
 		Signed:       false,
 	},
 
@@ -163,13 +171,15 @@ func TestValidStellarURIs(t *testing.T) {
 			}
 		}
 
-		od, err := UnvalidatedStellarURIOriginDomain(test.URI)
-		if err != nil {
-			t.Errorf("%d. expected no err, got %s", i, err)
-			continue
-		}
-		if od != test.OriginDomain {
-			t.Errorf("%d. unvalidated origin domain: %q, expected %q", i, od, test.OriginDomain)
+		if test.OriginDomain != "" {
+			od, err := UnvalidatedStellarURIOriginDomain(test.URI)
+			if err != nil {
+				t.Errorf("%d. expected no err, got %s", i, err)
+				continue
+			}
+			if od != test.OriginDomain {
+				t.Errorf("%d. unvalidated origin domain: %q, expected %q", i, od, test.OriginDomain)
+			}
 		}
 	}
 }

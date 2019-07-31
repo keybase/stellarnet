@@ -206,14 +206,15 @@ func newUnvalidatedURI(uri string) (*unvalidatedURI, error) {
 }
 
 func (u *unvalidatedURI) Validate(getter HTTPGetter) (*ValidatedStellarURI, error) {
-	// origin_domain and signature are optional in the spec, but
-	// it seems like a really bad idea to allow any of these
-	// requests without them, so we are going to make them required.
-	if u.OriginDomain == "" {
+	// URIs without signatures are valid iff the origin domain is also not set
+	if u.OriginDomain == "" && u.Signature != "" {
 		return nil, ErrMissingParameter{Key: "origin_domain"}
 	}
+	if u.OriginDomain != "" && u.Signature == "" {
+		return nil, ErrMissingParameter{Key: "signature"}
+	}
 
-	if !isDomainName(u.OriginDomain) {
+	if u.OriginDomain != "" && !isDomainName(u.OriginDomain) {
 		return nil, ErrInvalidParameter{Key: "origin_domain"}
 	}
 
@@ -264,6 +265,7 @@ func (u *unvalidatedURI) validateOriginDomain(getter HTTPGetter) (bool, error) {
 	if u.Signature == "" {
 		return false, nil
 	}
+
 	signingKey, err := u.originDomainSigningKey(getter)
 	if err != nil {
 		return false, err
