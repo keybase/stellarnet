@@ -17,7 +17,7 @@ type validURITest struct {
 	URI          string
 	Operation    string
 	OriginDomain string
-	Signed 		 bool
+	Signed       bool
 }
 
 var invalidTests = []invalidURITest{
@@ -83,7 +83,7 @@ var invalidTests = []invalidURITest{
 	},
 	{
 		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens&origin_domain=blah.com",
-		Err: ErrMissingParameter{Key:"signature"},
+		Err: ErrMissingParameter{Key: "signature"},
 	},
 }
 
@@ -113,12 +113,11 @@ var validTests = []validURITest{
 		Signed:       true,
 	},
 	{
-		URI: "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens",
+		URI:          "web+stellar:pay?destination=GCALNQQBXAPZ2WIRSDDBMSTAKCUH5SG6U76YBFLQLIXJTF7FE5AX7AOO&amount=120.1234567&memo=skdjfasf&msg=pay%20me%20with%20lumens",
 		Operation:    "pay",
 		OriginDomain: "",
 		Signed:       false,
 	},
-
 }
 
 func TestInvalidStellarURIs(t *testing.T) {
