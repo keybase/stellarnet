@@ -124,6 +124,7 @@ type ValidatedStellarURI struct {
 	AssetIssuer  string
 	Memo         string
 	MemoType     string
+	Signed       bool
 }
 
 // ValidateStellarURI will check the validity of a web+stellar SEP7 URI.
@@ -211,9 +212,6 @@ func (u *unvalidatedURI) Validate(getter HTTPGetter) (*ValidatedStellarURI, erro
 	if u.OriginDomain == "" {
 		return nil, ErrMissingParameter{Key: "origin_domain"}
 	}
-	if u.Signature == "" {
-		return nil, ErrMissingParameter{Key: "signature"}
-	}
 
 	if !isDomainName(u.OriginDomain) {
 		return nil, ErrInvalidParameter{Key: "origin_domain"}
@@ -261,31 +259,35 @@ func (u *unvalidatedURI) originDomainSigningKey(getter HTTPGetter) (string, erro
 	return strings.TrimSpace(sdoc.SigningKey), nil
 }
 
-func (u *unvalidatedURI) validateOriginDomain(getter HTTPGetter) error {
+// Validates the origin domain. Returns (isSigned, error)
+func (u *unvalidatedURI) validateOriginDomain(getter HTTPGetter) (bool, error) {
+	if u.Signature == "" {
+		return false, nil
+	}
 	signingKey, err := u.originDomainSigningKey(getter)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if signingKey == "" {
-		return ErrInvalidWellKnownOrigin{Wrapped: errors.New("no signing key")}
+		return false, ErrInvalidWellKnownOrigin{Wrapped: errors.New("no signing key")}
 	}
 
 	kp, err := keypair.Parse(signingKey)
 	if err != nil {
-		return ErrInvalidWellKnownOrigin{Wrapped: errors.New("invalid signing key")}
+		return false, ErrInvalidWellKnownOrigin{Wrapped: errors.New("invalid signing key")}
 	}
 
 	signature, err := base64.StdEncoding.DecodeString(u.Signature)
 	if err != nil {
-		return ErrBadSignature
+		return false, ErrBadSignature
 	}
 
 	if err := kp.Verify(u.payload(), signature); err != nil {
-		return ErrBadSignature
+		return false, ErrBadSignature
 	}
 
-	return nil
+	return true, nil
 }
 
 func (u *unvalidatedURI) payload() []byte {
@@ -303,7 +305,8 @@ func (u *unvalidatedURI) payload() []byte {
 }
 
 func (u *unvalidatedURI) validatePay(getter HTTPGetter) (*ValidatedStellarURI, error) {
-	if err := u.validateOriginDomain(getter); err != nil {
+	signed, err := u.validateOriginDomain(getter)
+	if err != nil {
 		return nil, err
 	}
 
@@ -313,6 +316,7 @@ func (u *unvalidatedURI) validatePay(getter HTTPGetter) (*ValidatedStellarURI, e
 	}
 
 	validated := u.newValidated("pay")
+	validated.Signed = signed
 	validated.Recipient = destination
 	validated.Amount = u.value("amount")
 	validated.AssetCode = u.value("asset_code")
@@ -342,7 +346,8 @@ func (u *unvalidatedURI) validateTx(getter HTTPGetter) (*ValidatedStellarURI, er
 		return nil, ErrMissingParameter{Key: "xdr"}
 	}
 
-	if err := u.validateOriginDomain(getter); err != nil {
+	signed, err := u.validateOriginDomain(getter)
+	if err != nil {
 		return nil, err
 	}
 
@@ -358,6 +363,7 @@ func (u *unvalidatedURI) validateTx(getter HTTPGetter) (*ValidatedStellarURI, er
 		return nil, err
 	}
 	validated := u.newValidated("tx")
+	validated.Signed = signed
 	validated.XDR = xdrEncoded
 	validated.TxEnv = &validatedTxEnv
 
