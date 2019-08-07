@@ -144,7 +144,7 @@ func loadConfig(t *testing.T, subdir string) *Config {
 		conf.RebeccaSeed = newSeed(t)
 		conf.IssuerSeed = newSeed(t)
 		conf.DistributorSeed = newSeed(t)
-		conf.AssetCode = randomAssetCode()
+		conf.AssetCode = RandomAssetCode()
 
 		if *record {
 			// recording, so save key pairs
@@ -250,7 +250,7 @@ func init() {
 
 const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
-func randomAssetCode() string {
+func RandomAssetCode() string {
 	b := make([]byte, 4)
 	for i := range b {
 		b[i] = letters[rand.Intn(len(letters))]
