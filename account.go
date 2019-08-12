@@ -920,6 +920,18 @@ func CreateCustomAsset(source SeedStr, assetCode, limit, homeDomain string, xlmP
 // You should probably use CreateCustomAsset as it will make new issuer, dist for you,
 // but this one can be handy in tests where you want to specify the issuer, dist keys.
 func CreateCustomAssetWithKPs(source SeedStr, issuerPair, distPair *keypair.Full, assetCode, limit, homeDomain string, xlmPrice string, baseFee uint64) (issuer, distributor SeedStr, err error) {
+	// see if the asset has already been created
+	searchRes, err := AssetSearch(AssetSearchArg{
+		AssetCode: assetCode,
+		IssuerID:  issuerPair.Address(),
+	})
+	if err != nil {
+		return "", "", err
+	}
+	if len(searchRes) > 0 {
+		return "", "", ErrAssetAlreadyExists
+	}
+
 	// 1. create issuer
 	issuer, err = NewSeedStr(issuerPair.Seed())
 	if err != nil {
@@ -929,7 +941,7 @@ func CreateCustomAssetWithKPs(source SeedStr, issuerPair, distPair *keypair.Full
 	if err != nil {
 		return "", "", err
 	}
-	_, _, _, err = createAccountXLM(source, issuerAddr, "5", "")
+	_, _, _, err = SendXLM(source, issuerAddr, "5", "")
 	if err != nil {
 		return "", "", err
 	}
@@ -943,7 +955,7 @@ func CreateCustomAssetWithKPs(source SeedStr, issuerPair, distPair *keypair.Full
 	if err != nil {
 		return issuer, "", err
 	}
-	_, _, _, err = createAccountXLM(source, distributorAddr, "5", "")
+	_, _, _, err = SendXLM(source, distributorAddr, "5", "")
 	if err != nil {
 		return issuer, "", err
 	}

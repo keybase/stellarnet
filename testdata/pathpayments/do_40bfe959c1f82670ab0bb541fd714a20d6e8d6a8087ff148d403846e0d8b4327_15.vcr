@@ -1,0 +1,88 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Wed, 07 Aug 2019 21:29:22 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54",
+  "account_id": "GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54",
+  "sequence": "510654431625217",
+  "subentry_count": 1,
+  "last_modified_ledger": 118897,
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false,
+    "auth_immutable": false
+  },
+  "balances": [
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "last_modified_ledger": 118898,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "HQIK",
+      "asset_issuer": "GBKWMSXI4CTNA6UUL2U7TFL6QETO5VGFHPET3P3ZGBXLIN5GFT6O2HN3"
+    },
+    {
+      "balance": "4.9999900",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "weight": 1,
+      "key": "GBRCNVYSHXMW32DOZG47KXNBWDMOUP3HURJHCB7GTQOVSEXCPFX7IE54",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {}
+}

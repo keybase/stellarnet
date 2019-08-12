@@ -1,9 +1,11 @@
 package stellarnet
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/keybase/stellarnet/testclient"
+	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/require"
 )
@@ -168,4 +170,41 @@ func TestMakeXDRAsset(t *testing.T) {
 
 	a, err = makeXDRAsset("THIRTEENCHARS", "GAJVD2WOS7QXLSGFUQ3VIDEFG5I7S3VWL4X3V5FEFN4N2OC5CQDMHHZS")
 	require.Error(t, err)
+}
+
+func TestCreateCustomAssetIdempotent(t *testing.T) {
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "createcustomassets")
+
+	sourcePair := helper.Alice
+	sourceSeed := SeedStr(sourcePair.Seed())
+	testclient.GetTestLumens(t, sourcePair)
+
+	var assetCode string
+	if testclient.IsPlayback() {
+		// this needs to be updated if you re-record
+		assetCode = "AOJC"
+	} else {
+		assetCode = testclient.RandomAssetCode()
+		fmt.Printf("creating asset: %s. Please replace in TestCreateCustomAssetIdempotent.\n", assetCode)
+	}
+
+	// these are hardcoded so it's easier to deal with the vcr
+	var temp [32]byte
+	copy(temp[:], "SAOPODJ7GSCNAZODXI5OUXVUM6C3RXBMPTWPFJSEYBAI4WNBFS47F5YL")
+	issuerPair, err := keypair.FromRawSeed(temp)
+	require.NoError(t, err)
+	copy(temp[:], "SAHW6DJPWFOZIMDVY6HLPBBJFWPTCIPO2FVRX4OZCBM6ZYT2TBL7PMS6")
+	distPair, err := keypair.FromRawSeed(temp)
+	require.NoError(t, err)
+
+	// create an asset
+	_, _, err = CreateCustomAssetWithKPs(sourceSeed, issuerPair, distPair, assetCode, "10000", "keybase.io/blueasset", "2.3", 200)
+	require.NoError(t, err)
+
+	// creating it again with the same inputs should throw a predictable error
+	_, _, err = CreateCustomAssetWithKPs(sourceSeed, issuerPair, distPair, assetCode, "10000", "keybase.io/blueasset", "2.3", 200)
+	require.Error(t, err)
+	require.Equal(t, ErrAssetAlreadyExists, err)
 }
