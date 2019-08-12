@@ -1,0 +1,57 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Mon, 12 Aug 2019 14:52:43 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDHXS7OADZCXGPUCHYJF4YSMISLGHVTIIDYP44T7KTXZYZXHP4L6TLZK/payments?cursor=\u0026limit=1\u0026order=desc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDHXS7OADZCXGPUCHYJF4YSMISLGHVTIIDYP44T7KTXZYZXHP4L6TLZK/payments?cursor=831295215136769\u0026limit=1\u0026order=desc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GDHXS7OADZCXGPUCHYJF4YSMISLGHVTIIDYP44T7KTXZYZXHP4L6TLZK/payments?cursor=831295215136769\u0026limit=1\u0026order=asc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/831295215136769"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/3c466735c933184dd5da2a4dc711729a130ce1f6842198c0b4ed221bbc54eb3b"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/831295215136769/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=831295215136769"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=831295215136769"
+          }
+        },
+        "id": "831295215136769",
+        "paging_token": "831295215136769",
+        "transaction_successful": true,
+        "source_account": "GCU32K3L4R2TLE7BCZSP6PGWQ7YMYTILICL5JMZU4U4OOSPTWOF4J3GP",
+        "type": "account_merge",
+        "type_i": 8,
+        "created_at": "2019-08-12T14:52:41Z",
+        "transaction_hash": "3c466735c933184dd5da2a4dc711729a130ce1f6842198c0b4ed221bbc54eb3b",
+        "account": "GCU32K3L4R2TLE7BCZSP6PGWQ7YMYTILICL5JMZU4U4OOSPTWOF4J3GP",
+        "into": "GDHXS7OADZCXGPUCHYJF4YSMISLGHVTIIDYP44T7KTXZYZXHP4L6TLZK"
+      }
+    ]
+  }
+}
