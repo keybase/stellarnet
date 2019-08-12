@@ -299,7 +299,7 @@ func TestScenario(t *testing.T) {
 	require.Equal(t, txid2, txid3)
 
 	t.Logf("bob merges account into alice's account")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -343,7 +343,7 @@ func TestAccountMergeAmount(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Logf("bob merges back to alice")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -846,7 +846,7 @@ func TestAccountMergeFull(t *testing.T) {
 	}
 
 	// do the merge
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), Client(), build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -873,7 +873,7 @@ func TestAccountMergeFull(t *testing.T) {
 
 	// if we try to merge Bob's account into another account that doesn't support
 	// the custom asset, it will fail
-	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), build.DefaultBaseFee)
+	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "cannot merge")
 
@@ -887,7 +887,7 @@ func TestAccountMergeFull(t *testing.T) {
 	_, _, _, err = pathPayment(seedStr(t, helper.Bob), issuerAddr, path.SourceAsset(), sendAmountMax, path.DestinationAsset(), path.DestinationAmount, PathAssetSliceToAssetBase(path.Path), "pub memo path pay")
 	require.NoError(t, err)
 	// attempt the merge again from bob into charlie
-	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), build.DefaultBaseFee)
+	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)

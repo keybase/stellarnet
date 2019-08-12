@@ -663,7 +663,7 @@ func CreateAccountXLMTransactionWithMemo(from SeedStr, to AddressStr, amount str
 // custom assets, and deletion of the `from` account's trustlines. AccountMergeTransaction will
 // error if the `from` account has a balance for an asset that the `to` account does not "trust."
 func AccountMergeTransaction(from SeedStr, to AddressStr,
-	seqnoProvider build.SequenceProvider, baseFee uint64) (res SignResult, err error) {
+	seqnoProvider build.SequenceProvider, timeBounds *build.Timebounds, baseFee uint64) (res SignResult, err error) {
 	t, err := newBaseTxSeed(from, seqnoProvider, baseFee)
 	if err != nil {
 		return res, err
@@ -743,6 +743,7 @@ func AccountMergeTransaction(from SeedStr, to AddressStr,
 	}
 
 	t.AddAccountMergeOp(to)
+	t.AddBuiltTimeBounds(timeBounds)
 	t.AddMemoText(defaultMemo)
 
 	return t.Sign(from)

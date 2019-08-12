@@ -1,0 +1,89 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Mon, 12 Aug 2019 15:40:41 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/operations/833554367913985/effects?cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/operations/833554367913985/effects?cursor=833554367913985-3\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/operations/833554367913985/effects?cursor=833554367913985-1\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "operation": {
+            "href": "https://horizon-testnet.stellar.org/operations/833554367913985"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=833554367913985-1"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=833554367913985-1"
+          }
+        },
+        "id": "0000833554367913985-0000000001",
+        "paging_token": "833554367913985-1",
+        "account": "GB4AITCGQG57MY6ES6TYKJBAIWNWSY4NYI33FN47ECUOTV5XE4KNALPZ",
+        "type": "account_debited",
+        "type_i": 3,
+        "created_at": "2019-08-12T15:40:39Z",
+        "asset_type": "native",
+        "amount": "123.4559900"
+      },
+      {
+        "_links": {
+          "operation": {
+            "href": "https://horizon-testnet.stellar.org/operations/833554367913985"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=833554367913985-2"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=833554367913985-2"
+          }
+        },
+        "id": "0000833554367913985-0000000002",
+        "paging_token": "833554367913985-2",
+        "account": "GBMEQCFBJITA5TTTRTSMOAOZCEWHGCNTTOQSBZDXMOWNN5AOGUMS2OAI",
+        "type": "account_credited",
+        "type_i": 2,
+        "created_at": "2019-08-12T15:40:39Z",
+        "asset_type": "native",
+        "amount": "123.4559900"
+      },
+      {
+        "_links": {
+          "operation": {
+            "href": "https://horizon-testnet.stellar.org/operations/833554367913985"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=833554367913985-3"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=833554367913985-3"
+          }
+        },
+        "id": "0000833554367913985-0000000003",
+        "paging_token": "833554367913985-3",
+        "account": "GB4AITCGQG57MY6ES6TYKJBAIWNWSY4NYI33FN47ECUOTV5XE4KNALPZ",
+        "type": "account_removed",
+        "type_i": 1,
+        "created_at": "2019-08-12T15:40:39Z"
+      }
+    ]
+  }
+}

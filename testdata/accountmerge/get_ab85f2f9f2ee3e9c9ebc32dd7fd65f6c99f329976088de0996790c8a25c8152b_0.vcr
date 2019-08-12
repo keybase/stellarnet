@@ -1,0 +1,27 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Mon, 12 Aug 2019 15:38:11 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=SOMN\u0026asset_issuer=GD6LT7R3YURCDM6HFVH3CONNGIZQOZYVIVJDC7C2Z7YRTUT7TJXK6W2Z\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=SOMN\u0026asset_issuer=GD6LT7R3YURCDM6HFVH3CONNGIZQOZYVIVJDC7C2Z7YRTUT7TJXK6W2Z\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=SOMN\u0026asset_issuer=GD6LT7R3YURCDM6HFVH3CONNGIZQOZYVIVJDC7C2Z7YRTUT7TJXK6W2Z\u0026cursor=\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": []
+  }
+}
