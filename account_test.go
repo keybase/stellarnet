@@ -299,7 +299,7 @@ func TestScenario(t *testing.T) {
 	require.Equal(t, txid2, txid3)
 
 	t.Logf("bob merges account into alice's account")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -343,7 +343,7 @@ func TestAccountMergeAmount(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Logf("bob merges back to alice")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), nil /* timeBounds */, build.DefaultBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -784,4 +784,111 @@ func findBestAsset(t *testing.T, code string) AssetSummary {
 	}
 
 	return *best
+}
+
+func TestAccountMergeFull(t *testing.T) {
+	// set up alice with an account that has native and non-native assets
+	// merge it into bob (who must also have trustlines to the same assets)
+	// verify that bob has the assets, and alice no longer exists
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "accountmerge")
+
+	acctAlice := NewAccount(addressStr(t, helper.Alice))
+	acctBob := NewAccount(addressStr(t, helper.Bob))
+	// acctCharlie := NewAccount(addressStr(t, helper.Charlie))
+	var err error
+
+	// create an asset
+	source := helper.Keypair(t, "Source")
+	acctSource := NewAccount(addressStr(t, source))
+	testclient.GetTestLumens(t, source)
+	sourceSeed := SeedStr(source.Seed())
+	assetCode := "SOMN"
+	issuerPair := helper.Keypair(t, "issuer")
+	issuerAddr, err := NewAddressStr(issuerPair.Address())
+	require.NoError(t, err)
+	distPair := helper.Keypair(t, "dist")
+	_, _, err = CreateCustomAssetWithKPs(sourceSeed, issuerPair, distPair, assetCode, "10000", "keybase.io/blueasset", "2.3", 200)
+	require.NoError(t, err)
+
+	// send 10 lumens from source to alice and bob to create their accounts
+	_, _, _, err = SendXLM(sourceSeed, acctAlice.address, "10.0", "" /* empty memo */)
+	require.NoError(t, err)
+	_, _, _, err = SendXLM(sourceSeed, acctBob.address, "10.0", "" /* empty memo */)
+	require.NoError(t, err)
+	// create trustlines for our new asset to Alice and Bob
+	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, "10000", 200)
+	require.NoError(t, err)
+	_, err = CreateTrustline(seedStr(t, helper.Bob), assetCode, issuerAddr, "10000", 200)
+	require.NoError(t, err)
+	// send a path payment from the source to Alice so alice can also have some of the custom asset
+	paths, err := acctSource.FindPaymentPaths(acctAlice.address, assetCode, issuerAddr, "10")
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, len(paths), 1)
+	path := paths[0]
+	sendAmountMax, err := PathPaymentMaxValue(path.SourceAmount)
+	require.NoError(t, err)
+	_, _, _, err = pathPayment(seedStr(t, source), acctAlice.address, path.SourceAsset(), sendAmountMax, path.DestinationAsset(), path.DestinationAmount, PathAssetSliceToAssetBase(path.Path), "pub memo path pay")
+	require.NoError(t, err)
+	// verify the balances are what we expect before attempting the actual merge transaction
+	balances, err := acctAlice.Balances()
+	require.NoError(t, err)
+	require.Equal(t, 2, len(balances))
+	for _, balance := range balances {
+		if balance.Asset.Type == "native" {
+			require.Regexp(t, `^9.9999`, balance.Balance)
+		} else if balance.Asset.Code == assetCode {
+			require.Equal(t, "10.0000000", balance.Balance)
+		} else {
+			t.Fatal("unexpected asset in these balances")
+		}
+	}
+
+	// do the merge
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	require.NoError(t, err)
+	_, err = Submit(sig.Signed)
+	require.NoError(t, err)
+
+	// bob now has all the assets
+	balances, err = acctBob.Balances()
+	require.NoError(t, err)
+	require.Equal(t, 2, len(balances))
+	for _, balance := range balances {
+		if balance.Asset.Type == "native" {
+			require.Equal(t, "19.9999500", balance.Balance)
+		} else if balance.Asset.Code == assetCode {
+			require.Equal(t, "10.0000000", balance.Balance)
+		} else {
+			t.Fatal("unexpected asset in these balances")
+		}
+	}
+
+	// and alice's account is gone
+	_, err = acctAlice.BalanceXLM()
+	require.Error(t, err)
+	require.Equal(t, ErrSourceAccountNotFound, err)
+	t.Logf("successfully merged an account with an XLM and non-native asset balance")
+
+	// if we try to merge Bob's account into another account that doesn't support
+	// the custom asset, it will fail
+	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "cannot merge")
+
+	// if we eliminate the balance on that asset (just send it back to the issuer) and then try again, it should then work
+	paths, err = acctBob.FindPaymentPaths(issuerAddr, assetCode, issuerAddr, "10")
+	require.NoError(t, err)
+	require.GreaterOrEqual(t, len(paths), 1)
+	path = paths[0]
+	sendAmountMax, err = PathPaymentMaxValue(path.SourceAmount)
+	require.NoError(t, err)
+	_, _, _, err = pathPayment(seedStr(t, helper.Bob), issuerAddr, path.SourceAsset(), sendAmountMax, path.DestinationAsset(), path.DestinationAmount, PathAssetSliceToAssetBase(path.Path), "pub memo path pay")
+	require.NoError(t, err)
+	// attempt the merge again from bob into charlie
+	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	require.NoError(t, err)
+	_, err = Submit(sig.Signed)
+	require.NoError(t, err)
 }

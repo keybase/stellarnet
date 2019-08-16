@@ -1,0 +1,57 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Mon, 12 Aug 2019 15:40:41 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBMEQCFBJITA5TTTRTSMOAOZCEWHGCNTTOQSBZDXMOWNN5AOGUMS2OAI/payments?cursor=\u0026limit=1\u0026order=desc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBMEQCFBJITA5TTTRTSMOAOZCEWHGCNTTOQSBZDXMOWNN5AOGUMS2OAI/payments?cursor=833554367913985\u0026limit=1\u0026order=desc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBMEQCFBJITA5TTTRTSMOAOZCEWHGCNTTOQSBZDXMOWNN5AOGUMS2OAI/payments?cursor=833554367913985\u0026limit=1\u0026order=asc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/833554367913985"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/dc045e07edc8ba654f87e5155670de183bc859097bfd0a898ee5e1b3242db81d"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/833554367913985/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=833554367913985"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=833554367913985"
+          }
+        },
+        "id": "833554367913985",
+        "paging_token": "833554367913985",
+        "transaction_successful": true,
+        "source_account": "GB4AITCGQG57MY6ES6TYKJBAIWNWSY4NYI33FN47ECUOTV5XE4KNALPZ",
+        "type": "account_merge",
+        "type_i": 8,
+        "created_at": "2019-08-12T15:40:39Z",
+        "transaction_hash": "dc045e07edc8ba654f87e5155670de183bc859097bfd0a898ee5e1b3242db81d",
+        "account": "GB4AITCGQG57MY6ES6TYKJBAIWNWSY4NYI33FN47ECUOTV5XE4KNALPZ",
+        "into": "GBMEQCFBJITA5TTTRTSMOAOZCEWHGCNTTOQSBZDXMOWNN5AOGUMS2OAI"
+      }
+    ]
+  }
+}
