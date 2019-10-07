@@ -1,0 +1,187 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Mon, 07 Oct 2019 14:09:58 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K",
+  "account_id": "GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K",
+  "sequence": "441063076528148",
+  "subentry_count": 19,
+  "last_modified_ledger": 1075659,
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false,
+    "auth_immutable": false
+  },
+  "balances": [
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 102697,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "YFOX",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 113882,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "YFOY",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 118860,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "TREE",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 129848,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "YFOZ",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 132799,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "HBGH",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 132976,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "AOJC",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 1032739,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "ZXMN",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 1033135,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "EQZJ",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 1075404,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "GMRZ",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "0.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "last_modified_ledger": 1075530,
+      "is_authorized": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "DXBN",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "49.9997700",
+      "buying_liabilities": "207000.0000000",
+      "selling_liabilities": "0.0000000",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "weight": 1,
+      "key": "GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {}
+}

@@ -24,13 +24,13 @@ func TestAsset(t *testing.T) {
 	//
 	// will show a list of EUR assets.  Pick one.
 	//
-	summary, err := Asset("EUR", "GA2NDBWMAXXMNM746EGSBQFIUDLOS6Q2EBVG6XPB7E4WNCVRK4CLJLRA")
+	summary, err := Asset("EUR", "GA2S3LEBBLN5AYDH4ZDSFQ4D2IMNNHUDV7GEZEUD6AVX7A3FGWLD4JEP")
 	require.NoError(t, err)
 
 	require.Equal(t, "credit_alphanum4", summary.AssetType)
 	require.Equal(t, "EUR", summary.AssetCode)
 	require.Equal(t, "EUR", summary.AssetCode)
-	require.Equal(t, "GA2NDBWMAXXMNM746EGSBQFIUDLOS6Q2EBVG6XPB7E4WNCVRK4CLJLRA", summary.AssetIssuer)
+	require.Equal(t, "GA2S3LEBBLN5AYDH4ZDSFQ4D2IMNNHUDV7GEZEUD6AVX7A3FGWLD4JEP", summary.AssetIssuer)
 	require.Empty(t, summary.UnverifiedWellKnownLink)
 }
 
@@ -57,37 +57,37 @@ func TestAssetSearch(t *testing.T) {
 		UnverifiedWellKnownLink: "",
 		AssetType:               "credit_alphanum4",
 		AssetCode:               "BTC",
-		AssetIssuer:             "GA2NDBWMAXXMNM746EGSBQFIUDLOS6Q2EBVG6XPB7E4WNCVRK4CLJLRA",
-		Amount:                  "10000.0000000",
-		NumAccounts:             10,
+		AssetIssuer:             "GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN",
+		Amount:                  "1000.0000000",
+		NumAccounts:             2,
 	}
 	require.Equal(t, expectedMatch, res[0])
 	require.Equal(t, len(res), 10)
 
 	// finds an issuer with a bunch of assets
-	res, err = search("", "GA2NDBWMAXXMNM746EGSBQFIUDLOS6Q2EBVG6XPB7E4WNCVRK4CLJLRA")
+	res, err = search("", "GA5X3POHQR45UV5YUFPFERDY4E4WCR6ZAPK6QUYPOL6BOX42GKGURCEC")
 	require.NoError(t, err)
 	expectedMatch = AssetSummary{
 		UnverifiedWellKnownLink: "",
 		AssetType:               "credit_alphanum4",
-		AssetCode:               "MAD",
-		AssetIssuer:             "GA2NDBWMAXXMNM746EGSBQFIUDLOS6Q2EBVG6XPB7E4WNCVRK4CLJLRA",
+		AssetCode:               "ETH",
+		AssetIssuer:             "GA5X3POHQR45UV5YUFPFERDY4E4WCR6ZAPK6QUYPOL6BOX42GKGURCEC",
 		Amount:                  "0.0000000",
-		NumAccounts:             10,
+		NumAccounts:             1,
 	}
 	require.Contains(t, res, expectedMatch)
-	require.Len(t, res, 6)
+	require.Len(t, res, 3)
 
 	// finds an exact match
-	res, err = search("BTC", "GA2NDBWMAXXMNM746EGSBQFIUDLOS6Q2EBVG6XPB7E4WNCVRK4CLJLRA")
+	res, err = search("BTC", "GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN")
 	require.NoError(t, err)
 	expectedMatch = AssetSummary{
 		UnverifiedWellKnownLink: "",
 		AssetType:               "credit_alphanum4",
 		AssetCode:               "BTC",
-		AssetIssuer:             "GA2NDBWMAXXMNM746EGSBQFIUDLOS6Q2EBVG6XPB7E4WNCVRK4CLJLRA",
-		Amount:                  "10000.0000000",
-		NumAccounts:             10,
+		AssetIssuer:             "GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN",
+		Amount:                  "1000.0000000",
+		NumAccounts:             2,
 	}
 	require.Contains(t, res, expectedMatch)
 	require.Equal(t, len(res), 1)
@@ -118,15 +118,15 @@ func TestAssetSearch(t *testing.T) {
 	require.Equal(t, len(res), 0)
 
 	// works with credit_alphanum12 asset codes
-	res, err = search("006064", "")
+	res, err = search("000000", "")
 	require.NoError(t, err)
 	expectedMatch = AssetSummary{
 		UnverifiedWellKnownLink: "",
 		AssetType:               "credit_alphanum12",
-		AssetCode:               "006064",
-		AssetIssuer:             "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-		Amount:                  "53441.0000000",
-		NumAccounts:             834,
+		AssetCode:               "000000",
+		AssetIssuer:             "GDO3W6RAIEKK44JA6Q3JKTK2THNVKUWMURXLGYLMU4XW3ZSKDDY24CUY",
+		Amount:                  "3000.0000000",
+		NumAccounts:             80,
 	}
 	require.Contains(t, res, expectedMatch)
 }
@@ -184,7 +184,7 @@ func TestCreateCustomAssetIdempotent(t *testing.T) {
 	var assetCode string
 	if testclient.IsPlayback() {
 		// this needs to be updated if you re-record
-		assetCode = "AOJC"
+		assetCode = "PRQH"
 	} else {
 		assetCode = testclient.RandomAssetCode()
 		fmt.Printf("creating asset: %s. Please replace in TestCreateCustomAssetIdempotent.\n", assetCode)
