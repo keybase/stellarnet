@@ -38,7 +38,8 @@ var fmtTests = []fmtTest{
 	{amount: "2.31970278", precTwo: false, rounding: "round", out: "2.3197028", valid: true},
 	{amount: "2.31970278", precTwo: false, rounding: "truncate", out: "2.3197027", valid: true},
 	{amount: "2.31970278", precTwo: true, rounding: "round", out: "2.32", valid: true},
-	{amount: "2.31970278", precTwo: true, rounding: "truncate", out: "2.31", valid: true}, // this test fails
+	{amount: "2.31970278", precTwo: true, rounding: "truncate", out: "2.31", valid: true},
+	{amount: "2.31555555", precTwo: true, rounding: "truncate", out: "2.31", valid: true},
 	{amount: "1234.1234567", precTwo: false, out: "1,234.1234567", valid: true},
 	{amount: "123123123.1234567", precTwo: false, out: "123,123,123.1234567", valid: true},
 	{amount: "123123123.1234567", precTwo: true, out: "123,123,123.12", valid: true},

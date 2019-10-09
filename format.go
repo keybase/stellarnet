@@ -66,8 +66,8 @@ func FmtAmount(amount string, precisionTwo bool, rounding FmtRoundingBehavior) (
 	if rounding == Round {
 		s = x.FloatString(precision)
 	} else {
-		s = x.FloatString(precision + 1)
-		s = s[:len(s)-1]
+		s = x.FloatString(precision + 2)
+		s = s[:len(s)-2]
 	}
 	parts := strings.Split(s, ".")
 	if len(parts) != 2 {
