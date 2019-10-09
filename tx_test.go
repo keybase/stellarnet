@@ -58,7 +58,7 @@ func TestMultipleOps(t *testing.T) {
 	require.Equal(t, "120.0000000", balance)
 	balance, err = acctAlice.BalanceXLM()
 	require.NoError(t, err)
-	require.Equal(t, "9819.9989800", balance)
+	require.Equal(t, "9819.9979800", balance)
 
 	tx = NewBaseTx(addressStr(t, helper.Alice), Client(), build.DefaultBaseFee*2)
 	for i := 0; i < 100; i++ {

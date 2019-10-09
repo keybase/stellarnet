@@ -1,0 +1,46 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Mon, 07 Oct 2019 13:58:04 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 97
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026asset_issuer=GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026asset_issuer=GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN\u0026cursor=BTC_GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN_credit_alphanum4\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026asset_issuer=GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN\u0026cursor=BTC_GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN_credit_alphanum4\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "BTC",
+        "asset_issuer": "GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN",
+        "paging_token": "BTC_GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN_credit_alphanum4",
+        "amount": "1000.0000000",
+        "num_accounts": 2,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      }
+    ]
+  }
+}

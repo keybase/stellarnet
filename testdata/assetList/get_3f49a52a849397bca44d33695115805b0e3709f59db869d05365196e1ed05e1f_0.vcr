@@ -3,11 +3,11 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Mon, 17 Jun 2019 17:51:39 GMT
+Date: Mon, 07 Oct 2019 13:58:04 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 97
-X-Ratelimit-Reset: 1
+X-Ratelimit-Remaining: 92
+X-Ratelimit-Reset: 2
 
 {
   "_links": {
@@ -15,10 +15,10 @@ X-Ratelimit-Reset: 1
       "href": "https://horizon-testnet.stellar.org/assets?cursor=\u0026limit=10\u0026order=asc"
     },
     "next": {
-      "href": "https://horizon-testnet.stellar.org/assets?cursor=00acc1_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12\u0026limit=10\u0026order=asc"
+      "href": "https://horizon-testnet.stellar.org/assets?cursor=06_GAAQPFE4OBV74DTY2UGUTE6FNCFVVKKITL5HNWVBBVVDFLH3REQOTIJA_credit_alphanum4\u0026limit=10\u0026order=asc"
     },
     "prev": {
-      "href": "https://horizon-testnet.stellar.org/assets?cursor=004d40_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12\u0026limit=10\u0026order=desc"
+      "href": "https://horizon-testnet.stellar.org/assets?cursor=000000_GDO3W6RAIEKK44JA6Q3JKTK2THNVKUWMURXLGYLMU4XW3ZSKDDY24CUY_credit_alphanum12\u0026limit=10\u0026order=desc"
     }
   },
   "_embedded": {
@@ -30,11 +30,11 @@ X-Ratelimit-Reset: 1
           }
         },
         "asset_type": "credit_alphanum12",
-        "asset_code": "004d40",
-        "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-        "paging_token": "004d40_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "54658.0000000",
-        "num_accounts": 856,
+        "asset_code": "000000",
+        "asset_issuer": "GDO3W6RAIEKK44JA6Q3JKTK2THNVKUWMURXLGYLMU4XW3ZSKDDY24CUY",
+        "paging_token": "000000_GDO3W6RAIEKK44JA6Q3JKTK2THNVKUWMURXLGYLMU4XW3ZSKDDY24CUY_credit_alphanum12",
+        "amount": "3000.0000000",
+        "num_accounts": 80,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -47,12 +47,12 @@ X-Ratelimit-Reset: 1
             "href": ""
           }
         },
-        "asset_type": "credit_alphanum12",
-        "asset_code": "006064",
-        "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-        "paging_token": "006064_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "53441.0000000",
-        "num_accounts": 834,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "0054",
+        "asset_issuer": "GAFPUGAPPXMHYYEPUWBMLEPJ2EZGXDXS4J233V4F4NSZMAVWN73QO4VY",
+        "paging_token": "0054_GAFPUGAPPXMHYYEPUWBMLEPJ2EZGXDXS4J233V4F4NSZMAVWN73QO4VY_credit_alphanum4",
+        "amount": "300000.0000000",
+        "num_accounts": 1,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -65,12 +65,30 @@ X-Ratelimit-Reset: 1
             "href": ""
           }
         },
-        "asset_type": "credit_alphanum12",
-        "asset_code": "00695c",
-        "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-        "paging_token": "00695c_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "54966.0000000",
-        "num_accounts": 852,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "0054",
+        "asset_issuer": "GCGKPRDUWTKUDFT3DVRW4QL7FHG25IJ6NT4253EGXLIRHAIQVGRHH2DE",
+        "paging_token": "0054_GCGKPRDUWTKUDFT3DVRW4QL7FHG25IJ6NT4253EGXLIRHAIQVGRHH2DE_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 0,
+        "flags": {
+          "auth_required": true,
+          "auth_revocable": true,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "02",
+        "asset_issuer": "GA5DN4VLKEZIAQT2H4GV2ZHZZUIERY22FJPXOFBJ63EHWE2FHVR6ZIFE",
+        "paging_token": "02_GA5DN4VLKEZIAQT2H4GV2ZHZZUIERY22FJPXOFBJ63EHWE2FHVR6ZIFE_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 1,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -83,12 +101,12 @@ X-Ratelimit-Reset: 1
             "href": ""
           }
         },
-        "asset_type": "credit_alphanum12",
-        "asset_code": "00796b",
-        "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-        "paging_token": "00796b_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "54429.0000000",
-        "num_accounts": 863,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "02",
+        "asset_issuer": "GBO6DOE2Q6R6HJCE53METQ6MFNJ3ULBOF7J5NYHFSORDHMMVLDJLPD5A",
+        "paging_token": "02_GBO6DOE2Q6R6HJCE53METQ6MFNJ3ULBOF7J5NYHFSORDHMMVLDJLPD5A_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 0,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -101,12 +119,12 @@ X-Ratelimit-Reset: 1
             "href": ""
           }
         },
-        "asset_type": "credit_alphanum12",
-        "asset_code": "00838f",
-        "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-        "paging_token": "00838f_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "57162.0000000",
-        "num_accounts": 891,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "02",
+        "asset_issuer": "GCEIMNMMWB4ZEGTXPBVTXCOQVCXLKU2ENTP4XSQAISHN5I6ATXFQNAA3",
+        "paging_token": "02_GCEIMNMMWB4ZEGTXPBVTXCOQVCXLKU2ENTP4XSQAISHN5I6ATXFQNAA3_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 0,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -119,12 +137,12 @@ X-Ratelimit-Reset: 1
             "href": ""
           }
         },
-        "asset_type": "credit_alphanum12",
-        "asset_code": "00897b",
-        "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-        "paging_token": "00897b_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "54923.0000000",
-        "num_accounts": 862,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "02",
+        "asset_issuer": "GCWRV5LTNXNJFY2H53BZNLJUWENIYG2A3A2A2F7LIZNJSDBKI5ZBJCXX",
+        "paging_token": "02_GCWRV5LTNXNJFY2H53BZNLJUWENIYG2A3A2A2F7LIZNJSDBKI5ZBJCXX_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 0,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -137,12 +155,12 @@ X-Ratelimit-Reset: 1
             "href": ""
           }
         },
-        "asset_type": "credit_alphanum12",
-        "asset_code": "0091ea",
-        "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-        "paging_token": "0091ea_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "54584.0000000",
-        "num_accounts": 873,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "06",
+        "asset_issuer": "GA3SUGWEQUXVR7TDXFXY2BLFC2MH47KI4QNCLVBYDLZYVCIE4ZPTJLH7",
+        "paging_token": "06_GA3SUGWEQUXVR7TDXFXY2BLFC2MH47KI4QNCLVBYDLZYVCIE4ZPTJLH7_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 3,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -155,12 +173,12 @@ X-Ratelimit-Reset: 1
             "href": ""
           }
         },
-        "asset_type": "credit_alphanum12",
-        "asset_code": "009688",
-        "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-        "paging_token": "009688_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "56342.0000000",
-        "num_accounts": 888,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "06",
+        "asset_issuer": "GA5DN4VLKEZIAQT2H4GV2ZHZZUIERY22FJPXOFBJ63EHWE2FHVR6ZIFE",
+        "paging_token": "06_GA5DN4VLKEZIAQT2H4GV2ZHZZUIERY22FJPXOFBJ63EHWE2FHVR6ZIFE_credit_alphanum4",
+        "amount": "0.0000002",
+        "num_accounts": 3,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -173,30 +191,12 @@ X-Ratelimit-Reset: 1
             "href": ""
           }
         },
-        "asset_type": "credit_alphanum12",
-        "asset_code": "0097a7",
-        "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-        "paging_token": "0097a7_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "54396.0000000",
-        "num_accounts": 849,
-        "flags": {
-          "auth_required": false,
-          "auth_revocable": false,
-          "auth_immutable": false
-        }
-      },
-      {
-        "_links": {
-          "toml": {
-            "href": ""
-          }
-        },
-        "asset_type": "credit_alphanum12",
-        "asset_code": "00acc1",
-        "asset_issuer": "GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5",
-        "paging_token": "00acc1_GD4SAUKGB6GE2Q25H2CZMZ3BSP5CVYIY2LQYJDCFNNICR473AVL7IYH5_credit_alphanum12",
-        "amount": "53412.0000000",
-        "num_accounts": 836,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "06",
+        "asset_issuer": "GAAQPFE4OBV74DTY2UGUTE6FNCFVVKKITL5HNWVBBVVDFLH3REQOTIJA",
+        "paging_token": "06_GAAQPFE4OBV74DTY2UGUTE6FNCFVVKKITL5HNWVBBVVDFLH3REQOTIJA_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 1,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,

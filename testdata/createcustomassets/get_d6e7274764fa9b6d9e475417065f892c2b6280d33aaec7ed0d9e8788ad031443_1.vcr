@@ -1,0 +1,46 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Mon, 07 Oct 2019 14:10:19 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=PRQH\u0026asset_issuer=GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=PRQH\u0026asset_issuer=GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD\u0026cursor=PRQH_GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD_credit_alphanum4\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=PRQH\u0026asset_issuer=GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD\u0026cursor=PRQH_GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD_credit_alphanum4\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": "https://keybase.io/blueasset/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "PRQH",
+        "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD",
+        "paging_token": "PRQH_GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD_credit_alphanum4",
+        "amount": "10000.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      }
+    ]
+  }
+}

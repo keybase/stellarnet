@@ -3,10 +3,10 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Mon, 17 Jun 2019 17:44:08 GMT
+Date: Mon, 07 Oct 2019 13:46:41 GMT
 Vary: Origin
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 96
+X-Ratelimit-Remaining: 98
 X-Ratelimit-Reset: 1
 
 {
@@ -46,12 +46,13 @@ X-Ratelimit-Reset: 1
       "templated": true
     }
   },
-  "horizon_version": "0.18.0-92259749c681df66a8347f846e94681a24f2a920",
-  "core_version": "stellar-core 11.1.0 (324c1bd61b0e9bada63e0d696d799421b00a7950)",
-  "history_latest_ledger": 874017,
+  "horizon_version": "0.20.0~unstable-0c4a1deb190a37affe1788aa482ee2d15784721c",
+  "core_version": "stellar-core 12.0.0 (de0b21c0ecc367b6883693bcbf53010941dcd5e6)",
+  "exp_history_latest_ledger": 1075404,
+  "history_latest_ledger": 1075403,
   "history_elder_ledger": 1,
-  "core_latest_ledger": 874018,
+  "core_latest_ledger": 1075404,
   "network_passphrase": "Test SDF Network ; September 2015",
   "current_protocol_version": 11,
-  "core_supported_protocol_version": 11
+  "core_supported_protocol_version": 12
 }

@@ -1,0 +1,27 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Mon, 07 Oct 2019 14:07:41 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=LZOD\u0026asset_issuer=GAK7XHX6LWPCQVN25RB2WCOXJE3C5FFDGOKXKKGE4SOTO7362EJTA23N\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=LZOD\u0026asset_issuer=GAK7XHX6LWPCQVN25RB2WCOXJE3C5FFDGOKXKKGE4SOTO7362EJTA23N\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=LZOD\u0026asset_issuer=GAK7XHX6LWPCQVN25RB2WCOXJE3C5FFDGOKXKKGE4SOTO7362EJTA23N\u0026cursor=\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": []
+  }
+}

@@ -1,0 +1,17 @@
+HTTP/1.1 404 Not Found
+Content-Length: 322
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Type: application/problem+json; charset=utf-8
+Date: Mon, 07 Oct 2019 13:55:17 GMT
+Vary: Origin
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
+
+{
+  "type": "https://stellar.org/horizon-errors/not_found",
+  "title": "Resource Missing",
+  "status": 404,
+  "detail": "The resource at the url requested was not found.  This usually occurs for one of two reasons:  The url requested is not valid, or no data in our database could be found with the parameters provided."
+}
