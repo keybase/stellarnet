@@ -178,6 +178,26 @@ func (f FullPath) DestinationAsset() AssetMinimal {
 	}
 }
 
+// SameAsset returns true if source and destination assets are the same
+// (and there are no intermediate steps, which should never happen, but
+// just in case something insane happens).
+func (f FullPath) SameAsset() bool {
+	if len(f.Path) > 0 {
+		return false
+	}
+	if f.SourceAssetType != f.DestinationAssetType {
+		return false
+	}
+	if f.SourceAssetCode != f.DestinationAssetCode {
+		return false
+	}
+	if f.SourceAssetIssuer != f.DestinationAssetIssuer {
+		return false
+	}
+
+	return true
+}
+
 // PathsPage is used to unmarshal the results from the /paths endpoint.
 type PathsPage struct {
 	Links struct {

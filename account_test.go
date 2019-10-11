@@ -697,6 +697,10 @@ func TestPathPayments(t *testing.T) {
 	// select the path to use
 	path := paths[0]
 
+	if path.SameAsset() {
+		t.Errorf("selected path has same source and destination asset")
+	}
+
 	// calculate the max send amount
 	sendAmountMax, err := PathPaymentMaxValue(path.SourceAmount)
 	if err != nil {
