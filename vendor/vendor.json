@@ -3,10 +3,22 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "Pc2ORQp+VY3Un/dkh4QwLC7R6lE=",
+			"path": "github.com/BurntSushi/toml",
+			"revision": "3012a1dbe2e4bd1391d42b32f0577cb7bbc7f005",
+			"revisionTime": "2018-08-15T10:47:33Z"
+		},
+		{
 			"checksumSHA1": "3YcTIP7+Vtja2xSak7pVI2pZtUw=",
 			"path": "github.com/asaskevich/govalidator",
 			"revision": "f61b66f89f4a311bef65f13e575bcf1a2ffadda6",
 			"revisionTime": "2019-04-24T11:10:38Z"
+		},
+		{
+			"checksumSHA1": "CSPbwbyzqA6sfORicn4HFtIhF/c=",
+			"path": "github.com/davecgh/go-spew/spew",
+			"revision": "d8f796af33cc11cb798c1aaeb27a4ebc5099927d",
+			"revisionTime": "2018-08-30T19:11:22Z"
 		},
 		{
 			"checksumSHA1": "kxja3mICEw4DKBlGQdK4tmIAkCQ=",
@@ -27,6 +39,12 @@
 			"revisionTime": "2019-04-15T17:47:12Z"
 		},
 		{
+			"checksumSHA1": "ATnwV0POluBNQEMjPdylodz0oK0=",
+			"path": "github.com/lib/pq/oid",
+			"revision": "931b5ae4c24e6810c8c82ab4734904de3df1c3dc",
+			"revisionTime": "2019-09-19T16:09:11Z"
+		},
+		{
 			"checksumSHA1": "ywel3wHXnu1eLhyT1/FolporeAc=",
 			"path": "github.com/lib/pq/scram",
 			"revision": "51e2106eed1cea199c802d2a49e91e2491b02056",
@@ -43,6 +61,18 @@
 			"path": "github.com/pkg/errors",
 			"revision": "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7",
 			"revisionTime": "2019-02-27T00:00:51Z"
+		},
+		{
+			"checksumSHA1": "LuFv4/jlrmFNnDb/5SCSEPAM9vU=",
+			"path": "github.com/pmezard/go-difflib/difflib",
+			"revision": "5d4384ee4fb2527b0a1256a821ebfc92f91efefc",
+			"revisionTime": "2018-12-26T10:54:42Z"
+		},
+		{
+			"checksumSHA1": "iQKxa7KhhJQ+gjQOWYaTxSjtZw8=",
+			"path": "github.com/shopspring/decimal",
+			"revision": "f1972eb1d1f519e2e5f4b51f2dea765e8c93a130",
+			"revisionTime": "2019-10-09T02:57:16Z"
 		},
 		{
 			"checksumSHA1": "taEBeuO78f77cGfJWD9qmdkeXYU=",
