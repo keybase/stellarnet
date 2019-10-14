@@ -178,13 +178,8 @@ func (f FullPath) DestinationAsset() AssetMinimal {
 	}
 }
 
-// SameAsset returns true if source and destination assets are the same
-// (and there are no intermediate steps, which should never happen, but
-// just in case something insane happens).
+// SameAsset returns true if source and destination assets are the same.
 func (f FullPath) SameAsset() bool {
-	if len(f.Path) > 0 {
-		return false
-	}
 	if f.SourceAssetType != f.DestinationAssetType {
 		return false
 	}
