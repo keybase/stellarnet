@@ -15,6 +15,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"sync"
 )
 
 // Mode is used to signify the current operating mode of VCR.
@@ -34,6 +35,7 @@ var (
 
 // VCR is an http client that can record and playback responses to http requests.
 type VCR struct {
+	sync.Mutex
 	dir   string
 	mode  mode
 	seqno map[string]int
@@ -153,6 +155,8 @@ func (v *VCR) PostForm(url string, data url.Values) (resp *http.Response, err er
 }
 
 func (v *VCR) incSeqno(hash string) {
+	v.Lock()
+	defer v.Unlock()
 	v.seqno[hash]++
 }
 
@@ -237,6 +241,8 @@ func (v *VCR) postFormFilename(url string, data url.Values) (string, string, err
 }
 
 func (v *VCR) filename(prefix, hash string) string {
+	v.Lock()
+	defer v.Unlock()
 	return filepath.Join(v.dir, fmt.Sprintf("%s_%s_%d.vcr", prefix, hash, v.seqno[hash]))
 }
 
