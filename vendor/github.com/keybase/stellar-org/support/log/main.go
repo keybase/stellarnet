@@ -4,7 +4,6 @@ import (
 	"context"
 	"os"
 
-	loggly "github.com/segmentio/go-loggly"
 	"github.com/sirupsen/logrus"
 )
 
@@ -29,13 +28,6 @@ type Entry struct {
 
 // F wraps the logrus.Fields type for the convenience of typing less.
 type F logrus.Fields
-
-// LogglyHook sends logs to loggly
-type LogglyHook struct {
-	client       *loggly.Client
-	host         string
-	FilteredKeys map[string]bool
-}
 
 // New creates a new logger, starting at a WARN level and including the current
 // processes pid as a field.
