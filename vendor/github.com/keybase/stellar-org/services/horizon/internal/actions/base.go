@@ -171,7 +171,6 @@ func (base *Base) Execute(action interface{}) {
 
 NotAcceptable:
 	problem.Render(ctx, base.W, hProblem.NotAcceptable)
-	return
 }
 
 // Do executes the provided func iff there is no current error for the action.

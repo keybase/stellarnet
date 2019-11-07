@@ -11,6 +11,8 @@ bumps.  A breaking change will get clearly notified in this log.
 ### Changed
 
 - BREAKING CHANGE: The `url` database configuration has been renamed to `dsn` to more accurately reflect its content.
+- BREAKING CHANGE: MySQL is no longer supported. To migrate your data to postgresql use any of the tools provided [here](https://wiki.postgresql.org/wiki/Converting_from_other_Databases_to_PostgreSQL#MySQL).
+- Dropped support for Go 1.10, 1.11.
 
 ### Fixed
 

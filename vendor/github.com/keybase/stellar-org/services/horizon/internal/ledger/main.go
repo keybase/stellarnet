@@ -12,9 +12,10 @@ import (
 // State represents a snapshot of both horizon's and stellar-core's view of the
 // ledger.
 type State struct {
-	CoreLatest    int32 `db:"core_latest"`
-	HistoryLatest int32 `db:"history_latest"`
-	HistoryElder  int32 `db:"history_elder"`
+	CoreLatest       int32  `db:"core_latest"`
+	HistoryLatest    int32  `db:"history_latest"`
+	HistoryElder     int32  `db:"history_elder"`
+	ExpHistoryLatest uint32 `db:"exp_history_latest"`
 }
 
 // CurrentState returns the cached snapshot of ledger state

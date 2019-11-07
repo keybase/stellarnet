@@ -48,7 +48,7 @@ func RefreshAssets(s *tickerdb.TickerSession, c *horizonclient.Client, l *hlog.E
 func GenerateAssetsFile(s *tickerdb.TickerSession, l *hlog.Entry, filename string) error {
 	l.Infoln("Retrieving asset data from db...")
 	var assets []Asset
-	validAssets, err := s.GetAllValidAssets()
+	validAssets, err := s.GetAssetsWithNestedIssuer()
 	if err != nil {
 		return err
 	}
@@ -156,6 +156,20 @@ func dbAssetToAsset(dbAsset tickerdb.Asset) (a Asset) {
 	a.CollateralAddressSignatures = collAddrSigns
 	a.Countries = dbAsset.Countries
 	a.Status = dbAsset.Status
+
+	i := Issuer{
+		PublicKey:        dbAsset.Issuer.PublicKey,
+		Name:             dbAsset.Issuer.Name,
+		URL:              dbAsset.Issuer.URL,
+		TOMLURL:          dbAsset.Issuer.TOMLURL,
+		FederationServer: dbAsset.Issuer.FederationServer,
+		AuthServer:       dbAsset.Issuer.AuthServer,
+		TransferServer:   dbAsset.Issuer.TransferServer,
+		WebAuthEndpoint:  dbAsset.Issuer.WebAuthEndpoint,
+		DepositServer:    dbAsset.Issuer.DepositServer,
+		OrgTwitter:       dbAsset.Issuer.OrgTwitter,
+	}
+	a.IssuerDetail = i
 
 	return
 }

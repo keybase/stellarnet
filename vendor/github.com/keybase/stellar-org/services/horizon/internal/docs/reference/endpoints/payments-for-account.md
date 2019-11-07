@@ -34,6 +34,7 @@ GET /accounts/{id}/payments{?cursor,limit,order}
 | `?limit` | optional, number, default `10` | Specifies the count of records at most to return. | `200` |
 | `?order` | optional, string, default `asc` | Specifies order of returned results. `asc` means older payments first, `desc` mean newer payments first. | `desc` |
 | `?include_failed` | optional, bool, default: `false` | Set to `true` to include payments of failed transactions in results. | `true` |
+| `?join` | optional, string, default: _null_ | Set to `transactions` to include the transactions which created each of the payments in the response. | `transactions` |
 
 ### curl Example Request
 

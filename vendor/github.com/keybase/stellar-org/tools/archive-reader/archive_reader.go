@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	stdio "io"
 	"log"
 
 	"github.com/stellar/go/exp/ingest/adapters"
@@ -24,9 +25,9 @@ func main() {
 	if e != nil {
 		panic(e)
 	}
-	haa := ingestadapters.MakeHistoryArchiveAdapter(archive)
+	haa := adapters.MakeHistoryArchiveAdapter(archive)
 
-	sr, e := haa.GetState(seqNum)
+	sr, e := haa.GetState(seqNum, &io.MemoryTempSet{})
 	if e != nil {
 		panic(e)
 	}
@@ -39,7 +40,7 @@ func main() {
 		if e != nil {
 			panic(e)
 		}
-		if e == io.EOF {
+		if e == stdio.EOF {
 			log.Printf("total seen %d entries of which %d were accounts", i, count)
 			return
 		}

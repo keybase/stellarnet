@@ -7,11 +7,13 @@ package historyarchive
 import (
 	"bytes"
 	"io"
+	"net/http"
 	"path"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/stellar/go/support/errors"
 )
 
 type S3ArchiveBackend struct {
@@ -39,7 +41,7 @@ func (b *S3ArchiveBackend) GetFile(pth string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func (b *S3ArchiveBackend) Exists(pth string) bool {
+func (b *S3ArchiveBackend) Head(pth string) (*http.Response, error) {
 	params := &s3.HeadObjectInput{
 		Bucket: aws.String(b.bucket),
 		Key:    aws.String(path.Join(b.prefix, pth)),
@@ -51,7 +53,49 @@ func (b *S3ArchiveBackend) Exists(pth string) bool {
 	}
 	err := req.Send()
 
-	return err == nil
+	if req != nil && req.HTTPResponse.StatusCode == http.StatusNotFound {
+		// Lately the S3 SDK has started treating a 404 as generating a non-nil
+		// 'err', so we have to test for this _before_ we test 'err' for
+		// nil-ness. This is undocumented, as is the err.Code returned in that
+		// error ("NotFound"), and it's a breaking change from what it used to
+		// do, and not what one would expect, but who's counting? We'll just
+		// turn it _back_ into what it used to be: 404 as a non-erroneously
+		// received HTTP response.
+		return req.HTTPResponse, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+	return req.HTTPResponse, nil
+}
+
+func (b *S3ArchiveBackend) Exists(pth string) (bool, error) {
+	resp, err := b.Head(pth)
+	if err != nil {
+		return false, err
+	}
+	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+		return true, nil
+	} else if resp.StatusCode == http.StatusNotFound {
+		return false, nil
+	} else {
+		return false, errors.Errorf("Unkown status code=%d", resp.StatusCode)
+	}
+}
+
+func (b *S3ArchiveBackend) Size(pth string) (int64, error) {
+	resp, err := b.Head(pth)
+	if err != nil {
+		return 0, err
+	}
+	if resp.StatusCode >= 200 && resp.StatusCode < 400 {
+		return resp.ContentLength, nil
+	} else if resp.StatusCode == http.StatusNotFound {
+		return 0, nil
+	} else {
+		return 0, errors.Errorf("Unkown status code=%d", resp.StatusCode)
+	}
 }
 
 func (b *S3ArchiveBackend) PutFile(pth string, in io.ReadCloser) error {
@@ -128,12 +172,13 @@ func (b *S3ArchiveBackend) CanListFiles() bool {
 }
 
 func makeS3Backend(bucket string, prefix string, opts ConnectOptions) (ArchiveBackend, error) {
-	cfg := aws.Config{
+	cfg := &aws.Config{
 		Region:   aws.String(opts.S3Region),
 		Endpoint: aws.String(opts.S3Endpoint),
 	}
+	cfg = cfg.WithS3ForcePathStyle(true)
 
-	sess, err := session.NewSession(&cfg)
+	sess, err := session.NewSession(cfg)
 	if err != nil {
 		return nil, err
 	}

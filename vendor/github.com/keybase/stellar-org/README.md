@@ -10,8 +10,8 @@ This repo is the home for all of the public go code produced by SDF.  In additio
 * [Horizon Server](services/horizon): Full-featured API server for Stellar network
 * [Go Horizon SDK - horizonclient](clients/horizonclient): Client for Horizon server (queries and transaction submission)
 * [Go Horizon SDK - txnbuild](txnbuild): Construct Stellar transactions and operations
-* [Bifrost](services/bifrost): Bitcoin/Ethereum -> Stellar bridge
 * [Ticker](services/ticker): An API server that provides statistics about assets and markets on the Stellar network
+* [Keystore](services/keystore): An API server that is used to store and manage encrypted keys for Stellar client applications
 * Servers for Anchors & Financial Institutions
   * [Bridge Server](services/bridge): send payments and take action when payments are received
   * [Compliance Server](services/compliance): Allows financial institutions to exchange KYC information
@@ -19,19 +19,11 @@ This repo is the home for all of the public go code produced by SDF.  In additio
 
 ## Dependencies
 
-This repository depends upon a [number of external dependencies](./Gopkg.lock), and uses [dep](https://golang.github.io/dep/) to manage them (see installation instructions [here](https://golang.github.io/dep/docs/installation.html)).  
+This repository is officially supported on the last two releases of Go, which is currently Go 1.12 and Go 1.13.
 
-To satisfy dependencies and populate the `vendor` directory run: 
+It depends on a [number of external dependencies](./go.mod), and uses Go [Modules](https://github.com/golang/go/wiki/Modules) to manage them. Running any `go` command will automatically download dependencies required for that operation.
 
-```bash
-$ dep ensure -v
-```
-
-Note that if this hangs indefinitely on your machine, you might need to check if mercurial is installed.
-
-You can use dep yourself in your project and add stellar go as a vendor'd dependency, or you can just drop this repos as `$GOPATH/src/github.com/stellar/go` to import it the canonical way (you still need to run `dep ensure -v`).
-
-When creating this project, we had to decide whether or not we committed our external dependencies to the repo.  We decided that we would not, by default, do so.  This lets us avoid the diff churn associated with updating dependencies while allowing an acceptable path to get reproducible builds.  To do so, simply install dep and run `dep ensure -v` in your checkout of the code.  We realize this is a judgement call; Please feel free to open an issue if you would like to make a case that we change this policy.
+You can choose to checkout this repository into a [GOPATH](https://github.com/golang/go/wiki/GOPATH) or into any directory, but if you are using a GOPATH with Go 1.12 or earlier you must set environment variable `GO111MODULE=on` to enable Modules.
 
 ## Directory Layout
 
@@ -73,8 +65,10 @@ Generally, file contents are sorted by exported/unexported, then declaration typ
 
 Often, we provide test packages that aid in the creation of tests that interact with our other packages.  For example, the `support/db` package has the `support/db/dbtest` package underneath it that contains elements that make it easier to test code that accesses a SQL database.  We've found that this pattern of having a separate test package maximizes flexibility and simplifies package dependencies.
 
+### Contributing
 
-## Coding conventions
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more details.
 
-- Always document exported package elements: vars, consts, funcs, types, etc.
-- Tests are better than no tests.
+### Developing
+
+See [DEVELOPING.md](DEVELOPING.md) for helpful instructions for getting started developing code in this repository.

@@ -58,12 +58,7 @@ func isStellarAccountID(i interface{}, context interface{}) bool {
 	}
 
 	_, err := strkey.Decode(strkey.VersionByteAccountID, enc)
-
-	if err == nil {
-		return true
-	}
-
-	return false
+	return err == nil
 }
 
 func isStellarSeed(i interface{}, context interface{}) bool {
@@ -74,12 +69,7 @@ func isStellarSeed(i interface{}, context interface{}) bool {
 	}
 
 	_, err := strkey.Decode(strkey.VersionByteSeed, enc)
-
-	if err == nil {
-		return true
-	}
-
-	return false
+	return err == nil
 }
 
 func isStellarAssetCode(i interface{}, context interface{}) bool {
@@ -108,11 +98,7 @@ func isStellarAddress(i interface{}, context interface{}) bool {
 	}
 
 	_, _, err := address.Split(addr)
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 func isStellarAmount(i interface{}, context interface{}) bool {
@@ -123,11 +109,7 @@ func isStellarAmount(i interface{}, context interface{}) bool {
 	}
 
 	_, err := amount.Parse(am)
-	if err != nil {
-		return false
-	}
-
-	return true
+	return err == nil
 }
 
 // isStellarDestination checks if `i` is either account public key or Stellar address.

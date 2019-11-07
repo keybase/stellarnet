@@ -1,21 +1,21 @@
-package ingestadapters
+package adapters
 
 import (
 	"fmt"
 
 	"github.com/stellar/go/exp/ingest/io"
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/support/historyarchive"
+	"github.com/stellar/go/xdr"
 )
-
-const msrBufferSize = 50000
 
 // HistoryArchiveAdapter is an adapter for the historyarchive package to read from history archives
 type HistoryArchiveAdapter struct {
-	archive *historyarchive.Archive
+	archive historyarchive.ArchiveInterface
 }
 
 // MakeHistoryArchiveAdapter is a factory method to make a HistoryArchiveAdapter
-func MakeHistoryArchiveAdapter(archive *historyarchive.Archive) *HistoryArchiveAdapter {
+func MakeHistoryArchiveAdapter(archive historyarchive.ArchiveInterface) *HistoryArchiveAdapter {
 	return &HistoryArchiveAdapter{archive: archive}
 }
 
@@ -29,15 +29,38 @@ func (haa *HistoryArchiveAdapter) GetLatestLedgerSequence() (uint32, error) {
 	return has.CurrentLedger, nil
 }
 
+// BucketListHash returns the bucket list hash to compare with hash in the
+// ledger header fetched from Stellar-Core.
+func (haa *HistoryArchiveAdapter) BucketListHash(sequence uint32) (xdr.Hash, error) {
+	exists, err := haa.archive.CategoryCheckpointExists("history", sequence)
+	if err != nil {
+		return xdr.Hash{}, errors.Wrap(err, "error checking if category checkpoint exists")
+	}
+	if !exists {
+		return xdr.Hash{}, fmt.Errorf("history checkpoint does not exist for ledger %d", sequence)
+	}
+
+	has, err := haa.archive.GetCheckpointHAS(sequence)
+	if err != nil {
+		return xdr.Hash{}, fmt.Errorf("unable to get checkpoint HAS at ledger sequence %d: %s", sequence, err)
+	}
+
+	return has.BucketListHash()
+}
+
 // GetState returns a reader with the state of the ledger at the provided sequence number
-func (haa *HistoryArchiveAdapter) GetState(sequence uint32) (io.StateReadCloser, error) {
-	if !haa.archive.CategoryCheckpointExists("history", sequence) {
+func (haa *HistoryArchiveAdapter) GetState(sequence uint32, tempSet io.TempSet) (io.StateReader, error) {
+	exists, err := haa.archive.CategoryCheckpointExists("history", sequence)
+	if err != nil {
+		return nil, errors.Wrap(err, "error checking if category checkpoint exists")
+	}
+	if !exists {
 		return nil, fmt.Errorf("history checkpoint does not exist for ledger %d", sequence)
 	}
 
-	sr, e := io.MakeMemoryStateReader(haa.archive, sequence, msrBufferSize)
+	sr, e := io.MakeSingleLedgerStateReader(haa.archive, tempSet, sequence)
 	if e != nil {
-		return nil, fmt.Errorf("could not make memory state reader: %s", e)
+		return nil, errors.Wrap(e, "could not make memory state reader")
 	}
 
 	return sr, nil

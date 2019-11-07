@@ -35,7 +35,7 @@ func TransactionPage(ctx context.Context, hq *history.Q, accountID string, ledge
 		page.Add(res)
 	}
 
-	page.FullURL = fullURL(ctx)
+	page.FullURL = FullURL(ctx)
 	page.PopulateLinks()
 	return page, nil
 }

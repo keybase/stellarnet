@@ -177,6 +177,12 @@ func (pl *PaymentListener) onPayment(payment operations.Operation) {
 	bPayment, err := pl.ConvertToBridgePayment(payment)
 	if err != nil {
 		pl.log.WithFields(logrus.Fields{"err": err}).Error("Error when converting operation to bridge payment type")
+		dbPayment.Status = err.Error()
+		err = pl.database.UpdateReceivedPayment(dbPayment)
+		if err != nil {
+			pl.log.WithFields(logrus.Fields{"err": err}).Error("Error updating payment")
+			return
+		}
 		return
 	}
 
@@ -389,12 +395,14 @@ func (pl *PaymentListener) ConvertToBridgePayment(op operations.Operation) (brid
 		payment.AssetType = v.Asset.Type
 		payment.From = v.From
 		payment.To = v.To
+		payment.Amount = v.Amount
 	case operations.PathPayment:
 		payment.AssetCode = v.Asset.Code
 		payment.AssetIssuer = v.Asset.Issuer
 		payment.AssetType = v.Asset.Type
 		payment.From = v.From
 		payment.To = v.To
+		payment.Amount = v.Amount
 	case operations.AccountMerge:
 		payment.AssetCode = "XLM"
 		payment.AssetIssuer = ""

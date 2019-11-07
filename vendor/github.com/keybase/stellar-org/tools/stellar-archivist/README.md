@@ -42,6 +42,7 @@ Flags:
       --last int          number of recent ledgers to act on (default -1)
       --low int           first ledger to act on
       --profile           collect and serve profile locally
+  -r, --recent            act on ledger-range difference between achives
       --s3region string   S3 region to connect to (default "us-east-1")
       --s3endpoint string S3 endpoint (default to AWS endpoint for selected region)
       --thorough          decode and re-encode all buckets
@@ -121,9 +122,23 @@ $ stellar-archivist mirror http://s3-eu-west-1.amazonaws.com/history.stellar.org
 
 ```
 
-### Incremental update to a mirror
+### Incremental update to a mirror with --recent
 ```
-$ stellar-archivist --last 1024 mirror http://s3-eu-west-1.amazonaws.com/history.stellar.org/prd/core-testnet/core_testnet_001 file://local-archive
+$ stellar-archivist mirror --recent http://history.stellar.org/prd/core-live/core_live_001 file://local-archive
+
+2019/08/21 13:53:15 mirroring http://history.stellar.org/prd/core-live/core_live_001 -> file://local-archive
+2019/08/21 13:53:15 copying range [0x01843cbf, 0x01843d7f]
+2019/08/21 13:53:19 skipping existing bucket/18/43/cc/bucket-1843cce32e1c4d6d0765858c9464a7435a6f46c25c8ab164a0d9a11b3da5098b.xdr.gz
+2019/08/21 13:53:20 skipping existing bucket/ff/08/f4/bucket-ff08f47f9d90fdaed40c1d6f0fdb1ea20344cdfac18849690d52aab7125c303c.xdr.gz
+...
+2019/08/21 13:53:20 skipping existing bucket/1e/1e/97/bucket-1e1e97031a1829fe3dff1875abed509103f5fc0569eef0718e02392d411b9c0a.xdr.gz
+2019/08/21 13:53:20 skipping existing bucket/36/e1/0c/bucket-36e10c7087567c3dd230e615851771062acc71cb3e8e7bc08605b1829f49f53c.xdr.gz
+2019/08/21 13:53:22 copied 3 checkpoints, 49 buckets, range [0x01843cbf, 0x01843d7f]
+```
+
+### Incremental update to a mirror with --last N
+```
+$ stellar-archivist --last 1024 mirror http://history.stellar.org/prd/core-testnet/core_testnet_001 file://local-archive
 
 2016/02/10 19:14:01 mirroring http://s3-eu-west-1.amazonaws.com/history.stellar.org/prd/core-testnet/core_testnet_001 -> file://local-archive
 2016/02/10 19:14:02 copying range [0x0025b23f, 0x0025b6bf]

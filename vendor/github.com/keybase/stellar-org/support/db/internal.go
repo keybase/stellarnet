@@ -10,13 +10,6 @@ import (
 
 var mapper = reflectx.NewMapper("db")
 
-type person struct {
-	Name        string `db:"name"`
-	HungerLevel string `db:"hunger_level"`
-
-	SomethingIgnored int `db:"-"`
-}
-
 // columnsForStruct returns a slice of column names for the provided value
 // (which should be a struct, a slice of structs).
 func columnsForStruct(dest interface{}) []string {

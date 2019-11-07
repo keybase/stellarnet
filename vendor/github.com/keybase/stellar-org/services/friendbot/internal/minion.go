@@ -1,6 +1,8 @@
 package internal
 
 import (
+	"fmt"
+
 	"github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/keypair"
 	hProtocol "github.com/stellar/go/protocols/horizon"
@@ -8,7 +10,9 @@ import (
 	"github.com/stellar/go/txnbuild"
 )
 
-const createAccountInitialAmount = "1.0"
+const createAccountAlreadyExistXDR = "AAAAAAAAAGT/////AAAAAQAAAAAAAAAA/////AAAAAA="
+
+var ErrAccountExists error = errors.New(fmt.Sprintf("createAccountAlreadyExist (%s)", createAccountAlreadyExistXDR))
 
 // Minion contains a Stellar channel account and Go channels to communicate with friendbot.
 type Minion struct {
@@ -20,6 +24,7 @@ type Minion struct {
 	Network           string
 	StartingBalance   string
 	SubmitTransaction func(minion *Minion, hclient *horizonclient.Client, tx string) (*hProtocol.TransactionSuccess, error)
+	BaseFee           uint32
 
 	// Uninitialized.
 	forceRefreshSequence bool
@@ -60,6 +65,8 @@ func SubmitTransaction(minion *Minion, hclient *horizonclient.Client, tx string)
 			resStr, resErr := e.ResultString()
 			if resErr != nil {
 				errStr += ": error getting horizon error code: " + resErr.Error()
+			} else if resStr == createAccountAlreadyExistXDR {
+				return nil, errors.Wrap(ErrAccountExists, errStr)
 			} else {
 				errStr += ": horizon error string: " + resStr
 			}
@@ -103,7 +110,9 @@ func (minion *Minion) makeTx(destAddress string) (string, error) {
 		Operations:    []txnbuild.Operation{&createAccountOp},
 		Network:       minion.Network,
 		Timebounds:    txnbuild.NewInfiniteTimeout(),
+		BaseFee:       minion.BaseFee,
 	}
+
 	txe, err := txn.BuildSignEncode(minion.Keypair, minion.BotKeypair)
 	if err != nil {
 		return "", errors.Wrap(err, "making account payment tx")

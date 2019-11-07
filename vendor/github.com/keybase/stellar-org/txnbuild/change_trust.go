@@ -61,3 +61,38 @@ func (ct *ChangeTrust) BuildXDR() (xdr.Operation, error) {
 	SetOpSourceAccount(&op, ct.SourceAccount)
 	return op, nil
 }
+
+// FromXDR for ChangeTrust initialises the txnbuild struct from the corresponding xdr Operation.
+func (ct *ChangeTrust) FromXDR(xdrOp xdr.Operation) error {
+	result, ok := xdrOp.Body.GetChangeTrustOp()
+	if !ok {
+		return errors.New("error parsing change_trust operation from xdr")
+	}
+
+	ct.SourceAccount = accountFromXDR(xdrOp.SourceAccount)
+	ct.Limit = amount.String(result.Limit)
+	asset, err := assetFromXDR(result.Line)
+	if err != nil {
+		return errors.Wrap(err, "error parsing asset in change_trust operation")
+	}
+	ct.Line = asset
+	return nil
+}
+
+// Validate for ChangeTrust validates the required struct fields. It returns an error if any of the fields are
+// invalid. Otherwise, it returns nil.
+func (ct *ChangeTrust) Validate() error {
+	// only validate limit if it has a value. Empty limit is set to the max trustline limit.
+	if ct.Limit != "" {
+		err := validateAmount(ct.Limit)
+		if err != nil {
+			return NewValidationError("Limit", err.Error())
+		}
+	}
+
+	err := validateChangeTrustAsset(ct.Line)
+	if err != nil {
+		return NewValidationError("Line", err.Error())
+	}
+	return nil
+}

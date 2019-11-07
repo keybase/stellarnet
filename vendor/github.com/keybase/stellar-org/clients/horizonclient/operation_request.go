@@ -38,7 +38,7 @@ func (op OperationRequest) BuildURL() (endpoint string, err error) {
 	}
 
 	queryParams := addQueryParams(cursor(op.Cursor), limit(op.Limit), op.Order,
-		includeFailed(op.IncludeFailed))
+		includeFailed(op.IncludeFailed), join(op.Join))
 	if queryParams != "" {
 		endpoint = fmt.Sprintf("%s?%s", endpoint, queryParams)
 	}

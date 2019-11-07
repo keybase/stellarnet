@@ -50,7 +50,7 @@ func (m *Manager) Addresses() []string {
 	defer m.mutex.Unlock()
 	addys := make([]string, 0, len(m.queues))
 
-	for addy, _ := range m.queues {
+	for addy := range m.queues {
 		addys = append(addys, addy)
 	}
 

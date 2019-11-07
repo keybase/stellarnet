@@ -281,5 +281,23 @@ func (m *MockClient) PrevTradesPage(page hProtocol.TradesPage) (hProtocol.Trades
 	return a.Get(0).(hProtocol.TradesPage), a.Error(1)
 }
 
+// HomeDomainForAccount is a mocking method
+func (m *MockClient) HomeDomainForAccount(aid string) (string, error) {
+	a := m.Called(aid)
+	return a.Get(0).(string), a.Error(1)
+}
+
+// NextTradeAggregationsPage is a mocking method
+func (m *MockClient) NextTradeAggregationsPage(page hProtocol.TradeAggregationsPage) (hProtocol.TradeAggregationsPage, error) {
+	a := m.Called(page)
+	return a.Get(0).(hProtocol.TradeAggregationsPage), a.Error(1)
+}
+
+// PrevTradeAggregationsPage is a mocking method
+func (m *MockClient) PrevTradeAggregationsPage(page hProtocol.TradeAggregationsPage) (hProtocol.TradeAggregationsPage, error) {
+	a := m.Called(page)
+	return a.Get(0).(hProtocol.TradeAggregationsPage), a.Error(1)
+}
+
 // ensure that the MockClient implements ClientInterface
 var _ ClientInterface = &MockClient{}

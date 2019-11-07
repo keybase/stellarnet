@@ -11,8 +11,9 @@ import (
 )
 
 var DatabaseURL string
+var Client *horizonclient.Client
+var UseTestNet bool
 var Logger = hlog.New()
-var Client = horizonclient.DefaultPublicNetClient // TODO: make this configurable
 
 var rootCmd = &cobra.Command{
 	Use:   "ticker",
@@ -21,6 +22,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(
 		&DatabaseURL,
 		"db-url",
@@ -28,8 +30,24 @@ func init() {
 		"postgres://localhost:5432/stellarticker01?sslmode=disable",
 		"database URL, such as: postgres://user:pass@localhost:5432/ticker",
 	)
+	rootCmd.PersistentFlags().BoolVar(
+		&UseTestNet,
+		"testnet",
+		false,
+		"use the Stellar Test Network, instead of the Stellar Public Network",
+	)
 
 	Logger.SetLevel(logrus.DebugLevel)
+}
+
+func initConfig() {
+	if UseTestNet {
+		Logger.Debug("Using Stellar Default Test Network")
+		Client = horizonclient.DefaultTestNetClient
+	} else {
+		Logger.Debug("Using Stellar Default Public Network")
+		Client = horizonclient.DefaultPublicNetClient
+	}
 }
 
 func Execute() {

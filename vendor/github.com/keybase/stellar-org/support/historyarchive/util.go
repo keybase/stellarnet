@@ -38,7 +38,11 @@ func copyPath(src *Archive, dst *Archive, pth string, opts *CommandOptions) erro
 		log.Printf("dryrun skipping " + pth)
 		return nil
 	}
-	if dst.backend.Exists(pth) && !opts.Force {
+	exists, err := dst.backend.Exists(pth)
+	if err != nil {
+		return err
+	}
+	if exists && !opts.Force {
 		log.Printf("skipping existing " + pth)
 		return nil
 	}

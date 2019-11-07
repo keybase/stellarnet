@@ -24,3 +24,25 @@ func (client *Client) AccountDetail(req AccountRequest) (hProtocol.Account, erro
 		Sequence:  "3556091187167235",
 	}, nil
 }
+
+// FeeStats returns mock network fee information
+func (client *Client) FeeStats() (hProtocol.FeeStats, error) {
+	return hProtocol.FeeStats{
+		LastLedger:          22606298,
+		LastLedgerBaseFee:   100,
+		LedgerCapacityUsage: 0.97,
+		MinAcceptedFee:      100,
+		ModeAcceptedFee:     200,
+		P10AcceptedFee:      250,
+		P20AcceptedFee:      300,
+		P30AcceptedFee:      350,
+		P40AcceptedFee:      500,
+		P50AcceptedFee:      600,
+		P60AcceptedFee:      700,
+		P70AcceptedFee:      800,
+		P80AcceptedFee:      900,
+		P90AcceptedFee:      2000,
+		P95AcceptedFee:      3000,
+		P99AcceptedFee:      5000,
+	}, nil
+}

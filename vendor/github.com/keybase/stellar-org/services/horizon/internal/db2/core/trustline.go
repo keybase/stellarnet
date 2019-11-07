@@ -11,34 +11,40 @@ func (tl Trustline) IsAuthorized() bool {
 	return (tl.Flags & int32(xdr.TrustLineFlagsAuthorizedFlag)) != 0
 }
 
-// AssetsForAddress loads `dest` as `[]xdr.Asset` with every asset the account
-// at `addy` can hold.
-func (q *Q) AssetsForAddress(dest interface{}, addy string) error {
+// AssetsForAddress returns a list of assets and balances for those assets held by
+// a given address.
+func (q *Q) AssetsForAddress(addy string) ([]xdr.Asset, []xdr.Int64, error) {
 	var tls []Trustline
+	var account Account
 
-	err := q.TrustlinesByAddress(&tls, addy)
-	if err != nil {
-		return err
+	if err := q.AccountByAddress(&account, addy); q.NoRows(err) {
+		// if there is no account for the given address then
+		// we return an empty list of assets and balances
+		return []xdr.Asset{}, []xdr.Int64{}, nil
+	} else if err != nil {
+		return nil, nil, err
 	}
 
-	dtl, ok := dest.(*[]xdr.Asset)
-	if !ok {
-		return errors.New("Invalid destination")
+	if err := q.TrustlinesByAddress(&tls, addy); err != nil {
+		return nil, nil, err
 	}
 
-	result := make([]xdr.Asset, len(tls)+1)
-	*dtl = result
+	assets := make([]xdr.Asset, len(tls)+1)
+	balances := make([]xdr.Int64, len(tls)+1)
 
+	var err error
 	for i, tl := range tls {
-		result[i], err = AssetFromDB(tl.Assettype, tl.Assetcode, tl.Issuer)
+		assets[i], err = AssetFromDB(tl.Assettype, tl.Assetcode, tl.Issuer)
 		if err != nil {
-			return err
+			return nil, nil, err
 		}
+		balances[i] = tl.Balance
 	}
 
-	result[len(result)-1], err = xdr.NewAsset(xdr.AssetTypeAssetTypeNative, nil)
+	assets[len(assets)-1], err = xdr.NewAsset(xdr.AssetTypeAssetTypeNative, nil)
+	balances[len(assets)-1] = account.Balance
 
-	return err
+	return assets, balances, err
 }
 
 // AllAssets loads all (unique) assets from core DB

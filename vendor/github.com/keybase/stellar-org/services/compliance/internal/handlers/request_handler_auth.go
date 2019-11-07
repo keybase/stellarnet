@@ -264,9 +264,12 @@ func (rh *RequestHandler) HandlerAuth(w http.ResponseWriter, r *http.Request) {
 				if operationBody.Type == xdr.OperationTypePayment {
 					amount = baseAmount.String(operationBody.PaymentOp.Amount)
 					operationBody.PaymentOp.Asset.Extract(&assetType, &assetCode, &assetIssuer)
-				} else if operationBody.Type == xdr.OperationTypePathPayment {
-					amount = baseAmount.String(operationBody.PathPaymentOp.DestAmount)
-					operationBody.PathPaymentOp.DestAsset.Extract(&assetType, &assetCode, &assetIssuer)
+				} else if operationBody.Type == xdr.OperationTypePathPaymentStrictReceive {
+					amount = baseAmount.String(operationBody.PathPaymentStrictReceiveOp.DestAmount)
+					operationBody.PathPaymentStrictReceiveOp.DestAsset.Extract(&assetType, &assetCode, &assetIssuer)
+				} else if operationBody.Type == xdr.OperationTypePathPaymentStrictSend {
+					amount = baseAmount.String(operationBody.PathPaymentStrictSendOp.DestMin)
+					operationBody.PathPaymentStrictSendOp.DestAsset.Extract(&assetType, &assetCode, &assetIssuer)
 				}
 			}
 

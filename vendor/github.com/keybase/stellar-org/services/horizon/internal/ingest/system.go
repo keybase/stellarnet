@@ -7,7 +7,6 @@ import (
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	herr "github.com/stellar/go/services/horizon/internal/errors"
 	"github.com/stellar/go/services/horizon/internal/ledger"
-	"github.com/stellar/go/services/horizon/internal/toid"
 	"github.com/stellar/go/support/errors"
 	ilog "github.com/stellar/go/support/log"
 )
@@ -311,75 +310,4 @@ func (i *System) runOnce() {
 
 	logFields["duration"] = time.Since(ingestStart).Seconds()
 	log.WithFields(logFields).Info("Finished ingesting ledgers")
-
-	return
-}
-
-// trimAbandondedLedgers deletes all "abandonded" ledgers from the history
-// database. An abandonded ledger, in this context, means a ledger known to
-// horizon but is no longer present in the stellar-core database source.  The
-// usual cause for this situation is a stellar-core that uses the CATCHUP_RECENT
-// mode.
-func (i *System) trimAbandondedLedgers() error {
-	var coreElder int32
-	cq := core.Q{Session: i.CoreDB}
-
-	err := cq.ElderLedger(&coreElder)
-	if err != nil {
-		return errors.Wrap(err, "load core elder ledger failed")
-	}
-
-	hdb := i.HorizonDB.Clone()
-	ingestion := &Ingestion{DB: hdb}
-
-	err = ingestion.Start()
-	if err != nil {
-		return errors.Wrap(err, "failed to begin ingestion")
-	}
-
-	end := toid.New(coreElder, 0, 0)
-
-	err = ingestion.Clear(0, end.ToInt64())
-	if err != nil {
-		return errors.Wrap(err, "failed to clear ingestion")
-	}
-
-	err = ingestion.Close()
-	if err != nil {
-		return errors.Wrap(err, "failed to close ingestion")
-	}
-
-	log.
-		WithField("new_elder_ledger", coreElder).
-		Infof("reingest: abandonded ledgers trimmed")
-
-	return nil
-}
-
-// validateLedgerChain helps to ensure the chain of ledger entries is contiguous
-// within horizon.  It ensures the ledger at `seq` is a child of `seq - 1`.
-func (i *System) validateLedgerChain(seq int32) error {
-	var (
-		cur  core.LedgerHeader
-		prev history.Ledger
-	)
-
-	cq := &core.Q{Session: i.CoreDB}
-	hq := &history.Q{Session: i.HorizonDB}
-
-	err := cq.LedgerHeaderBySequence(&cur, seq)
-	if err != nil {
-		return errors.Wrap(err, "validateLedgerChain: failed to load cur ledger")
-	}
-
-	err = hq.LedgerBySequence(&prev, seq-1)
-	if err != nil {
-		return errors.Wrap(err, "validateLedgerChain: failed to load prev ledger")
-	}
-
-	if cur.PrevHash != prev.LedgerHash {
-		return errors.New("cur and prev ledger hashes don't match")
-	}
-
-	return nil
 }

@@ -139,8 +139,8 @@ func (arch *Archive) VerifyCategoryCheckpoint(cat string, chk uint32) error {
 	defer rdr.Close()
 
 	var tmp interface{}
-	step := func() error { return nil }
-	reset := func() {}
+	var step func() error
+	var reset func()
 
 	var lhe xdr.LedgerHeaderHistoryEntry
 	var the xdr.TransactionHistoryEntry
@@ -277,7 +277,7 @@ func (arch *Archive) ReportInvalid(opts *CommandOptions) error {
 	defer arch.mutex.Unlock()
 
 	lowest := uint32(0xffffffff)
-	for i, _ := range arch.expectLedgerHashes {
+	for i := range arch.expectLedgerHashes {
 		if i < lowest {
 			lowest = i
 		}

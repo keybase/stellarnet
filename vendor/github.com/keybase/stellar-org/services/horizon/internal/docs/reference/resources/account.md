@@ -16,9 +16,8 @@ When horizon returns information about an account it uses the following format:
 | sequence       | number           | The current sequence number that can be used when submitting a transaction from this account.                                                |
 | subentry_count | number           | The number of [account subentries](https://www.stellar.org/developers/guides/concepts/ledger.html#ledger-entries).                           |
 | balances       | array of objects | An array of the native asset or credits this account holds.                                                                                  |
-| thresholds     | object           | An object of account flags.                                                                                                                  |
-| flags          | array of objects | The flags denote the enabling/disabling of certain asset issuer privileges.                                                                  |
-| signers        | array of objects | An array of account signers with their weights.                                                                                              |
+| thresholds     | object           | An object of account thresholds.                                                                                                             |
+| flags          | object           | The flags denote the enabling/disabling of certain asset issuer privileges.                                                                  |
 | signers        | array of objects | An array of [account signers](https://www.stellar.org/developers/guides/concepts/multi-sig.html#additional-signing-keys) with their weights. |
 | data           | object           | An array of account [data](./data.md) fields.                                                                                                |
 

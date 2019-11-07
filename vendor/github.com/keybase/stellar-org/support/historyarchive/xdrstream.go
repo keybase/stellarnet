@@ -5,26 +5,43 @@
 package historyarchive
 
 import (
+	"bufio"
 	"bytes"
 	"compress/gzip"
 	"crypto/sha256"
 	"encoding/binary"
-	"errors"
 	"fmt"
+	"hash"
 	"io"
-	"strings"
+	"io/ioutil"
 
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
 type XdrStream struct {
-	buf  bytes.Buffer
-	rdr  io.ReadCloser
-	rdr2 io.ReadCloser
+	buf        bytes.Buffer
+	rdr        io.ReadCloser
+	rdr2       io.ReadCloser
+	sha256Hash hash.Hash
+
+	validateHash bool
+	expectedHash [sha256.Size]byte
 }
 
 func NewXdrStream(in io.ReadCloser) *XdrStream {
-	return &XdrStream{rdr: bufReadCloser(in)}
+	// We write all we read from in to sha256Hash that can be later
+	// compared with `expectedHash` using SetExpectedHash and Close.
+	sha256Hash := sha256.New()
+	teeReader := io.TeeReader(in, sha256Hash)
+
+	return &XdrStream{
+		rdr: struct {
+			io.Reader
+			io.Closer
+		}{bufio.NewReader(teeReader), in},
+		sha256Hash: sha256Hash,
+	}
 }
 
 func NewXdrGzStream(in io.ReadCloser) (*XdrStream, error) {
@@ -33,28 +50,10 @@ func NewXdrGzStream(in io.ReadCloser) (*XdrStream, error) {
 		in.Close()
 		return nil, err
 	}
-	return &XdrStream{rdr: bufReadCloser(rdr), rdr2: in}, nil
-}
 
-func (a *Archive) GetXdrStreamForHash(hash Hash) (*XdrStream, error) {
-	path := fmt.Sprintf(
-		"bucket/%s/bucket-%s.xdr.gz",
-		HashPrefix(hash).Path(),
-		hash.String(),
-	)
-
-	return a.GetXdrStream(path)
-}
-
-func (a *Archive) GetXdrStream(pth string) (*XdrStream, error) {
-	if !strings.HasSuffix(pth, ".xdr.gz") {
-		return nil, errors.New("File has non-.xdr.gz suffix: " + pth)
-	}
-	rdr, err := a.backend.GetFile(pth)
-	if err != nil {
-		return nil, err
-	}
-	return NewXdrGzStream(rdr)
+	stream := NewXdrStream(rdr)
+	stream.rdr2 = in
+	return stream, nil
 }
 
 func HashXdr(x interface{}) (Hash, error) {
@@ -67,13 +66,42 @@ func HashXdr(x interface{}) (Hash, error) {
 	return Hash(sha256.Sum256(msg.Bytes())), nil
 }
 
-func (x *XdrStream) Close() {
+// SetExpectedHash sets expected hash that will be checked in Close().
+// This (obviously) needs to be set before Close() is called.
+func (x *XdrStream) SetExpectedHash(hash [sha256.Size]byte) {
+	x.validateHash = true
+	x.expectedHash = hash
+}
+
+// Close closes all internal readers and checks if the expected hash
+// (if set by SetExpectedHash) matches the actual hash of the stream.
+func (x *XdrStream) Close() error {
+	if x.validateHash {
+		// Read all remaining data from rdr
+		_, err := io.Copy(ioutil.Discard, x.rdr)
+		if err != nil {
+			return errors.Wrap(err, "Error reading remaining bytes from rdr")
+		}
+
+		actualHash := x.sha256Hash.Sum([]byte{})
+
+		if !bytes.Equal(x.expectedHash[:], actualHash[:]) {
+			return errors.New("Stream hash does not match expected hash!")
+		}
+	}
+
 	if x.rdr != nil {
-		x.rdr.Close()
+		if err := x.rdr.Close(); err != nil {
+			return err
+		}
 	}
 	if x.rdr2 != nil {
-		x.rdr2.Close()
+		if err := x.rdr2.Close(); err != nil {
+			return err
+		}
 	}
+
+	return nil
 }
 
 func (x *XdrStream) ReadOne(in interface{}) error {
@@ -81,11 +109,11 @@ func (x *XdrStream) ReadOne(in interface{}) error {
 	err := binary.Read(x.rdr, binary.BigEndian, &nbytes)
 	if err != nil {
 		x.rdr.Close()
-		if err == io.ErrUnexpectedEOF {
-			return io.EOF
-		} else {
+		if err == io.EOF {
+			// Do not wrap io.EOF
 			return err
 		}
+		return errors.Wrap(err, "binary.Read error")
 	}
 	nbytes &= 0x7fffffff
 	x.buf.Reset()
@@ -95,26 +123,33 @@ func (x *XdrStream) ReadOne(in interface{}) error {
 	}
 	x.buf.Grow(int(nbytes))
 	read, err := x.buf.ReadFrom(io.LimitReader(x.rdr, int64(nbytes)))
-	if read != int64(nbytes) {
-		x.rdr.Close()
-		return errors.New("Read wrong number of bytes from XDR")
-	}
 	if err != nil {
 		x.rdr.Close()
 		return err
 	}
+	if read != int64(nbytes) {
+		x.rdr.Close()
+		return errors.New("Read wrong number of bytes from XDR")
+	}
 
 	readi, err := xdr.Unmarshal(&x.buf, in)
+	if err != nil {
+		x.rdr.Close()
+		return err
+	}
 	if int64(readi) != int64(nbytes) {
 		return fmt.Errorf("Unmarshalled %d bytes from XDR, expected %d)",
 			readi, nbytes)
 	}
-	return err
+	return nil
 }
 
 func WriteFramedXdr(out io.Writer, in interface{}) error {
 	var tmp bytes.Buffer
 	n, err := xdr.Marshal(&tmp, in)
+	if err != nil {
+		return err
+	}
 	un := uint32(n)
 	if un > 0x7fffffff {
 		return fmt.Errorf("Overlong write: %d bytes", n)

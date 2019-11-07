@@ -13,23 +13,23 @@ import (
 	"github.com/gomodule/redigo/redis"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stellar/go/clients/stellarcore"
+	"github.com/stellar/go/exp/orderbook"
 	horizonContext "github.com/stellar/go/services/horizon/internal/context"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
+	"github.com/stellar/go/services/horizon/internal/expingest"
 	"github.com/stellar/go/services/horizon/internal/ingest"
 	"github.com/stellar/go/services/horizon/internal/ledger"
 	"github.com/stellar/go/services/horizon/internal/logmetrics"
 	"github.com/stellar/go/services/horizon/internal/operationfeestats"
 	"github.com/stellar/go/services/horizon/internal/paths"
 	"github.com/stellar/go/services/horizon/internal/reap"
-	"github.com/stellar/go/services/horizon/internal/simplepath"
 	"github.com/stellar/go/services/horizon/internal/txsub"
 	"github.com/stellar/go/support/app"
 	"github.com/stellar/go/support/db"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/support/log"
-	"github.com/throttled/throttled"
-	"golang.org/x/net/http2"
+	"github.com/stellar/throttled"
 	graceful "gopkg.in/tylerb/graceful.v1"
 )
 
@@ -49,6 +49,7 @@ type App struct {
 	submitter                    *txsub.System
 	paths                        paths.Finder
 	ingester                     *ingest.System
+	expingester                  *expingest.System
 	reaper                       *reap.System
 	ticks                        *time.Ticker
 
@@ -96,11 +97,13 @@ func (a *App) Serve() {
 		},
 	}
 
-	http2.ConfigureServer(srv.Server, nil)
-
 	log.Infof("Starting horizon on %s (ingest: %v)", addr, a.config.Ingest)
 
 	go a.run()
+
+	if a.expingester != nil {
+		go a.expingester.Run()
+	}
 
 	var err error
 	if a.config.TLSCert != "" {
@@ -110,7 +113,7 @@ func (a *App) Serve() {
 	}
 
 	if err != nil {
-		log.Panic(err)
+		log.Fatal(err)
 	}
 
 	a.CloseDB()
@@ -121,6 +124,9 @@ func (a *App) Serve() {
 // Close cancels the app. It does not close DB connections - use App.CloseDB().
 func (a *App) Close() {
 	a.cancel()
+	if a.expingester != nil {
+		a.expingester.Shutdown()
+	}
 	a.ticks.Stop()
 }
 
@@ -159,12 +165,16 @@ func (a *App) CoreQ() *core.Q {
 // IsHistoryStale returns true if the latest history ledger is more than
 // `StaleThreshold` ledgers behind the latest core ledger
 func (a *App) IsHistoryStale() bool {
-	if a.config.StaleThreshold == 0 {
+	return isHistoryStale(a.config.StaleThreshold)
+}
+
+func isHistoryStale(staleThreshold uint) bool {
+	if staleThreshold == 0 {
 		return false
 	}
 
 	ls := ledger.CurrentState()
-	return (ls.CoreLatest - ls.HistoryLatest) > int32(a.config.StaleThreshold)
+	return (ls.CoreLatest - ls.HistoryLatest) > int32(staleThreshold)
 }
 
 // UpdateLedgerState triggers a refresh of several metrics gauges, such as open
@@ -191,6 +201,12 @@ func (a *App) UpdateLedgerState() {
 	err = a.HistoryQ().ElderLedger(&next.HistoryElder)
 	if err != nil {
 		logErr(err, "failed to load the oldest known ledger state from history DB")
+		return
+	}
+
+	next.ExpHistoryLatest, err = a.HistoryQ().GetLastLedgerExpIngestNonBlocking()
+	if err != nil {
+		logErr(err, "failed to load the oldest known exp ledger state from history DB")
 		return
 	}
 
@@ -385,14 +401,21 @@ func (a *App) init() {
 	// ingester
 	initIngester(a)
 
+	var orderBookGraph *orderbook.OrderBookGraph
+	if a.config.EnableExperimentalIngestion {
+		orderBookGraph = orderbook.NewOrderBookGraph()
+		// expingester
+		initExpIngester(a, orderBookGraph)
+	}
+
 	// txsub
 	initSubmissionSystem(a)
 
 	// path-finder
-	a.paths = &simplepath.Finder{a.CoreQ()}
+	initPathFinder(a, orderBookGraph)
 
 	// reaper
-	a.reaper = reap.New(a.config.HistoryRetentionCount, a.HorizonSession(nil))
+	a.reaper = reap.New(a.config.HistoryRetentionCount, a.HorizonSession(context.Background()))
 
 	// web.init
 	a.web = mustInitWeb(a.ctx, a.historyQ, a.coreQ, a.config.SSEUpdateFrequency, a.config.StaleThreshold, a.config.IngestFailedTransactions)
@@ -406,7 +429,7 @@ func (a *App) init() {
 	a.web.mustInstallMiddlewares(a, a.config.ConnectionTimeout)
 
 	// web.actions
-	a.web.mustInstallActions(a.config.EnableAssetStats, a.config.FriendbotURL)
+	a.web.mustInstallActions(a.config, a.paths)
 
 	// metrics and log.metrics
 	a.metrics = metrics.NewRegistry()

@@ -54,11 +54,7 @@ func (p *pathNode) IsOnPath(asset xdr.Asset) bool {
 		cur = cur.Tail
 	}
 
-	if asset.Equals(cur.Asset) {
-		return true
-	}
-
-	return false
+	return asset.Equals(cur.Asset)
 }
 
 // Source returns the source asset in the pathNode

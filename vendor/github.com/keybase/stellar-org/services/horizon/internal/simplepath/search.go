@@ -41,12 +41,13 @@ type computedNode struct {
 	cost xdr.Int64
 }
 
-func (c computedNode) asPath() paths.Path {
+func (c computedNode) asPath(destinationAmount xdr.Int64) paths.Path {
 	return paths.Path{
-		Path:        c.path.Path(),
-		Source:      c.path.Source(),
-		Destination: c.path.Destination(),
-		Cost:        c.cost,
+		Path:              c.path.Path(),
+		Source:            c.path.Source(),
+		SourceAmount:      c.cost,
+		Destination:       c.path.Destination(),
+		DestinationAmount: destinationAmount,
 	}
 }
 
@@ -152,7 +153,7 @@ func (s *search) runOnce() {
 	id := cur.path.Asset.String()
 
 	if s.isTarget(id) {
-		s.Results = append(s.Results, cur.asPath())
+		s.Results = append(s.Results, cur.asPath(s.Query.DestinationAmount))
 	}
 
 	if cur.path.Depth == s.MaxLength {

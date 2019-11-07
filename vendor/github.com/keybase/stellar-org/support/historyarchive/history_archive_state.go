@@ -4,6 +4,15 @@
 
 package historyarchive
 
+import (
+	"crypto/sha256"
+	"encoding/hex"
+	"fmt"
+
+	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/xdr"
+)
+
 const NumLevels = 11
 
 type HistoryArchiveState struct {
@@ -20,7 +29,7 @@ type HistoryArchiveState struct {
 	} `json:"currentBuckets"`
 }
 
-func (h *HistoryArchiveState) LevelSummary() (string, int) {
+func (h *HistoryArchiveState) LevelSummary() (string, int, error) {
 	summ := ""
 	nz := 0
 	for _, b := range h.CurrentBuckets {
@@ -28,8 +37,17 @@ func (h *HistoryArchiveState) LevelSummary() (string, int) {
 		for _, bs := range []string{
 			b.Curr, b.Snap, b.Next.Output,
 		} {
+			// Ignore empty values
+			if bs == "" {
+				continue
+			}
+
 			h, err := DecodeHash(bs)
-			if err == nil && !h.IsZero() {
+			if err != nil {
+				return summ, nz, err
+			}
+
+			if !h.IsZero() {
 				state = '#'
 			}
 		}
@@ -38,22 +56,56 @@ func (h *HistoryArchiveState) LevelSummary() (string, int) {
 		}
 		summ += string(state)
 	}
-	return summ, nz
+	return summ, nz, nil
 }
 
-func (h *HistoryArchiveState) Buckets() []Hash {
+func (h *HistoryArchiveState) Buckets() ([]Hash, error) {
 	r := []Hash{}
 	for _, b := range h.CurrentBuckets {
 		for _, bs := range []string{
 			b.Curr, b.Snap, b.Next.Output,
 		} {
+			// Ignore empty values
+			if bs == "" {
+				continue
+			}
+
 			h, err := DecodeHash(bs)
-			if err == nil && !h.IsZero() {
+			if err != nil {
+				return r, err
+			}
+			if !h.IsZero() {
 				r = append(r, h)
 			}
 		}
 	}
-	return r
+	return r, nil
+}
+
+// BucketListHash calculates the hash of bucket list in the HistoryArchiveState.
+// This can be later compared with LedgerHeader.BucketListHash of the checkpoint
+// ledger to ensure data in history archive has not been changed by a malicious
+// actor.
+// Warning: Ledger header should be fetched from a trusted (!) stellar-core
+// instead of ex. history archives!
+func (h *HistoryArchiveState) BucketListHash() (xdr.Hash, error) {
+	total := []byte{}
+
+	for i, b := range h.CurrentBuckets {
+		curr, err := hex.DecodeString(b.Curr)
+		if err != nil {
+			return xdr.Hash{}, errors.Wrap(err, fmt.Sprintf("Error decoding hex of %d.curr", i))
+		}
+		snap, err := hex.DecodeString(b.Snap)
+		if err != nil {
+			return xdr.Hash{}, errors.Wrap(err, fmt.Sprintf("Error decoding hex of %d.snap", i))
+		}
+		both := append(curr, snap...)
+		bothHash := sha256.Sum256(both)
+		total = append(total, bothHash[:]...)
+	}
+
+	return sha256.Sum256(total), nil
 }
 
 func (h *HistoryArchiveState) Range() Range {

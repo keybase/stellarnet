@@ -78,11 +78,7 @@ func isStellarAmount(i interface{}, context interface{}) bool {
 
 	_, err := amount.Parse(enc)
 
-	if err == nil {
-		return true
-	}
-
-	return false
+	return err == nil
 }
 
 func isStellarAccountID(i interface{}, context interface{}) bool {
@@ -94,11 +90,7 @@ func isStellarAccountID(i interface{}, context interface{}) bool {
 
 	_, err := strkey.Decode(strkey.VersionByteAccountID, enc)
 
-	if err == nil {
-		return true
-	}
-
-	return false
+	return err == nil
 }
 
 func isStellarSeed(i interface{}, context interface{}) bool {
@@ -110,9 +102,5 @@ func isStellarSeed(i interface{}, context interface{}) bool {
 
 	_, err := strkey.Decode(strkey.VersionByteSeed, enc)
 
-	if err == nil {
-		return true
-	}
-
-	return false
+	return err == nil
 }

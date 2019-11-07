@@ -9,7 +9,6 @@ import (
 
 var MarketsOutFile string
 var AssetsOutFile string
-var CMCFormat bool
 
 func init() {
 	rootCmd.AddCommand(cmdGenerate)
@@ -30,13 +29,6 @@ func init() {
 		"o",
 		"assets.json",
 		"Set the name of the output file",
-	)
-
-	cmdGenerateMarketData.Flags().BoolVar(
-		&CMCFormat,
-		"cmc",
-		false,
-		"Format output specifically for CoinMarketCap",
 	)
 }
 
@@ -60,7 +52,7 @@ var cmdGenerateMarketData = &cobra.Command{
 		}
 
 		Logger.Infof("Starting market data generation, outputting to: %s\n", MarketsOutFile)
-		err = ticker.GenerateMarketSummaryFile(&session, Logger, MarketsOutFile, CMCFormat)
+		err = ticker.GenerateMarketSummaryFile(&session, Logger, MarketsOutFile)
 		if err != nil {
 			Logger.Fatal("could not generate market data:", err)
 		}

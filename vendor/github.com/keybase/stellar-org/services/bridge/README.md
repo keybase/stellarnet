@@ -34,9 +34,8 @@ The `bridge.cfg` file must be present in a working directory (you can load anoth
 * `horizon` - URL to [horizon](https://github.com/stellar/horizon) server instance
 * `assets` - array of approved assets codes that this server can authorize or receive. These are currency code/issuer pairs. Use asset code 'XLM' with no issuer to listen for XLM payments. See [`bridge_example.cfg`](./bridge_example.cfg) for example.
 * `database`
-  * `type` - database type (mysql, postgres)
+  * `type` - database type (postgres)
   * `url` - url to database connection:
-    * for `mysql`: `user:password@(host:port)/dbname` ([more info](https://github.com/go-sql-driver/mysql#dsn-data-source-name))
     * for `postgres`: `postgres://user:password@host/dbname?sslmode=sslmode` ([more info](https://godoc.org/github.com/lib/pq#hdr-Connection_String_Parameters))
 * `accounts`
   * `base_seed` - The secret seed of the account used to send payments. If left blank you will need to pass it in calls to `/payment`. 

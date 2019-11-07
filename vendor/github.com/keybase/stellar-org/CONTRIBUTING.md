@@ -13,7 +13,7 @@ Check out the [Stellar Contribution Guide](https://github.com/stellar/docs/blob/
 
 ### Pull Requests
 
-* PR titles start with package name, ex. “horizon/ingest: fix...”
+* PR titles start with package name, ex. "horizon/ingest: fix...", or "all" when changes are broad, ex. "all: update...", or "doc" when changes are isolated to non-code documentation not limited to a single package.
 * PRs must update the [CHANGELOG](CHANGELOG.md) with a small description of the change
 * PRs are merged into master or release branch using squash merge
 * Carefully think about where your PR fits according to [semver](https://semver.org). Target it at master if it’s only a patch change, otherwise if it contains breaking change or significant feature additions, set the base branch to the next major or minor release.
@@ -24,3 +24,8 @@ Check out the [Stellar Contribution Guide](https://github.com/stellar/docs/blob/
 
 * Use `gofmt` or preferably `goimports` to format code
 * Follow [Effective Go](https://golang.org/doc/effective_go.html) and [Go Code Review Comments](https://github.com/golang/go/wiki/CodeReviewComments)
+
+### Go Coding conventions
+
+- Always document exported package elements: vars, consts, funcs, types, etc.
+- Tests are better than no tests.

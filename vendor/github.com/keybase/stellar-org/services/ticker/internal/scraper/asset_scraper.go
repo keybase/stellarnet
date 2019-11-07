@@ -16,10 +16,11 @@ import (
 
 	horizonclient "github.com/stellar/go/clients/horizonclient"
 	hProtocol "github.com/stellar/go/protocols/horizon"
+	"github.com/stellar/go/services/ticker/internal/utils"
 )
 
 // shouldDiscardAsset maps the criteria for discarding an asset from the asset index
-func shouldDiscardAsset(asset hProtocol.AssetStat) bool {
+func shouldDiscardAsset(asset hProtocol.AssetStat, shouldValidateTOML bool) bool {
 	if asset.Amount == "" {
 		return true
 	}
@@ -39,13 +40,17 @@ func shouldDiscardAsset(asset hProtocol.AssetStat) bool {
 	if asset.NumAccounts >= 100 {
 		return false
 	}
-	if asset.Links.Toml.Href == "" {
-		return true
+
+	if shouldValidateTOML {
+		if asset.Links.Toml.Href == "" {
+			return true
+		}
+		// [StellarX Ticker]: TOML files should be hosted on HTTPS
+		if !strings.HasPrefix(asset.Links.Toml.Href, "https://") {
+			return true
+		}
 	}
-	// [StellarX Ticker]: TOML files should be hosted on HTTPS
-	if !strings.HasPrefix(asset.Links.Toml.Href, "https://") {
-		return true
-	}
+
 	return false
 }
 
@@ -100,11 +105,7 @@ func domainsMatch(tomlURL *url.URL, orgURL *url.URL) bool {
 	lenDiff := len(orgDomainParts) - len(tomlDomainParts)
 	orgDomainParts = orgDomainParts[lenDiff:]
 	orgRootDomain := strings.Join(orgDomainParts, ".")
-	if tomlURL.Host != orgRootDomain {
-		return false
-	}
-
-	return true
+	return tomlURL.Host == orgRootDomain
 }
 
 // isDomainVerified performs some checking to ensure we can trust the Asset's domain
@@ -209,31 +210,30 @@ func makeFinalAsset(
 }
 
 // processAsset merges data from an AssetStat with data retrieved from its corresponding TOML file
-func processAsset(asset hProtocol.AssetStat) (processedAsset FinalAsset, err error) {
+func processAsset(asset hProtocol.AssetStat, shouldValidateTOML bool) (FinalAsset, error) {
 	var errors []error
+	var issuer TOMLIssuer
 
-	tomlData, err := fetchTOMLData(asset)
-	if err != nil {
-		errors = append(errors, err)
+	if shouldValidateTOML {
+		tomlData, err := fetchTOMLData(asset)
+		if err != nil {
+			errors = append(errors, err)
+		}
+
+		issuer, err = decodeTOMLIssuer(tomlData)
+		if err != nil {
+			errors = append(errors, err)
+		}
 	}
 
-	issuer, err := decodeTOMLIssuer(tomlData)
-	if err != nil {
-		errors = append(errors, err)
-	}
-
-	processedAsset, err = makeFinalAsset(asset, issuer, errors)
-	if err != nil {
-		return
-	}
-
-	return
+	return makeFinalAsset(asset, issuer, errors)
 }
 
 // parallelProcessAssets filters the assets that don't match the shouldDiscardAsset criteria.
 // The TOML validation is performed in parallel to improve performance.
 func (c *ScraperConfig) parallelProcessAssets(assets []hProtocol.AssetStat, parallelism int) (cleanAssets []FinalAsset, numTrash int) {
 	queue := make(chan FinalAsset, parallelism)
+	shouldValidateTOML := c.Client != horizonclient.DefaultTestNetClient // TOMLs shouldn't be validated on TestNet
 
 	var mutex = &sync.Mutex{}
 	var wg sync.WaitGroup
@@ -252,8 +252,8 @@ func (c *ScraperConfig) parallelProcessAssets(assets []hProtocol.AssetStat, para
 			}
 
 			for j := start; j < end; j++ {
-				if !shouldDiscardAsset(assets[j]) {
-					finalAsset, err := processAsset(assets[j])
+				if !shouldDiscardAsset(assets[j], shouldValidateTOML) {
+					finalAsset, err := processAsset(assets[j], shouldValidateTOML)
 					if err != nil {
 						mutex.Lock()
 						numTrash++
@@ -309,7 +309,13 @@ func (c *ScraperConfig) retrieveAssets(limit int) (assets []hProtocol.AssetStat,
 	c.Logger.Infoln("Fetching assets from Horizon")
 
 	for assetsPage.Links.Next.Href != assetsPage.Links.Self.Href {
-		assetsPage, err = c.Client.Assets(r)
+		err = utils.Retry(5, 5*time.Second, c.Logger, func() error {
+			assetsPage, err = c.Client.Assets(r)
+			if err != nil {
+				c.Logger.Infoln("Horizon rate limit reached!")
+			}
+			return err
+		})
 		if err != nil {
 			return
 		}

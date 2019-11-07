@@ -48,14 +48,16 @@ func (q *Q) LedgersBySequence(dest interface{}, seqs ...int32) error {
 // Currently, we hard code the query to return the last 5 ledgers.
 // TODO: make the number of ledgers configurable.
 func (q *Q) LedgerCapacityUsageStats(currentSeq int32, dest *LedgerCapacityUsageStats) error {
+	const ledgers int32 = 5
 	return q.GetRaw(dest, `
-		SELECT
-			round(avg(
-				cast(successful_transaction_count+failed_transaction_count as decimal)/max_tx_set_size
-			), 2) AS "ledger_capacity_usage"
-		FROM history_ledgers
-		WHERE sequence > $1 AND sequence <= $2
-	`, currentSeq-5, currentSeq)
+		SELECT ROUND(SUM(CAST(operation_count as decimal))/SUM(max_tx_set_size), 2) as ledger_capacity_usage FROM
+			(SELECT
+			  hl.sequence, COALESCE(SUM(ht.operation_count), 0) as operation_count, hl.max_tx_set_size
+			  FROM history_ledgers hl
+			  LEFT JOIN history_transactions ht ON ht.ledger_sequence = hl.sequence
+			  WHERE hl.sequence > $1 AND hl.sequence <= $2
+			  GROUP BY hl.sequence, hl.max_tx_set_size) as a
+	`, currentSeq-ledgers, currentSeq)
 }
 
 // Page specifies the paging constraints for the query being built by `q`.

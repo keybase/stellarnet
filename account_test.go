@@ -746,11 +746,11 @@ func TestPathPayments(t *testing.T) {
 		t.Fatalf("operations: %d, expected 1", len(unpackedTx.Tx.Operations))
 	}
 	op := unpackedTx.Tx.Operations[0]
-	if op.Body.Type != xdr.OperationTypePathPayment {
-		t.Fatalf("operation type: %v, expected path payment (%v)", op.Body.Type, xdr.OperationTypePathPayment)
+	if op.Body.Type != xdr.OperationTypePathPaymentStrictReceive {
+		t.Fatalf("operation type: %v, expected path payment (%v)", op.Body.Type, xdr.OperationTypePathPaymentStrictReceive)
 	}
-	t.Logf("path payment op: %+v", op.Body.PathPaymentOp)
-	pathOp := op.Body.PathPaymentOp
+	t.Logf("path payment op: %+v", op.Body.PathPaymentStrictReceiveOp)
+	pathOp := op.Body.PathPaymentStrictReceiveOp
 	if pathOp.Destination.Address() != acctAlice.address.String() {
 		t.Errorf("destination: %s, expected alice %s", pathOp.Destination.Address(), acctAlice.address)
 	}

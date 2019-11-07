@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"sync"
 )
 
 // Event is the packet of data that gets sent over the wire to a connected
@@ -97,11 +96,6 @@ var helloEvent = Event{
 	Event: "open",
 	Retry: 1000,
 }
-
-var (
-	lock     sync.Mutex
-	nextTick = make(chan struct{})
-)
 
 func getJSON(val interface{}) string {
 	js, err := json.Marshal(val)

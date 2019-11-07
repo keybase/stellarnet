@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-	"github.com/throttled/throttled"
+	"github.com/stellar/throttled"
 )
 
 // Config is the configuration for horizon.  It gets populated by the
@@ -14,6 +14,7 @@ type Config struct {
 	DatabaseURL            string
 	StellarCoreDatabaseURL string
 	StellarCoreURL         string
+	HistoryArchiveURLs     []string
 	Port                   uint
 
 	// MaxDBConnections has a priority over all 4 values below.
@@ -43,6 +44,14 @@ type Config struct {
 	TLSKey string
 	// Ingest toggles whether this horizon instance should run the data ingestion subsystem.
 	Ingest bool
+	// EnableExperimentalIngestion  a feature flag that enables the exprimental ingestion subsystem.
+	// If this flag is true then the following features in horizon will be available:
+	// * In-Memory path finding
+	// * Accounts for signers endpoint
+	EnableExperimentalIngestion bool
+	// IngestStateReaderTempSet defines where to store temporary objects during state
+	// ingestion. Possible options are `memory` and `postgres`.
+	IngestStateReaderTempSet string
 	// IngestFailedTransactions toggles whether to ingest failed transactions
 	IngestFailedTransactions bool
 	// CursorName is the cursor used for ingesting from stellar-core.
@@ -67,4 +76,10 @@ type Config struct {
 	// Enabling it has a negative impact on CPU when ingesting ledgers full of
 	// many different assets related operations.
 	EnableAssetStats bool
+	// IngestDisableStateVerification disables state verification
+	// `System.verifyState()` when set to `true`.
+	IngestDisableStateVerification bool
+	// ApplyMigrations will apply pending migrations to the horizon database
+	// before starting the horizon service
+	ApplyMigrations bool
 }

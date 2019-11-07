@@ -11,7 +11,6 @@ import (
 // Load executes the sql script at `path` on postgres database at `url`
 func Load(url string, path string) {
 	sql, err := Asset(path)
-
 	if err != nil {
 		log.Panic(err)
 	}

@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -30,6 +31,27 @@ func (s *Session) Begin() error {
 	return nil
 }
 
+// BeginTx binds this session to a new transaction which is configured with the
+// given transaction options
+func (s *Session) BeginTx(opts *sql.TxOptions) error {
+	if s.tx != nil {
+		return errors.New("already in transaction")
+	}
+
+	tx, err := s.DB.BeginTxx(s.Ctx, opts)
+	if err != nil {
+		return errors.Wrap(err, "beginTx failed")
+	}
+	s.logBegin()
+
+	s.tx = tx
+	return nil
+}
+
+func (s *Session) GetTx() *sqlx.Tx {
+	return s.tx
+}
+
 // Clone clones the receiver, returning a new instance backed by the same
 // context and db. The result will not be bound to any transaction that the
 // source is currently within.
@@ -38,6 +60,13 @@ func (s *Session) Clone() *Session {
 		DB:  s.DB,
 		Ctx: s.Ctx,
 	}
+}
+
+// Close delegates to the underlying database Close method, closing the database
+// and releasing any resources. It is rare to Close a DB, as the DB handle is meant
+// to be long-lived and shared between many goroutines.
+func (s *Session) Close() error {
+	return s.DB.Close()
 }
 
 // Commit commits the current transaction
@@ -112,6 +141,12 @@ func (s *Session) GetTable(name string) *Table {
 		Name:    name,
 		Session: s,
 	}
+}
+
+func (s *Session) TruncateTables(tables []string) error {
+	truncateCmd := fmt.Sprintf("truncate %s restart identity cascade", strings.Join(tables[:], ","))
+	_, err := s.ExecRaw(truncateCmd)
+	return err
 }
 
 // Exec runs `query`

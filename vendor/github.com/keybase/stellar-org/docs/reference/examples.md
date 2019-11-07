@@ -2,9 +2,6 @@
 title: Basic Examples
 ---
 
-- [Creating a payment Transaction](#creating-and-submitting-a-payment-transaction)
-
-
 ## Create an account
 
 The first account on TestNet needs to be created by calling friendbot, a helper service that will create and fund the

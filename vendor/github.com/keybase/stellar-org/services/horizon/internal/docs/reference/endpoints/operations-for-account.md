@@ -24,6 +24,7 @@ GET /accounts/{account}/operations{?cursor,limit,order,include_failed}
 | `?order` | optional, string, default `asc`| The order in which to return rows, "asc" or "desc".              | `asc`                                                     |
 | `?limit` | optional, number, default `10` | Maximum number of records to return.                             | `200`
 | `?include_failed` | optional, bool, default: `false` | Set to `true` to include operations of failed transactions in results. | `true` |                                                     |
+| `?join` | optional, string, default: _null_ | Set to `transactions` to include the transactions which created each of the operations in the response. | `transactions` |
 
 ### curl Example Request
 

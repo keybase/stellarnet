@@ -251,23 +251,6 @@ func deleteData(source *hProtocol.Account, dataKey string, signer Account) (stri
 	return txeBase64, errors.Wrap(err, "couldn't serialise transaction")
 }
 
-func manageData(source *hProtocol.Account, dataKey string, dataValue string, signer Account) (string, error) {
-	manageDataOp := txnbuild.ManageData{
-		Name:  dataKey,
-		Value: []byte(dataValue),
-	}
-
-	tx := txnbuild.Transaction{
-		SourceAccount: source,
-		Operations:    []txnbuild.Operation{&manageDataOp},
-		Timebounds:    txnbuild.NewTimeout(300),
-		Network:       network.TestNetworkPassphrase,
-	}
-
-	txeBase64, err := tx.BuildSignEncode(signer.Keypair)
-	return txeBase64, errors.Wrap(err, "couldn't serialise transaction")
-}
-
 func payment(source *hProtocol.Account, dest, amount string, asset txnbuild.Asset, signer Account) (string, error) {
 	paymentOp := txnbuild.Payment{
 		Destination: dest,

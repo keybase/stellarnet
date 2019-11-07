@@ -17,12 +17,16 @@ type Range struct {
 	High uint32
 }
 
+func IsCheckpoint(i uint32) bool {
+	return (i+1)%CheckpointFreq == 0
+}
+
 func PrevCheckpoint(i uint32) uint32 {
 	freq := CheckpointFreq
 	if i < freq {
 		return freq - 1
 	}
-	return ((i / freq) * freq) - 1
+	return (((i + 1) / freq) * freq) - 1
 }
 
 func NextCheckpoint(i uint32) uint32 {
@@ -31,7 +35,7 @@ func NextCheckpoint(i uint32) uint32 {
 	}
 	freq := uint64(CheckpointFreq)
 	v := uint64(i)
-	n := (((v + freq - 1) / freq) * freq) - 1
+	n := (((v + freq) / freq) * freq) - 1
 	if n >= 0xffffffff {
 		return 0xffffffff
 	}
@@ -67,7 +71,7 @@ func (r Range) String() string {
 func (r Range) Checkpoints() chan uint32 {
 	ch := make(chan uint32)
 	go func() {
-		for i := uint64(r.Low); i < uint64(r.High); i += uint64(CheckpointFreq) {
+		for i := uint64(r.Low); i <= uint64(r.High); i += uint64(CheckpointFreq) {
 			ch <- uint32(i)
 		}
 		close(ch)
@@ -76,7 +80,7 @@ func (r Range) Checkpoints() chan uint32 {
 }
 
 func (r Range) Size() int {
-	return int(r.High-r.Low) / int(CheckpointFreq)
+	return 1 + (int(r.High-r.Low) / int(CheckpointFreq))
 }
 
 func (r Range) collapsedString() string {

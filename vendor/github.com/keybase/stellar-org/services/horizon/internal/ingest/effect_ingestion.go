@@ -15,11 +15,7 @@ func (ei *EffectIngestion) Add(aid xdr.AccountId, typ history.EffectType, detail
 	ei.added++
 
 	ei.err = ei.Dest.Effect(Address(aid.Address()), ei.OperationID, ei.added, typ, details)
-	if ei.err != nil {
-		return false
-	}
-
-	return true
+	return ei.err == nil
 }
 
 // Finish marks this ingestion as complete, returning any error that was recorded.

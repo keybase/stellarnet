@@ -5,7 +5,7 @@ import (
 
 	"github.com/stellar/go/amount"
 	"github.com/stellar/go/price"
-	. "github.com/stellar/go/protocols/horizon"
+	protocol "github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 )
 
@@ -13,7 +13,7 @@ import (
 // table.
 func PopulateTradeAggregation(
 	ctx context.Context,
-	dest *TradeAggregation,
+	dest *protocol.TradeAggregation,
 	row history.TradeAggregation,
 ) error {
 	var err error

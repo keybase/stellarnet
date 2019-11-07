@@ -17,7 +17,7 @@ To learn more about the concept of assets in the Stellar network, take a look at
 | asset_issuer             | string | The issuer of this asset. |
 | amount                   | number | The number of units of credit issued. |
 | num_accounts             | number | The number of accounts that: 1) trust this asset and 2) where if the asset has the auth_required flag then the account is authorized to hold the asset. |
-| flags                    | array of objects | The flags denote the enabling/disabling of certain asset issuer privileges. |
+| flags                    | object | The flags denote the enabling/disabling of certain asset issuer privileges. |
 | paging_token             | string | A [paging token](./page.md) suitable for use as the `cursor` parameter to transaction collection resources.                   |
 
 #### Flag Object

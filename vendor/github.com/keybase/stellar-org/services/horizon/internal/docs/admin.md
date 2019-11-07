@@ -18,7 +18,7 @@ The Stellar Development Foundation runs two Horizon servers, one for the public 
 ## Prerequisites
 
 Horizon is dependent upon a stellar-core server.  Horizon needs access to both the SQL database and the HTTP API that is published by stellar-core. See [the administration guide](https://www.stellar.org/developers/stellar-core/learn/admin.html
-) to learn how to set up and administer a stellar-core server.  Secondly, Horizon is dependent upon a postgres server, which it uses to store processed core data for ease of use. Horizon requires postgres version >= 9.3.
+) to learn how to set up and administer a stellar-core server.  Secondly, Horizon is dependent upon a postgres server, which it uses to store processed core data for ease of use. Horizon requires postgres version >= 9.5.
 
 In addition to the two prerequisites above, you may optionally install a redis server to be used for rate limiting requests.
 
@@ -36,17 +36,13 @@ To test the installation, simply run `horizon --help` from a terminal.  If the h
 Should you decide not to use one of our prebuilt releases, you may instead build Horizon from source.  To do so, you need to install some developer tools:
 
 - A unix-like operating system with the common core commands (cp, tar, mkdir, bash, etc.)
-- A compatible distribution of Go (we officially support Go 1.10 and later)
-- [go-dep](https://golang.github.io/dep/)
+- A compatible distribution of Go (Go 1.12 or later)
 - [git](https://git-scm.com/)
 - [mercurial](https://www.mercurial-scm.org/)
 
-
-1. Set your [GOPATH](https://github.com/golang/go/wiki/GOPATH) environment variable, if you haven't already. The default `GOPATH` is `$HOME/go`.
-2. Clone the Stellar Go monorepo:  `go get github.com/stellar/go`. You should see the repository cloned at `$GOPATH/src/github.com/stellar/go`.
-3. Enter the source dir: `cd $GOPATH/src/github.com/stellar/go`, and download external dependencies: `dep ensure -v`. You should see the downloaded third party dependencies in `$GOPATH/pkg`.
-4. Compile the Horizon binary: `cd $GOPATH; go install github.com/stellar/go/services/horizon`. You should see the `horizon` binary in `$GOPATH/bin`.
-5. Add Go binaries to your PATH in your `bashrc` or equivalent, for easy access: `export PATH=${GOPATH//://bin:}/bin:$PATH`
+1. See the details in [README.md](../../../../README.md#dependencies) for installing dependencies.
+2. Compile the Horizon binary: `go install github.com/stellar/go/services/horizon`. You should see the `horizon` binary in `$GOPATH/bin`.
+3. Add Go binaries to your PATH in your `bashrc` or equivalent, for easy access: `export PATH=${GOPATH//://bin:}/bin:$PATH`
 
 Open a new terminal. Confirm everything worked by running `horizon --help` successfully.
 
@@ -169,6 +165,93 @@ To ensure that your instance of Horizon is performing correctly we encourage you
 Horizon will output logs to standard out.  Information about what requests are coming in will be reported, but more importantly, warnings or errors will also be emitted by default.  A correctly running Horizon instance will not output any warning or error log entries.
 
 Metrics are collected while a Horizon process is running and they are exposed at the `/metrics` path.  You can see an example at (https://horizon-testnet.stellar.org/metrics).
+
+Below we present a few standard log entries with associated fields. You can use them to build metrics and alerts. We present below some examples. Please note that this represents Horizon app metrics only. You should also monitor your hardware metrics like CPU or RAM Utilization.
+
+### Starting HTTP request
+
+| Key              | Value                                                                                          |
+|------------------|------------------------------------------------------------------------------------------------|
+| **`msg`**        | **`Starting request`**                                                                         |
+| `client_name`    | Value of `X-Client-Name` HTTP header representing client name                                  |
+| `client_version` | Value of `X-Client-Version` HTTP header representing client version                            |
+| `app_name`       | Value of `X-App-Name` HTTP header representing app name                                        |
+| `app_version`    | Value of `X-App-Version` HTTP header representing app version                                  |
+| `forwarded_ip`   | First value of `X-Forwarded-For` header                                                        |
+| `host`           | Value of `Host` header                                                                         |
+| `ip`             | IP of a client sending HTTP request                                                            |
+| `ip_port`        | IP and port of a client sending HTTP request                                                   |
+| `method`         | HTTP method (`GET`, `POST`, ...)                                                               |
+| `path`           | Full request path, including query string (ex. `/transactions?order=desc`)                     |
+| `streaming`      | Boolean, `true` if request is a streaming request                                              |
+| `referer`        | Value of `Referer` header                                                                      |
+| `req`            | Random value that uniquely identifies a request, attached to all logs within this HTTP request |
+
+### Finished HTTP request
+
+| Key              | Value                                                                                          |
+|------------------|------------------------------------------------------------------------------------------------|
+| **`msg`**        | **`Finished request`**                                                                         |
+| `bytes`          | Number of response bytes sent                                                                  |
+| `client_name`    | Value of `X-Client-Name` HTTP header representing client name                                  |
+| `client_version` | Value of `X-Client-Version` HTTP header representing client version                            |
+| `app_name`       | Value of `X-App-Name` HTTP header representing app name                                        |
+| `app_version`    | Value of `X-App-Version` HTTP header representing app version                                  |
+| `duration`       | Duration of request in seconds                                                                 |
+| `forwarded_ip`   | First value of `X-Forwarded-For` header                                                        |
+| `host`           | Value of `Host` header                                                                         |
+| `ip`             | IP of a client sending HTTP request                                                            |
+| `ip_port`        | IP and port of a client sending HTTP request                                                   |
+| `method`         | HTTP method (`GET`, `POST`, ...)                                                               |
+| `path`           | Full request path, including query string (ex. `/transactions?order=desc`)                     |
+| `route`          | Route pattern without query string (ex. `/accounts/{id}`)                                      |
+| `status`         | HTTP status code (ex. `200`)                                                                   |
+| `streaming`      | Boolean, `true` if request is a streaming request                                              |
+| `referer`        | Value of `Referer` header                                                                      |
+| `req`            | Random value that uniquely identifies a request, attached to all logs within this HTTP request |
+
+### Processing (ingesting) a new ledger
+
+| Key       | Value                    |
+|-----------|--------------------------|
+| **`msg`** | **`Reading new ledger`** |
+| `ledger`  | Ledger sequence          |
+
+### Finished processing (ingesting) a new ledger
+
+| Key            | Value                                |
+|----------------|--------------------------------------|
+| **`msg`**      | **`Finished processing ledger`**     |
+| `ledger`       | Ledger sequence                      |
+| `duration`     | Duration in seconds                  |
+| `transactions` | Number of transactions in the ledger |
+
+
+### Metrics
+
+Using the entries above you can build metrics that will help understand performance of a given Horizon node, some examples below:
+* Number of requests per minute.
+* Number of requests per route (the most popular routes).
+* Average response time per route.
+* Maximum response time for non-streaming requests.
+* Number of streaming vs. non-streaming requests.
+* Number of rate-limited requests.
+* List of rate-limited IPs.
+* Unique IPs.
+* The most popular SDKs/apps sending requests to a given Horizon node.
+* Average ingestion time of a ledger.
+* Average ingestion time of a transaction.
+
+### Alerts
+
+Below we present example alerts with potential cause and solution. Feel free to add more alerts using your metrics.
+
+Alert | Cause | Solution
+-|-|-
+Spike in number of requests | Potential DoS attack | Lower rate-limiting threshold
+Large number of rate-limited requests | Rate-limiting threshold too low | Increase rate-limiting threshold
+Ingestion is slow | Horizon server spec too low | Increase hardware spec
+Spike in average response time of a single route | Possible bug in a code responsible for rendering a route | Report an issue in Horizon repository.
 
 ## I'm Stuck! Help!
 

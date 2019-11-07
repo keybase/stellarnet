@@ -36,6 +36,8 @@ type TableName string
 
 const (
 	AssetStatsTableName              TableName = "asset_stats"
+	AccountsTableName                TableName = "history_accounts"
+	AssetsTableName                  TableName = "history_assets"
 	EffectsTableName                 TableName = "history_effects"
 	LedgersTableName                 TableName = "history_ledgers"
 	OperationParticipantsTableName   TableName = "history_operation_participants"

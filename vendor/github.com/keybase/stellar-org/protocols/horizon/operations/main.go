@@ -5,6 +5,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/protocols/horizon/base"
 	"github.com/stellar/go/support/render/hal"
 	"github.com/stellar/go/xdr"
@@ -15,11 +16,13 @@ import (
 var TypeNames = map[xdr.OperationType]string{
 	xdr.OperationTypeCreateAccount: "create_account",
 	xdr.OperationTypePayment:       "payment",
-	xdr.OperationTypePathPayment:   "path_payment",
-	// Action needed in release: horizon-v0.19.0
+	// Action needed in release: horizon-v0.25.0
+	// Change name to `path_payment_strict_receive`
+	xdr.OperationTypePathPaymentStrictReceive: "path_payment",
+	// Action needed in release: horizon-v0.25.0
 	// Change name to `manage_sell_offer`
 	xdr.OperationTypeManageSellOffer: "manage_offer",
-	// Action needed in release: horizon-v0.19.0
+	// Action needed in release: horizon-v0.25.0
 	// Change name to `create_passive_sell_offer`
 	xdr.OperationTypeCreatePassiveSellOffer: "create_passive_offer",
 	xdr.OperationTypeSetOptions:             "set_options",
@@ -30,6 +33,7 @@ var TypeNames = map[xdr.OperationType]string{
 	xdr.OperationTypeManageData:             "manage_data",
 	xdr.OperationTypeBumpSequence:           "bump_sequence",
 	xdr.OperationTypeManageBuyOffer:         "manage_buy_offer",
+	xdr.OperationTypePathPaymentStrictSend:  "path_payment_strict_send",
 }
 
 // Base represents the common attributes of an operation resource
@@ -51,12 +55,18 @@ type Base struct {
 	Type                  string    `json:"type"`
 	TypeI                 int32     `json:"type_i"`
 	LedgerCloseTime       time.Time `json:"created_at"`
-	TransactionHash       string    `json:"transaction_hash"`
+	// TransactionHash is the hash of the transaction which created the operation
+	// Note that the Transaction field below is not always present in the Operation response.
+	// If the Transaction field is present TransactionHash is redundant since the same information
+	// is present in Transaction. But, if the Transaction field is nil then TransactionHash is useful.
+	// Transaction is non nil when the "join=transactions" parameter is present in the operations request
+	TransactionHash string               `json:"transaction_hash"`
+	Transaction     *horizon.Transaction `json:"transaction,omitempty"`
 }
 
 // PagingToken implements hal.Pageable
-func (this Base) PagingToken() string {
-	return this.PT
+func (base Base) PagingToken() string {
+	return base.PT
 }
 
 // BumpSequence is the json resource representing a single operation whose type is
@@ -97,6 +107,18 @@ type PathPayment struct {
 	SourceAssetIssuer string       `json:"source_asset_issuer,omitempty"`
 }
 
+// PathPaymentStrictSend is the json resource representing a single operation whose type
+// is PathPaymentStrictSend.
+type PathPaymentStrictSend struct {
+	Payment
+	Path              []base.Asset `json:"path"`
+	SourceAmount      string       `json:"source_amount"`
+	DestinationMin    string       `json:"destination_min"`
+	SourceAssetType   string       `json:"source_asset_type"`
+	SourceAssetCode   string       `json:"source_asset_code,omitempty"`
+	SourceAssetIssuer string       `json:"source_asset_issuer,omitempty"`
+}
+
 // ManageData represents a ManageData operation as it is serialized into json
 // for the horizon API.
 type ManageData struct {
@@ -129,6 +151,7 @@ type CreatePassiveSellOffer struct {
 // is ManageSellOffer.
 type ManageSellOffer struct {
 	Offer
+	// Action needed in release: horizon-v0.23.0
 	OfferID int64 `json:"offer_id"`
 }
 
@@ -136,6 +159,7 @@ type ManageSellOffer struct {
 // is ManageBuyOffer.
 type ManageBuyOffer struct {
 	Offer
+	// Action needed in release: horizon-v0.23.0
 	OfferID int64 `json:"offer_id"`
 }
 
@@ -204,25 +228,25 @@ type Operation interface {
 }
 
 // GetType returns the type of operation
-func (this Base) GetType() string {
-	return this.Type
+func (base Base) GetType() string {
+	return base.Type
 }
 
 // GetTypeI returns the ID of type of operation
-func (this Base) GetTypeI() int32 {
-	return this.TypeI
+func (base Base) GetTypeI() int32 {
+	return base.TypeI
 }
 
-func (this Base) GetID() string {
-	return this.ID
+func (base Base) GetID() string {
+	return base.ID
 }
 
-func (this Base) GetTransactionHash() string {
-	return this.TransactionHash
+func (base Base) GetTransactionHash() string {
+	return base.TransactionHash
 }
 
-func (this Base) IsTransactionSuccessful() bool {
-	return this.TransactionSuccessful
+func (base Base) IsTransactionSuccessful() bool {
+	return base.TransactionSuccessful
 }
 
 // OperationsPage is the json resource representing a page of operations.
@@ -277,7 +301,7 @@ func UnmarshalOperation(operationTypeID int32, dataString []byte) (ops Operation
 			return
 		}
 		ops = op
-	case xdr.OperationTypePathPayment:
+	case xdr.OperationTypePathPaymentStrictReceive:
 		var op PathPayment
 		if err = json.Unmarshal(dataString, &op); err != nil {
 			return
@@ -345,6 +369,12 @@ func UnmarshalOperation(operationTypeID int32, dataString []byte) (ops Operation
 		ops = op
 	case xdr.OperationTypeManageBuyOffer:
 		var op ManageBuyOffer
+		if err = json.Unmarshal(dataString, &op); err != nil {
+			return
+		}
+		ops = op
+	case xdr.OperationTypePathPaymentStrictSend:
+		var op PathPaymentStrictSend
 		if err = json.Unmarshal(dataString, &op); err != nil {
 			return
 		}

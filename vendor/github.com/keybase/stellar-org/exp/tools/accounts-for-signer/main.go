@@ -5,8 +5,9 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/stellar/go/exp/ingest/adapters"
+	"github.com/stellar/go/exp/ingest"
 	"github.com/stellar/go/exp/ingest/pipeline"
+	"github.com/stellar/go/exp/ingest/processors"
 	"github.com/stellar/go/support/historyarchive"
 	"github.com/stellar/go/xdr"
 )
@@ -17,34 +18,30 @@ func main() {
 		panic(err)
 	}
 
-	historyAdapter := ingestadapters.MakeHistoryArchiveAdapter(archive)
+	statePipeline := &pipeline.StatePipeline{}
+	statePipeline.SetRoot(
+		// Passes accounts only
+		pipeline.StateNode(&processors.EntryTypeFilter{Type: xdr.LedgerEntryTypeAccount}).
+			Pipe(
+				// Finds accounts for a single signer
+				pipeline.StateNode(&AccountsForSignerProcessor{Signer: "GBMALBYJT6A73SYQWOWVVCGSPUPJPBX4AFDJ7A63GG64QCNRCAFYWWEN"}).
+					Pipe(pipeline.StateNode(&processors.CSVPrinter{Filename: "./accounts_for_signer.csv"})),
+			),
+	)
 
-	seq, err := historyAdapter.GetLatestLedgerSequence()
-	if err != nil {
-		panic(err)
+	session := &ingest.SingleLedgerSession{
+		Archive:       archive,
+		StatePipeline: statePipeline,
 	}
 
-	fmt.Printf("Getting data for ledger seq = %d\n", seq)
+	doneStats := printPipelineStats(statePipeline)
 
-	stateReader, err := historyAdapter.GetState(seq)
+	err = session.Run()
 	if err != nil {
-		panic(err)
-	}
-
-	p, err := buildPipeline()
-	if err != nil {
-		panic(err)
-	}
-
-	errChan := p.ProcessState(stateReader)
-	doneStats := printPipelineStats(p)
-
-	err = <-errChan
-	if err != nil {
-		fmt.Println("Pipeline errored:")
+		fmt.Println("Session errored:")
 		fmt.Println(err)
 	} else {
-		fmt.Println("Pipeline finished without errors")
+		fmt.Println("Session finished without errors")
 	}
 
 	time.Sleep(10 * time.Second)
@@ -64,23 +61,7 @@ func archive() (*historyarchive.Archive, error) {
 	)
 }
 
-func buildPipeline() (*pipeline.Pipeline, error) {
-	p := &pipeline.Pipeline{}
-
-	p.AddStateProcessorTree(
-		// Passes accounts only
-		p.Node(&EntryTypeFilter{Type: xdr.LedgerEntryTypeAccount}).
-			Pipe(
-				// Finds accounts for a single signer
-				p.Node(&AccountsForSignerProcessor{Signer: "GBMALBYJT6A73SYQWOWVVCGSPUPJPBX4AFDJ7A63GG64QCNRCAFYWWEN"}).
-					Pipe(p.Node(&PrintAllProcessor{Filename: "./accounts_for_signer.csv"})),
-			),
-	)
-
-	return p, nil
-}
-
-func printPipelineStats(p *pipeline.Pipeline) chan<- bool {
+func printPipelineStats(p *pipeline.StatePipeline) chan<- bool {
 	startTime := time.Now()
 	done := make(chan bool)
 	ticker := time.NewTicker(10 * time.Second)

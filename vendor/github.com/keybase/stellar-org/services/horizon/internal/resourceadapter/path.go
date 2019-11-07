@@ -9,9 +9,9 @@ import (
 )
 
 // PopulatePath converts the paths.Path into a Path
-func PopulatePath(ctx context.Context, dest *horizon.Path, q paths.Query, p paths.Path) (err error) {
-	dest.DestinationAmount = amount.String(q.DestinationAmount)
-	dest.SourceAmount = amount.String(p.Cost)
+func PopulatePath(ctx context.Context, dest *horizon.Path, p paths.Path) (err error) {
+	dest.DestinationAmount = amount.String(p.DestinationAmount)
+	dest.SourceAmount = amount.String(p.SourceAmount)
 
 	err = p.Source.Extract(
 		&dest.SourceAssetType,

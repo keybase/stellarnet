@@ -73,8 +73,8 @@ func (op PathPaymentOperationBody) Build() txnbuild.Operation {
 	txnOp := txnbuild.PathPayment{
 		Destination: op.Destination,
 		DestAmount:  op.DestinationAmount,
-		DestAsset:   txnbuild.CreditAsset{Code: op.DestinationAsset.Code, Issuer: op.DestinationAsset.Issuer},
-		SendAsset:   txnbuild.CreditAsset{Code: op.SendAsset.Code, Issuer: op.SendAsset.Issuer},
+		DestAsset:   op.DestinationAsset.ToBaseAsset(),
+		SendAsset:   op.SendAsset.ToBaseAsset(),
 		SendMax:     op.SendMax,
 		Path:        paths,
 	}

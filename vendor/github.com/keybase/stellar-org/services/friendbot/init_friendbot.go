@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
@@ -18,6 +19,7 @@ func initFriendbot(
 	horizonURL string,
 	startingBalance string,
 	numMinions int,
+	baseFee uint32,
 ) (*internal.Bot, error) {
 	if friendbotSecret == "" || networkPassphrase == "" || horizonURL == "" || startingBalance == "" || numMinions < 0 {
 		return nil, errors.New("invalid input param(s)")
@@ -46,7 +48,7 @@ func initFriendbot(
 		numMinions = 1000
 	}
 	log.Printf("Found all valid params, now creating %d minions", numMinions)
-	minions, err := createMinionAccounts(botAccount, botKeypair, networkPassphrase, startingBalance, minionBalance, numMinions, hclient)
+	minions, err := createMinionAccounts(botAccount, botKeypair, networkPassphrase, startingBalance, minionBalance, numMinions, baseFee, hclient)
 	if err != nil && len(minions) == 0 {
 		return nil, errors.Wrap(err, "creating minion accounts")
 	}
@@ -54,7 +56,7 @@ func initFriendbot(
 	return &internal.Bot{Minions: minions}, nil
 }
 
-func createMinionAccounts(botAccount internal.Account, botKeypair *keypair.Full, networkPassphrase, newAccountBalance, minionBalance string, numMinions int, hclient *horizonclient.Client) ([]internal.Minion, error) {
+func createMinionAccounts(botAccount internal.Account, botKeypair *keypair.Full, networkPassphrase, newAccountBalance, minionBalance string, numMinions int, baseFee uint32, hclient *horizonclient.Client) ([]internal.Minion, error) {
 	var minions []internal.Minion
 	numRemainingMinions := numMinions
 	minionBatchSize := 100
@@ -88,6 +90,7 @@ func createMinionAccounts(botAccount internal.Account, botKeypair *keypair.Full,
 				Network:           networkPassphrase,
 				StartingBalance:   newAccountBalance,
 				SubmitTransaction: internal.SubmitTransaction,
+				BaseFee:           baseFee,
 			})
 
 			ops = append(ops, &txnbuild.CreateAccount{
@@ -102,14 +105,21 @@ func createMinionAccounts(botAccount internal.Account, botKeypair *keypair.Full,
 			Operations:    ops,
 			Timebounds:    txnbuild.NewTimeout(300),
 			Network:       networkPassphrase,
+			BaseFee:       baseFee,
 		}
+
 		txe, err := txn.BuildSignEncode(botKeypair)
 		if err != nil {
 			return minions, errors.Wrap(err, "making create accounts tx")
 		}
 		resp, err := hclient.SubmitTransactionXDR(txe)
 		if err != nil {
-			log.Print(resp)
+			log.Println(resp)
+			switch e := err.(type) {
+			case *horizonclient.Error:
+				problemString := fmt.Sprintf("Problem[Type=%s, Title=%s, Status=%d, Detail=%s, Extras=%v]", e.Problem.Type, e.Problem.Title, e.Problem.Status, e.Problem.Detail, e.Problem.Extras)
+				return minions, errors.Wrap(errors.Wrap(e, problemString), "submitting create accounts tx")
+			}
 			return minions, errors.Wrap(err, "submitting create accounts tx")
 		}
 

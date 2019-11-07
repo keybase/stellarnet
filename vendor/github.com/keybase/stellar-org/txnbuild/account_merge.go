@@ -30,3 +30,27 @@ func (am *AccountMerge) BuildXDR() (xdr.Operation, error) {
 	SetOpSourceAccount(&op, am.SourceAccount)
 	return op, nil
 }
+
+// FromXDR for AccountMerge initialises the txnbuild struct from the corresponding xdr Operation.
+func (am *AccountMerge) FromXDR(xdrOp xdr.Operation) error {
+	if xdrOp.Body.Type != xdr.OperationTypeAccountMerge {
+		return errors.New("error parsing account_merge operation from xdr")
+	}
+
+	am.SourceAccount = accountFromXDR(xdrOp.SourceAccount)
+	if xdrOp.Body.Destination != nil {
+		am.Destination = xdrOp.Body.Destination.Address()
+	}
+
+	return nil
+}
+
+// Validate for AccountMerge validates the required struct fields. It returns an error if any of the fields are
+// invalid. Otherwise, it returns nil.
+func (am *AccountMerge) Validate() error {
+	err := validateStellarPublicKey(am.Destination)
+	if err != nil {
+		return NewValidationError("Destination", err.Error())
+	}
+	return nil
+}

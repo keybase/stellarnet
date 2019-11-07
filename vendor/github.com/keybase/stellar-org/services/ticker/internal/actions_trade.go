@@ -79,12 +79,14 @@ func BackfillTrades(
 	var dbTrades []tickerdb.Trade
 
 	for _, trade := range trades {
-		bID, cID, err := findBaseAndCounter(s, trade)
+		var bID, cID int32
+		bID, cID, err = findBaseAndCounter(s, trade)
 		if err != nil {
 			continue
 		}
 
-		dbTrade, err := hProtocolTradeToDBTrade(trade, bID, cID)
+		var dbTrade tickerdb.Trade
+		dbTrade, err = hProtocolTradeToDBTrade(trade, bID, cID)
 		if err != nil {
 			l.Errorln("Could not convert entry to DB Trade: ", err)
 			continue

@@ -19,9 +19,5 @@ func isStellarAddress(i interface{}, context interface{}) bool {
 
 	_, _, err := address.Split(addr)
 
-	if err == nil {
-		return true
-	}
-
-	return false
+	return err == nil
 }

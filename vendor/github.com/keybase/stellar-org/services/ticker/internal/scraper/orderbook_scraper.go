@@ -3,6 +3,7 @@ package scraper
 import (
 	"math"
 	"strconv"
+	"time"
 
 	"github.com/pkg/errors"
 	horizonclient "github.com/stellar/go/clients/horizonclient"
@@ -12,6 +13,11 @@ import (
 
 // fetchOrderbook fetches the orderbook stats for the base and counter assets provided in the parameters
 func (c *ScraperConfig) fetchOrderbook(bType, bCode, bIssuer, cType, cCode, cIssuer string) (OrderbookStats, error) {
+	var (
+		err     error
+		summary hProtocol.OrderBookSummary
+	)
+
 	obStats := OrderbookStats{
 		BaseAssetCode:      bType,
 		BaseAssetType:      bCode,
@@ -23,13 +29,23 @@ func (c *ScraperConfig) fetchOrderbook(bType, bCode, bIssuer, cType, cCode, cIss
 		LowestAsk:          math.Inf(1),  // start with +Inf to make sure we catch the correct min ask
 	}
 	r := createOrderbookRequest(bType, bCode, bIssuer, cType, cCode, cIssuer)
-	summary, err := c.Client.OrderBook(r)
+
+	err = utils.Retry(5, 5*time.Second, c.Logger, func() error {
+		summary, err = c.Client.OrderBook(r)
+		if err != nil {
+			c.Logger.Infoln("Horizon rate limit reached!")
+		}
+		return err
+	})
 	if err != nil {
 		return obStats, errors.Wrap(err, "could not fetch orderbook summary")
 	}
 
 	err = calcOrderbookStats(&obStats, summary)
-	return obStats, errors.Wrap(err, "could not calculate orderbook stats")
+	if err != nil {
+		return obStats, errors.Wrap(err, "could not calculate orderbook stats")
+	}
+	return obStats, nil
 }
 
 // calcOrderbookStats calculates the NumBids, BidVolume, BidMax, NumAsks, AskVolume and AskMin

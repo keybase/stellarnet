@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/stellar/go/amount"
-	. "github.com/stellar/go/protocols/horizon"
+	protocol "github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/services/horizon/internal/db2/assets"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/support/render/hal"
@@ -15,7 +15,7 @@ import (
 //func PopulateAssetStat(
 func PopulateAssetStat(
 	ctx context.Context,
-	res *AssetStat,
+	res *protocol.AssetStat,
 	row assets.AssetStatsR,
 ) (err error) {
 	res.Asset.Type = row.Type
@@ -26,7 +26,7 @@ func PopulateAssetStat(
 		return errors.Wrap(err, "Invalid amount in PopulateAssetStat")
 	}
 	res.NumAccounts = row.NumAccounts
-	res.Flags = AccountFlags{
+	res.Flags = protocol.AccountFlags{
 		(row.Flags & int8(xdr.AccountFlagsAuthRequiredFlag)) != 0,
 		(row.Flags & int8(xdr.AccountFlagsAuthRevocableFlag)) != 0,
 		(row.Flags & int8(xdr.AccountFlagsAuthImmutableFlag)) != 0,

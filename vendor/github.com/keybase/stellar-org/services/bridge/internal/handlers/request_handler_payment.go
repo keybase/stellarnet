@@ -191,7 +191,8 @@ func (rh *RequestHandler) standardPayment(w http.ResponseWriter, request *bridge
 
 	var rSource *string
 	if request.Source != "" {
-		kp, err := keypair.Parse(request.Source)
+		var kp keypair.KP
+		kp, err = keypair.Parse(request.Source)
 		if err != nil {
 			log.WithFields(log.Fields{"error": err}).Error("Unable to convert seed to keypair")
 			helpers.Write(w, helpers.NewInvalidParameterError("source", "Source must be a valid secret seed."))
@@ -202,41 +203,20 @@ func (rh *RequestHandler) standardPayment(w http.ResponseWriter, request *bridge
 
 	var operationBuilder txnbuild.Operation
 
-	// check if Path payment
-
-	if request.SendMax != "" {
-		paymentOp := bridge.PathPaymentOperationBody{
-			Source:            rSource,
-			SendMax:           request.SendMax,
-			SendAsset:         protocols.Asset{Code: request.SendAssetCode, Issuer: request.SendAssetIssuer},
-			Destination:       request.Destination,
-			DestinationAmount: request.Amount,
-			DestinationAsset:  protocols.Asset{Code: request.AssetCode, Issuer: request.AssetIssuer},
-			Path:              request.Path,
-		}
-
-		operationBuilder = paymentOp.Build()
-	}
-
-	// if payment is to a custom asset
-	if request.AssetCode != "" && request.AssetIssuer != "" {
-		paymentOp := bridge.PaymentOperationBody{
-			Source:      rSource,
-			Destination: request.Destination,
-			Amount:      request.Amount,
-			Asset:       protocols.Asset{Code: request.AssetCode, Issuer: request.AssetIssuer},
-		}
-
-		operationBuilder = paymentOp.Build()
-
-	}
-
-	// if xlm payment
 	// Check if destination account exist
 	accountRequest := hc.AccountRequest{AccountID: destinationObject.AccountID}
 	_, err = rh.Horizon.AccountDetail(accountRequest)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Error loading account")
+		log.WithFields(log.Fields{"error": err}).Error("Error loading destination account")
+
+		// if pathpayment or custom asset
+		if request.SendMax != "" || (request.AssetCode != "" && request.AssetIssuer != "") {
+			// return error instead of creating account
+			log.WithFields(log.Fields{"destination": request.Destination}).Error("can not send custom asset or path payment to inactive destination")
+			helpers.Write(w, helpers.NewInvalidParameterError("destination", "Can not send custom asset or path payment to inactive destination."))
+			return
+		}
+
 		paymentOp := bridge.CreateAccountOperationBody{
 			Source:          rSource,
 			Destination:     request.Destination,
@@ -244,13 +224,29 @@ func (rh *RequestHandler) standardPayment(w http.ResponseWriter, request *bridge
 		}
 		operationBuilder = paymentOp.Build()
 	} else {
-		paymentOp := bridge.PaymentOperationBody{
-			Source:      rSource,
-			Destination: request.Destination,
-			Amount:      request.Amount,
-			Asset:       protocols.Asset{Code: request.AssetCode, Issuer: request.AssetIssuer},
+		// check if Path payment
+		if request.SendMax != "" {
+			paymentOp := bridge.PathPaymentOperationBody{
+				Source:            rSource,
+				SendMax:           request.SendMax,
+				SendAsset:         protocols.Asset{Code: request.SendAssetCode, Issuer: request.SendAssetIssuer},
+				Destination:       request.Destination,
+				DestinationAmount: request.Amount,
+				DestinationAsset:  protocols.Asset{Code: request.AssetCode, Issuer: request.AssetIssuer},
+				Path:              request.Path,
+			}
+
+			operationBuilder = paymentOp.Build()
+		} else {
+			paymentOp := bridge.PaymentOperationBody{
+				Source:      rSource,
+				Destination: request.Destination,
+				Amount:      request.Amount,
+				Asset:       protocols.Asset{Code: request.AssetCode, Issuer: request.AssetIssuer},
+			}
+
+			operationBuilder = paymentOp.Build()
 		}
-		operationBuilder = paymentOp.Build()
 	}
 
 	memoType := request.MemoType

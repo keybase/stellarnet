@@ -13,6 +13,6 @@ The `txnbuild` ([source](https://github.com/stellar/go/tree/master/txnbuild), [d
 
 - `horizonclient` ([source](https://github.com/stellar/go/tree/master/clients/horizonclient), [docs](https://godoc.org/github.com/stellar/go/clients/horizonclient)) - programmatic client access to Horizon
 - `txnbuild` ([source](https://github.com/stellar/go/tree/master/txnbuild), [docs](https://godoc.org/github.com/stellar/go/txnbuild)) - construction, signing and encoding of Stellar transactions and operations
-- `stellartoml` ([source](https://github.com/stellar/go/tree/master/clients/horizonclient), [docs](https://godoc.org/github.com/stellar/go/clients/stellartoml)) - parse [Stellar.toml](../../guides/concepts/stellar-toml.md) files from the internet
+- `stellartoml` ([source](https://github.com/stellar/go/tree/master/clients/stellartoml), [docs](https://godoc.org/github.com/stellar/go/clients/stellartoml)) - parse [Stellar.toml](../../guides/concepts/stellar-toml.md) files from the internet
 - `federation` ([source](https://godoc.org/github.com/stellar/go/clients/federation)) - resolve federation addresses  into stellar account IDs, suitable for use within a transaction
 

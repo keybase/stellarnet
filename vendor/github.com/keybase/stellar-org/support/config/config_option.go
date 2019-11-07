@@ -37,7 +37,7 @@ func (co *ConfigOption) Init(cmd *cobra.Command) error {
 
 // Require checks that a required string configuration option is not empty, raising a user error if it is.
 func (co *ConfigOption) Require() {
-	if co.Required == true && viper.GetString(co.Name) == "" {
+	if co.Required && viper.GetString(co.Name) == "" {
 		stdLog.Fatalf("Invalid config: %s is blank. Please specify --%s on the command line or set the %s environment variable.", co.Name, co.Name, co.EnvVar)
 	}
 }

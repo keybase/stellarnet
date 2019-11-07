@@ -6,6 +6,10 @@ file.  This project adheres to [Semantic Versioning](http://semver.org/).
 As this project is pre 1.0, breaking changes may happen for minor version
 bumps.  A breaking change will get clearly notified in this log.
 
+## Unreleased
+
+- Dropped support for Go 1.10, 1.11.
+
 ## [v0.2.0] - 2016-08-19
 
 ### Added
