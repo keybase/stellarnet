@@ -2,6 +2,8 @@ package httptest
 
 import (
 	"net/http"
+	"net/url"
+	"strconv"
 
 	"github.com/jarcoal/httpmock"
 	"github.com/stellar/go/support/errors"
@@ -36,7 +38,7 @@ func (ce *ClientExpectation) ReturnString(
 	)
 }
 
-// ReturnText causes this expectation to resolve to a json-based body with the
+// ReturnJSON causes this expectation to resolve to a json-based body with the
 // provided status code.  Panics when the provided body cannot be encoded to
 // JSON.
 func (ce *ClientExpectation) ReturnJSON(
@@ -57,4 +59,66 @@ func (ce *ClientExpectation) ReturnJSON(
 // `ReturnString`` instead.
 func (ce *ClientExpectation) ReturnNotFound() *ClientExpectation {
 	return ce.ReturnString(http.StatusNotFound, "not found")
+}
+
+// ReturnStringWithHeader causes this expectation to resolve to a string-based body with
+// the provided status code and response header.
+func (ce *ClientExpectation) ReturnStringWithHeader(
+	status int,
+	body string,
+	header http.Header,
+) *ClientExpectation {
+
+	req, err := ce.clientRequest()
+	if err != nil {
+		panic(err)
+	}
+
+	cResp := http.Response{
+		Status:     strconv.Itoa(status),
+		StatusCode: status,
+		Body:       httpmock.NewRespBodyFromString(body),
+		Header:     header,
+		Request:    req,
+	}
+
+	return ce.Return(httpmock.ResponderFromResponse(&cResp))
+}
+
+// ReturnJSONWithHeader causes this expectation to resolve to a json-based body with the provided
+// status code and response header.  Panics when the provided body cannot be encoded to JSON.
+func (ce *ClientExpectation) ReturnJSONWithHeader(
+	status int,
+	body interface{},
+	header http.Header,
+) *ClientExpectation {
+
+	r, err := httpmock.NewJsonResponse(status, body)
+	if err != nil {
+		panic(err)
+	}
+
+	req, err := ce.clientRequest()
+	if err != nil {
+		panic(err)
+	}
+
+	r.Header = header
+	r.Request = req
+	return ce.Return(httpmock.ResponderFromResponse(r))
+}
+
+// clientRequest builds a http.Request struct from the supplied request parameters.
+func (ce *ClientExpectation) clientRequest() (*http.Request, error) {
+	rurl, err := url.Parse(ce.URL)
+	if err != nil {
+		return nil, errors.Wrap(err, "failed to parse request url")
+	}
+
+	req := http.Request{
+		Method: ce.Method,
+		URL:    rurl,
+		Host:   rurl.Host,
+	}
+	return &req, nil
 }

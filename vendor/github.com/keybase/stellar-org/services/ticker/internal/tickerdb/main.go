@@ -47,6 +47,7 @@ type Asset struct {
 	Countries                   string    `db:"countries"`
 	Status                      string    `db:"status"`
 	IssuerID                    int32     `db:"issuer_id"`
+	Issuer                      Issuer    `db:"-"`
 }
 
 // Issuer represents an entry on the issuers table

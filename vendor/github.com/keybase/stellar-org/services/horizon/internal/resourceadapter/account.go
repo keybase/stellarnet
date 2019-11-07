@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	. "github.com/stellar/go/protocols/horizon"
+	protocol "github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/services/horizon/internal/httpx"
 	"github.com/stellar/go/support/errors"
@@ -14,7 +14,7 @@ import (
 // PopulateAccount fills out the resource's fields
 func PopulateAccount(
 	ctx context.Context,
-	dest *Account,
+	dest *protocol.Account,
 	ca core.Account,
 	cd []core.AccountData,
 	cs []core.Signer,
@@ -32,7 +32,7 @@ func PopulateAccount(
 	PopulateAccountThresholds(&dest.Thresholds, ca)
 
 	// populate balances
-	dest.Balances = make([]Balance, len(ct)+1)
+	dest.Balances = make([]protocol.Balance, len(ct)+1)
 	for i, tl := range ct {
 		err := PopulateBalance(&dest.Balances[i], tl)
 		if err != nil {
@@ -53,7 +53,7 @@ func PopulateAccount(
 	}
 
 	// populate signers
-	dest.Signers = make([]Signer, len(cs)+1)
+	dest.Signers = make([]protocol.Signer, len(cs)+1)
 	for i, s := range cs {
 		PopulateSigner(ctx, &dest.Signers[i], s)
 	}

@@ -101,12 +101,13 @@ func main() {
 }
 
 func readLine(prompt string, private bool) (string, error) {
-	fmt.Fprintf(os.Stdout, prompt)
+	fmt.Println(prompt)
 	var line string
 	var err error
 
 	if private {
-		str, err := gopass.GetPasswdMasked()
+		var str []byte
+		str, err = gopass.GetPasswdMasked()
 		if err != nil {
 			return "", err
 		}

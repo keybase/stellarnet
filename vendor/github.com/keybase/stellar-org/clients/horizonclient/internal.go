@@ -11,14 +11,15 @@ import (
 )
 
 // decodeResponse decodes the response from a request to a horizon server
-func decodeResponse(resp *http.Response, object interface{}) (err error) {
+func decodeResponse(resp *http.Response, object interface{}, hc *Client) (err error) {
 	defer resp.Body.Close()
 	decoder := json.NewDecoder(resp.Body)
 
-	// resp.Request should not be nil for Client requests
-	if resp.Request != nil {
-		setCurrentServerTime(resp.Request.Host, resp.Header["Date"])
+	u, err := url.Parse(hc.HorizonURL)
+	if err != nil {
+		return errors.Errorf("unable to parse the provided horizon url: %s", hc.HorizonURL)
 	}
+	setCurrentServerTime(u.Hostname(), resp.Header["Date"], hc)
 
 	if !(resp.StatusCode >= 200 && resp.StatusCode < 300) {
 		horizonError := &Error{
@@ -95,6 +96,10 @@ func addQueryParams(params ...interface{}) string {
 			if param {
 				query.Add("include_failed", "true")
 			}
+		case join:
+			if param != "" {
+				query.Add("join", string(param))
+			}
 		case map[string]string:
 			for key, value := range param {
 				if value != "" {
@@ -110,7 +115,7 @@ func addQueryParams(params ...interface{}) string {
 }
 
 // setCurrentServerTime saves the current time returned by a horizon server
-func setCurrentServerTime(host string, serverDate []string) {
+func setCurrentServerTime(host string, serverDate []string, hc *Client) {
 	if len(serverDate) == 0 {
 		return
 	}
@@ -119,12 +124,13 @@ func setCurrentServerTime(host string, serverDate []string) {
 		return
 	}
 	serverTimeMapMutex.Lock()
-	ServerTimeMap[host] = ServerTimeRecord{ServerTime: st.UTC().Unix(), LocalTimeRecorded: time.Now().UTC().Unix()}
+	hc.setDefaultCurrentUniversalTime()
+	ServerTimeMap[host] = ServerTimeRecord{ServerTime: st.UTC().Unix(), LocalTimeRecorded: hc.currentUniversalTime()}
 	serverTimeMapMutex.Unlock()
 }
 
 // currentServerTime returns the current server time for a given horizon server
-func currentServerTime(host string) int64 {
+func currentServerTime(host string, currentTimeUTC int64) int64 {
 	serverTimeMapMutex.Lock()
 	st := ServerTimeMap[host]
 	serverTimeMapMutex.Unlock()
@@ -132,12 +138,15 @@ func currentServerTime(host string) int64 {
 		return 0
 	}
 
-	currentTime := time.Now().UTC().Unix()
 	// if it has been more than 5 minutes from the last time, then return 0 because the saved
 	// server time is behind.
-	if currentTime-st.LocalTimeRecorded > 60*5 {
+	if currentTimeUTC-st.LocalTimeRecorded > 60*5 {
 		return 0
 	}
+	return currentTimeUTC - st.LocalTimeRecorded + st.ServerTime
+}
 
-	return currentTime - st.LocalTimeRecorded + st.ServerTime
+// universalTimeFunc returns the current UTC unix time in seconds.
+var universalTimeFunc = func() int64 {
+	return time.Now().UTC().Unix()
 }

@@ -76,8 +76,7 @@ func (c *Config) Validate() (err error) {
 		}
 	}
 
-	var dbURL *url.URL
-	dbURL, err = url.Parse(c.Database.URL)
+	_, err = url.Parse(c.Database.URL)
 	if err != nil {
 		err = errors.New("Cannot parse database.url param")
 		return
@@ -85,11 +84,8 @@ func (c *Config) Validate() (err error) {
 
 	switch c.Database.Type {
 	case "mysql":
-		// Add `parseTime=true` param to mysql url
-		query := dbURL.Query()
-		query.Set("parseTime", "true")
-		dbURL.RawQuery = query.Encode()
-		c.Database.URL = dbURL.String()
+		err = errors.New("Invalid database.type param, mysql support is discontinued")
+		return
 	case "postgres":
 		break
 	default:

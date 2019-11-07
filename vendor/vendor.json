@@ -75,11 +75,11 @@
 			"revisionTime": "2019-10-09T02:57:16Z"
 		},
 		{
-			"checksumSHA1": "taEBeuO78f77cGfJWD9qmdkeXYU=",
+			"checksumSHA1": "EgxoUr2+Zcda0qQi1l8nCXdHqh4=",
 			"origin": "github.com/keybase/stellar-org",
 			"path": "github.com/stellar/go",
-			"revision": "e43266cae98f292a11218decae91a277a8489da2",
-			"revisionTime": "2019-06-21T18:08:33Z",
+			"revision": "0fc3bfe3dfa7aba69074e417e7dd47101b44e219",
+			"revisionTime": "2019-10-10T20:56:48Z",
 			"tree": true
 		},
 		{

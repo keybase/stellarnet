@@ -115,33 +115,33 @@ func String(code interface{}) (string, error) {
 		case xdr.PaymentResultCodePaymentNoIssuer:
 			return OpNoIssuer, nil
 		}
-	case xdr.PathPaymentResultCode:
+	case xdr.PathPaymentStrictReceiveResultCode:
 		switch code {
-		case xdr.PathPaymentResultCodePathPaymentSuccess:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveSuccess:
 			return OpSuccess, nil
-		case xdr.PathPaymentResultCodePathPaymentMalformed:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveMalformed:
 			return OpMalformed, nil
-		case xdr.PathPaymentResultCodePathPaymentUnderfunded:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveUnderfunded:
 			return OpUnderfunded, nil
-		case xdr.PathPaymentResultCodePathPaymentSrcNoTrust:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveSrcNoTrust:
 			return "op_src_no_trust", nil
-		case xdr.PathPaymentResultCodePathPaymentSrcNotAuthorized:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveSrcNotAuthorized:
 			return "op_src_not_authorized", nil
-		case xdr.PathPaymentResultCodePathPaymentNoDestination:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveNoDestination:
 			return "op_no_destination", nil
-		case xdr.PathPaymentResultCodePathPaymentNoTrust:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveNoTrust:
 			return "op_no_trust", nil
-		case xdr.PathPaymentResultCodePathPaymentNotAuthorized:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveNotAuthorized:
 			return "op_not_authorized", nil
-		case xdr.PathPaymentResultCodePathPaymentLineFull:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveLineFull:
 			return OpLineFull, nil
-		case xdr.PathPaymentResultCodePathPaymentNoIssuer:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveNoIssuer:
 			return OpNoIssuer, nil
-		case xdr.PathPaymentResultCodePathPaymentTooFewOffers:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveTooFewOffers:
 			return "op_too_few_offers", nil
-		case xdr.PathPaymentResultCodePathPaymentOfferCrossSelf:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveOfferCrossSelf:
 			return "op_cross_self", nil
-		case xdr.PathPaymentResultCodePathPaymentOverSendmax:
+		case xdr.PathPaymentStrictReceiveResultCodePathPaymentStrictReceiveOverSendmax:
 			return "op_over_source_max", nil
 		}
 	case xdr.ManageBuyOfferResultCode:
@@ -297,6 +297,36 @@ func String(code interface{}) (string, error) {
 		case xdr.BumpSequenceResultCodeBumpSequenceBadSeq:
 			return "op_bad_seq", nil
 		}
+
+	case xdr.PathPaymentStrictSendResultCode:
+		switch code {
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendSuccess:
+			return OpSuccess, nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendMalformed:
+			return OpMalformed, nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendUnderfunded:
+			return OpUnderfunded, nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendSrcNoTrust:
+			return "op_src_no_trust", nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendSrcNotAuthorized:
+			return "op_src_not_authorized", nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendNoDestination:
+			return "op_no_destination", nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendNoTrust:
+			return "op_no_trust", nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendNotAuthorized:
+			return "op_not_authorized", nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendLineFull:
+			return OpLineFull, nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendNoIssuer:
+			return OpNoIssuer, nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendTooFewOffers:
+			return "op_too_few_offers", nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendOfferCrossSelf:
+			return "op_cross_self", nil
+		case xdr.PathPaymentStrictSendResultCodePathPaymentStrictSendUnderDestmin:
+			return "op_under_dest_min", nil
+		}
 	}
 
 	return "", errors.New(ErrUnknownCode)
@@ -317,8 +347,8 @@ func ForOperationResult(opr xdr.OperationResult) (string, error) {
 		ic = ir.MustCreateAccountResult().Code
 	case xdr.OperationTypePayment:
 		ic = ir.MustPaymentResult().Code
-	case xdr.OperationTypePathPayment:
-		ic = ir.MustPathPaymentResult().Code
+	case xdr.OperationTypePathPaymentStrictReceive:
+		ic = ir.MustPathPaymentStrictReceiveResult().Code
 	case xdr.OperationTypeManageBuyOffer:
 		ic = ir.MustManageBuyOfferResult().Code
 	case xdr.OperationTypeManageSellOffer:
@@ -339,6 +369,8 @@ func ForOperationResult(opr xdr.OperationResult) (string, error) {
 		ic = ir.MustManageDataResult().Code
 	case xdr.OperationTypeBumpSequence:
 		ic = ir.MustBumpSeqResult().Code
+	case xdr.OperationTypePathPaymentStrictSend:
+		ic = ir.MustPathPaymentStrictSendResult().Code
 	}
 
 	return String(ic)

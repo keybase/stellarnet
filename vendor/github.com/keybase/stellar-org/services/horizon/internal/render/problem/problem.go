@@ -94,4 +94,14 @@ var (
 			"behind the connected instance of stellar-core.  If you operate this " +
 			"server, please ensure that the ingestion system is properly running.",
 	}
+
+	// StillIngesting is a well-known problem type.  Use it as a shortcut
+	// in your actions.
+	StillIngesting = problem.P{
+		Type:   "still_ingesting",
+		Title:  "Still Ingesting",
+		Status: http.StatusServiceUnavailable,
+		Detail: "Data cannot be presented because it's still being ingested. Please " +
+			"wait for several minutes before trying your request again.",
+	}
 )

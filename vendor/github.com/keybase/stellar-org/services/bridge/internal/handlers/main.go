@@ -22,12 +22,3 @@ type RequestHandler struct {
 	TransactionSubmitter submitter.TransactionSubmitterInterface `inject:""`
 	PaymentListener      *listener.PaymentListener               `inject:""`
 }
-
-func (rh *RequestHandler) isAssetAllowed(code string, issuer string) bool {
-	for _, asset := range rh.Config.Assets {
-		if asset.Code == code && asset.Issuer == issuer {
-			return true
-		}
-	}
-	return false
-}

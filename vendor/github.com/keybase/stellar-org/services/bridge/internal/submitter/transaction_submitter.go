@@ -283,15 +283,15 @@ func (ts *TransactionSubmitter) SubmitAndSave(paymentID *string, sourceAccount, 
 		herr, isHorizonError = err.(*hc.Error)
 		if !isHorizonError {
 			ts.log.WithFields(logrus.Fields{"err": err}).Error("Error submitting transaction ", err)
-			return
-		}
-		var result string
-		result, err = herr.ResultString()
-		if err != nil {
-			result = errors.Wrap(err, "Error getting tx result").Error()
+		} else {
+			var result string
+			result, err = herr.ResultString()
+			if err != nil {
+				result = errors.Wrap(err, "Error getting tx result").Error()
+			}
+			sentTransaction.ResultXdr = &result
 		}
 		sentTransaction.Status = db.SentTransactionStatusFailure
-		sentTransaction.ResultXdr = &result
 	}
 
 	err = ts.Database.UpdateSentTransaction(sentTransaction)

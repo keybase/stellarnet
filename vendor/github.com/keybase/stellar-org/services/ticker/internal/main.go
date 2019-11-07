@@ -54,5 +54,20 @@ type AssetSummary struct {
 type Asset struct {
 	scraper.FinalAsset
 
+	IssuerDetail       Issuer `json:"issuer_detail"`
 	LastValidTimestamp string `json:"last_valid"`
+}
+
+// Issuer represents the aggregated data for a given issuer.
+type Issuer struct {
+	PublicKey        string `json:"public_key"`
+	Name             string `json:"name"`
+	URL              string `json:"url"`
+	TOMLURL          string `json:"toml_url"`
+	FederationServer string `json:"federation_server"`
+	AuthServer       string `json:"auth_server"`
+	TransferServer   string `json:"transfer_server"`
+	WebAuthEndpoint  string `json:"web_auth_endpoint"`
+	DepositServer    string `json:"deposit_server"`
+	OrgTwitter       string `json:"org_twitter"`
 }

@@ -86,8 +86,33 @@ func getLimit(r *http.Request, defaultSize, maxSize uint64) (uint64, error) {
 	return uint64(limitInt64), nil
 }
 
-// getPageQuery gets the page query and does the validation if disableCursorValidation is false.
-func getPageQuery(r *http.Request, disableCursorValidation bool) (db2.PageQuery, error) {
+// getAccountsPageQuery gets the page query for /accounts
+func getAccountsPageQuery(r *http.Request) (db2.PageQuery, error) {
+	cursor, err := hchi.GetStringFromURL(r, actions.ParamCursor)
+	if err != nil {
+		return db2.PageQuery{}, errors.Wrap(err, "getting param cursor")
+	}
+
+	order, err := getOrder(r)
+	if err != nil {
+		return db2.PageQuery{}, errors.Wrap(err, "getting param order")
+	}
+
+	limit, err := getLimit(r, db2.DefaultPageSize, db2.MaxPageSize)
+	if err != nil {
+		return db2.PageQuery{}, errors.Wrap(err, "getting param limit")
+	}
+
+	return db2.PageQuery{
+		Cursor: cursor,
+		Order:  order,
+		Limit:  limit,
+	}, nil
+}
+
+// getPageQuery gets the page query and does the pair validation if
+// disablePairValidation is false.
+func getPageQuery(r *http.Request, disablePairValidation bool) (db2.PageQuery, error) {
 	cursor, err := getCursor(r)
 	if err != nil {
 		return db2.PageQuery{}, errors.Wrap(err, "getting param cursor")
@@ -108,7 +133,7 @@ func getPageQuery(r *http.Request, disableCursorValidation bool) (db2.PageQuery,
 		Order:  order,
 		Limit:  limit,
 	}
-	if !disableCursorValidation {
+	if !disablePairValidation {
 		_, _, err = pq.CursorInt64Pair(db2.DefaultPairSep)
 		if err != nil {
 			return db2.PageQuery{}, problem.MakeInvalidFieldProblem(actions.ParamCursor, db2.ErrInvalidCursor)
@@ -135,6 +160,25 @@ func getInt32ParamFromURL(r *http.Request, key string) (int32, error) {
 	}
 
 	return int32(asI64), nil
+}
+
+// getInt64ParamFromURL gets the int64 param with the provided key. It errors
+// if the param value cannot be parsed as int64.
+func getInt64ParamFromURL(r *http.Request, key string) (int64, error) {
+	val, err := hchi.GetStringFromURL(r, key)
+	if err != nil {
+		return 0, errors.Wrapf(err, "loading %s from URL", key)
+	}
+	if val == "" {
+		return 0, nil
+	}
+
+	asI64, err := strconv.ParseInt(val, 10, 64)
+	if err != nil {
+		return 0, problem.MakeInvalidFieldProblem(key, errors.New("invalid int64 value"))
+	}
+
+	return asI64, nil
 }
 
 // getBoolParamFromURL gets the bool param with the provided key. It errors if

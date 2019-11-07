@@ -29,8 +29,8 @@ To learn more about the concept of transactions in the Stellar network, take a l
 | memo_type        | string | |
 | memo             | string | |
 | signatures | string[] | An array of signatures used to sign this transaction |
-| valid_after | ISO8601 string | |
-| valid_before | ISO8601 string | |
+| valid_after | RFC3339 date-time string | |
+| valid_before | RFC3339 date-time string | |
 
 ## Links
 

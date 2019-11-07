@@ -20,7 +20,9 @@ func PopulateRoot(
 	currentProtocolVersion int32,
 	coreSupportedProtocolVersion int32,
 	friendBotURL *url.URL,
+	experimentalIngestionEnabled bool,
 ) {
+	dest.ExpHorizonSequence = ledgerState.ExpHistoryLatest
 	dest.HorizonSequence = ledgerState.HistoryLatest
 	dest.HistoryElderSequence = ledgerState.HistoryElder
 	dest.CoreSequence = ledgerState.CoreLatest
@@ -41,6 +43,16 @@ func PopulateRoot(
 	dest.Links.AccountTransactions = lb.PagedLink("/accounts/{account_id}/transactions")
 	dest.Links.Assets = lb.Link("/assets{?asset_code,asset_issuer,cursor,limit,order}")
 	dest.Links.Metrics = lb.Link("/metrics")
+
+	if experimentalIngestionEnabled {
+		accountsLink := lb.Link("/accounts?{signer}")
+		offerLink := lb.Link("/offers/{offer_id}")
+		offersLink := lb.Link("/offers{?seller,selling_asset_type,selling_asset_code,selling_asset_issuer,buying_asset_type,buying_asset_code,buying_asset_issuer,cursor,limit,order}")
+		dest.Links.Accounts = &accountsLink
+		dest.Links.Offer = &offerLink
+		dest.Links.Offers = &offersLink
+	}
+
 	dest.Links.OrderBook = lb.Link("/order_book{?selling_asset_type,selling_asset_code,selling_asset_issuer,buying_asset_type,buying_asset_code,buying_asset_issuer,limit}")
 	dest.Links.Self = lb.Link("/")
 	dest.Links.Transaction = lb.Link("/transactions/{hash}")

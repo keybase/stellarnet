@@ -118,14 +118,20 @@ var dbInitCmd = &cobra.Command{
 	Short: "install schema",
 	Long:  "init initializes the postgres database used by horizon.",
 	Run: func(cmd *cobra.Command, args []string) {
-		dbConn, err := db.Open("postgres", viper.GetString("db-url"))
+		db, err := sql.Open("postgres", viper.GetString("db-url"))
 		if err != nil {
 			log.Fatal(err)
 		}
 
-		err = schema.Init(dbConn)
+		numMigrationsRun, err := schema.Migrate(db, schema.MigrateUp, 0)
 		if err != nil {
 			log.Fatal(err)
+		}
+
+		if numMigrationsRun == 0 {
+			log.Println("No migrations applied.")
+		} else {
+			log.Printf("Successfully applied %d migrations.\n", numMigrationsRun)
 		}
 	},
 }
@@ -160,6 +166,7 @@ var dbMigrateCmd = &cobra.Command{
 		if err != nil {
 			log.Fatal(err)
 		}
+		pingDB(db)
 
 		numMigrationsRun, err := schema.Migrate(db, dir, count)
 		if err != nil {
@@ -420,13 +427,21 @@ func reingestRange(i *ingest.System, from, to int32) error {
 	})
 
 	hlog.Infof("Starting %d workers...", workers)
+	done := make(chan bool)
 	go func() {
-		c := time.Tick(10 * time.Second)
-		for range c {
+		ticker := time.NewTicker(10 * time.Second)
+		for {
+			select {
+			case <-done:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+			}
 			hlog.WithField("progress", float32(allJobs-pool.WorkSize())/float32(allJobs)*100).Info("Work status")
 		}
 	}()
 	pool.Start(workers)
+	done <- true
 	hlog.Info("Done")
 	return nil
 }

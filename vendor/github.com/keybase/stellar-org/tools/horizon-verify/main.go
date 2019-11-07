@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"sync"
@@ -149,20 +148,20 @@ func main() {
 	}
 }
 
-func getBody(url string) []byte {
-	resp, err := http.Get(url)
-	if err != nil {
-		panic(err)
-	}
+// func getBody(url string) []byte {
+// 	resp, err := http.Get(url)
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	if resp.StatusCode != http.StatusOK {
-		panic(fmt.Sprintf("%d response for %s", resp.StatusCode, url))
-	}
+// 	if resp.StatusCode != http.StatusOK {
+// 		panic(fmt.Sprintf("%d response for %s", resp.StatusCode, url))
+// 	}
 
-	body, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		panic(err)
-	}
+// 	body, err := ioutil.ReadAll(resp.Body)
+// 	if err != nil {
+// 		panic(err)
+// 	}
 
-	return body
-}
+// 	return body
+// }

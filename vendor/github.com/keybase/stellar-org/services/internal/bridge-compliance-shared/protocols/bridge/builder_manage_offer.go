@@ -25,8 +25,8 @@ type ManageOfferOperationBody struct {
 func (op ManageOfferOperationBody) Build() txnbuild.Operation {
 	if op.PassiveOffer {
 		txnOp := txnbuild.CreatePassiveSellOffer{
-			Selling: txnbuild.CreditAsset{Code: op.Selling.Code, Issuer: op.Selling.Issuer},
-			Buying:  txnbuild.CreditAsset{Code: op.Buying.Code, Issuer: op.Buying.Issuer},
+			Selling: op.Selling.ToBaseAsset(),
+			Buying:  op.Buying.ToBaseAsset(),
 			Amount:  op.Amount,
 			Price:   op.Price,
 		}

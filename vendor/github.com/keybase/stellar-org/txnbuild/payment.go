@@ -51,3 +51,44 @@ func (p *Payment) BuildXDR() (xdr.Operation, error) {
 	SetOpSourceAccount(&op, p.SourceAccount)
 	return op, nil
 }
+
+// FromXDR for Payment initialises the txnbuild struct from the corresponding xdr Operation.
+func (p *Payment) FromXDR(xdrOp xdr.Operation) error {
+	result, ok := xdrOp.Body.GetPaymentOp()
+	if !ok {
+		return errors.New("error parsing payment operation from xdr")
+	}
+
+	p.SourceAccount = accountFromXDR(xdrOp.SourceAccount)
+	p.Destination = result.Destination.Address()
+	p.Amount = amount.String(result.Amount)
+
+	asset, err := assetFromXDR(result.Asset)
+	if err != nil {
+		return errors.Wrap(err, "error parsing asset in payment operation")
+	}
+	p.Asset = asset
+
+	return nil
+}
+
+// Validate for Payment validates the required struct fields. It returns an error if any
+// of the fields are invalid. Otherwise, it returns nil.
+func (p *Payment) Validate() error {
+	err := validateStellarPublicKey(p.Destination)
+	if err != nil {
+		return NewValidationError("Destination", err.Error())
+	}
+
+	err = validateStellarAsset(p.Asset)
+	if err != nil {
+		return NewValidationError("Asset", err.Error())
+	}
+
+	err = validateAmount(p.Amount)
+	if err != nil {
+		return NewValidationError("Amount", err.Error())
+	}
+
+	return nil
+}

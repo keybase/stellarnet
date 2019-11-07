@@ -44,3 +44,51 @@ func (s *TickerSession) GetAllValidAssets() (assets []Asset, err error) {
 
 	return
 }
+
+// GetAssetsWithNestedIssuer returns a slice with all assets in the database
+// with is_valid = true, also adding the nested Issuer attribute
+func (s *TickerSession) GetAssetsWithNestedIssuer() (assets []Asset, err error) {
+	const q = `
+		SELECT
+			a.code, a.issuer_account, a.type, a.num_accounts, a.auth_required, a.auth_revocable,
+			a.amount, a.asset_controlled_by_domain, a.anchor_asset_code, a.anchor_asset_type,
+			a.is_valid, a.validation_error, a.last_valid, a.last_checked, a.display_decimals,
+			a.name, a.description, a.conditions, a.is_asset_anchored, a.fixed_number, a.max_number,
+			a.is_unlimited, a.redemption_instructions, a.collateral_addresses, a.collateral_address_signatures,
+			a.countries, a.status, a.issuer_id, i.public_key, i.name, i.url, i.toml_url, i.federation_server,
+			i.auth_server, i.transfer_server, i.web_auth_endpoint, i.deposit_server, i.org_twitter
+		FROM assets AS a
+		INNER JOIN issuers AS i ON a.issuer_id = i.id
+		WHERE a.is_valid = TRUE
+	`
+
+	rows, err := s.DB.Query(q)
+	if err != nil {
+		return
+	}
+
+	for rows.Next() {
+		var (
+			a Asset
+			i Issuer
+		)
+
+		err = rows.Scan(
+			&a.Code, &a.IssuerAccount, &a.Type, &a.NumAccounts, &a.AuthRequired, &a.AuthRevocable,
+			&a.Amount, &a.AssetControlledByDomain, &a.AnchorAssetCode, &a.AnchorAssetType,
+			&a.IsValid, &a.ValidationError, &a.LastValid, &a.LastChecked, &a.DisplayDecimals,
+			&a.Name, &a.Desc, &a.Conditions, &a.IsAssetAnchored, &a.FixedNumber, &a.MaxNumber,
+			&a.IsUnlimited, &a.RedemptionInstructions, &a.CollateralAddresses, &a.CollateralAddressSignatures,
+			&a.Countries, &a.Status, &a.IssuerID, &i.PublicKey, &i.Name, &i.URL, &i.TOMLURL, &i.FederationServer,
+			&i.AuthServer, &i.TransferServer, &i.WebAuthEndpoint, &i.DepositServer, &i.OrgTwitter,
+		)
+		if err != nil {
+			return
+		}
+
+		a.Issuer = i
+		assets = append(assets, a)
+	}
+
+	return
+}

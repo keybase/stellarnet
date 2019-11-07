@@ -2,14 +2,14 @@ package resourceadapter
 
 import (
 	"github.com/stellar/go/amount"
-	. "github.com/stellar/go/protocols/horizon"
+	protocol "github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/services/horizon/internal/assets"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
-func PopulateBalance(dest *Balance, row core.Trustline) (err error) {
+func PopulateBalance(dest *protocol.Balance, row core.Trustline) (err error) {
 	dest.Type, err = assets.String(row.Assettype)
 	if err != nil {
 		return errors.Wrap(err, "getting the string representation from the provided xdr asset type")
@@ -27,7 +27,7 @@ func PopulateBalance(dest *Balance, row core.Trustline) (err error) {
 	return
 }
 
-func PopulateNativeBalance(dest *Balance, stroops, buyingLiabilities, sellingLiabilities xdr.Int64) (err error) {
+func PopulateNativeBalance(dest *protocol.Balance, stroops, buyingLiabilities, sellingLiabilities xdr.Int64) (err error) {
 	dest.Type, err = assets.String(xdr.AssetTypeAssetTypeNative)
 	if err != nil {
 		return errors.Wrap(err, "getting the string representation from the provided xdr asset type")

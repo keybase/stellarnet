@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/protocols/horizon/operations"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/httpx"
@@ -15,69 +16,75 @@ import (
 // based upon the row's type.
 func NewOperation(
 	ctx context.Context,
-	row history.Operation,
+	operationRow history.Operation,
+	transactionRow *history.Transaction,
 	ledger history.Ledger,
 ) (result hal.Pageable, err error) {
 
 	base := operations.Base{}
-	PopulateBaseOperation(ctx, &base, row, ledger)
+	PopulateBaseOperation(ctx, &base, operationRow, transactionRow, ledger)
 
-	switch row.Type {
+	switch operationRow.Type {
 	case xdr.OperationTypeBumpSequence:
 		e := operations.BumpSequence{Base: base}
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypeCreateAccount:
 		e := operations.CreateAccount{Base: base}
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypePayment:
 		e := operations.Payment{Base: base}
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
-	case xdr.OperationTypePathPayment:
+	case xdr.OperationTypePathPaymentStrictReceive:
 		e := operations.PathPayment{}
 		e.Payment.Base = base
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypeManageBuyOffer:
 		e := operations.ManageBuyOffer{}
 		e.Offer.Base = base
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypeManageSellOffer:
 		e := operations.ManageSellOffer{}
 		e.Offer.Base = base
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypeCreatePassiveSellOffer:
 		e := operations.CreatePassiveSellOffer{}
 		e.Offer.Base = base
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypeSetOptions:
 		e := operations.SetOptions{Base: base}
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypeChangeTrust:
 		e := operations.ChangeTrust{Base: base}
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypeAllowTrust:
 		e := operations.AllowTrust{Base: base}
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypeAccountMerge:
 		e := operations.AccountMerge{Base: base}
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypeInflation:
 		e := operations.Inflation{Base: base}
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	case xdr.OperationTypeManageData:
 		e := operations.ManageData{Base: base}
-		err = row.UnmarshalDetails(&e)
+		err = operationRow.UnmarshalDetails(&e)
+		result = e
+	case xdr.OperationTypePathPaymentStrictSend:
+		e := operations.PathPaymentStrictSend{}
+		e.Payment.Base = base
+		err = operationRow.UnmarshalDetails(&e)
 		result = e
 	default:
 		result = base
@@ -90,29 +97,35 @@ func NewOperation(
 func PopulateBaseOperation(
 	ctx context.Context,
 	dest *operations.Base,
-	row history.Operation,
+	operationRow history.Operation,
+	transactionRow *history.Transaction,
 	ledger history.Ledger,
 ) {
-	dest.ID = fmt.Sprintf("%d", row.ID)
-	dest.PT = row.PagingToken()
+	dest.ID = fmt.Sprintf("%d", operationRow.ID)
+	dest.PT = operationRow.PagingToken()
 	// Check db2/history.Transaction.Successful field comment for more information.
-	if row.TransactionSuccessful == nil {
+	if operationRow.TransactionSuccessful == nil {
 		dest.TransactionSuccessful = true
 	} else {
-		dest.TransactionSuccessful = *row.TransactionSuccessful
+		dest.TransactionSuccessful = *operationRow.TransactionSuccessful
 	}
-	dest.SourceAccount = row.SourceAccount
-	populateOperationType(dest, row)
+	dest.SourceAccount = operationRow.SourceAccount
+	populateOperationType(dest, operationRow)
 	dest.LedgerCloseTime = ledger.ClosedAt
-	dest.TransactionHash = row.TransactionHash
+	dest.TransactionHash = operationRow.TransactionHash
 
 	lb := hal.LinkBuilder{Base: httpx.BaseURL(ctx)}
-	self := fmt.Sprintf("/operations/%d", row.ID)
+	self := fmt.Sprintf("/operations/%d", operationRow.ID)
 	dest.Links.Self = lb.Link(self)
 	dest.Links.Succeeds = lb.Linkf("/effects?order=desc&cursor=%s", dest.PT)
 	dest.Links.Precedes = lb.Linkf("/effects?order=asc&cursor=%s", dest.PT)
-	dest.Links.Transaction = lb.Linkf("/transactions/%s", row.TransactionHash)
+	dest.Links.Transaction = lb.Linkf("/transactions/%s", operationRow.TransactionHash)
 	dest.Links.Effects = lb.Link(self, "effects")
+
+	if transactionRow != nil {
+		dest.Transaction = new(horizon.Transaction)
+		PopulateTransaction(ctx, dest.Transaction, *transactionRow)
+	}
 }
 
 func populateOperationType(dest *operations.Base, row history.Operation) {

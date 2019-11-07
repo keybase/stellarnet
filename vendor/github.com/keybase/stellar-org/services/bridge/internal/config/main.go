@@ -6,28 +6,23 @@ import (
 	"regexp"
 
 	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/services/internal/bridge-compliance-shared/protocols"
 )
 
 // Config contains config params of the bridge server
 type Config struct {
-	Port              *int      `valid:"required"`
-	Horizon           string    `valid:"optional"`
-	Compliance        string    `valid:"optional"`
-	LogFormat         string    `valid:"optional" toml:"log_format"`
-	MACKey            string    `valid:"optional" toml:"mac_key"`
-	APIKey            string    `valid:"optional" toml:"api_key"`
-	NetworkPassphrase string    `valid:"optional" toml:"network_passphrase"`
-	Develop           bool      `valid:"optional"`
-	Assets            []Asset   `valid:"optional"`
-	Database          *Database `valid:"optional"`
-	Accounts          Accounts  `valid:"optional" toml:"accounts"`
-	Callbacks         Callbacks `valid:"optional" toml:"callbacks"`
-}
-
-// Asset represents credit asset
-type Asset struct {
-	Code   string `valid:"required"`
-	Issuer string `valid:"optional"`
+	Port              *int              `valid:"required"`
+	Horizon           string            `valid:"optional"`
+	Compliance        string            `valid:"optional"`
+	LogFormat         string            `valid:"optional" toml:"log_format"`
+	MACKey            string            `valid:"optional" toml:"mac_key"`
+	APIKey            string            `valid:"optional" toml:"api_key"`
+	NetworkPassphrase string            `valid:"optional" toml:"network_passphrase"`
+	Develop           bool              `valid:"optional"`
+	Assets            []protocols.Asset `valid:"optional"`
+	Database          *Database         `valid:"optional"`
+	Accounts          Accounts          `valid:"optional" toml:"accounts"`
+	Callbacks         Callbacks         `valid:"optional" toml:"callbacks"`
 }
 
 // Accounts contains values of `accounts` config group
@@ -49,6 +44,8 @@ type Database struct {
 	Type string `valid:"required"`
 	URL  string `valid:"required"`
 }
+
+var assetCodeMatch = regexp.MustCompile("^[a-zA-Z0-9]{1,12}$")
 
 // Validate validates config and returns error if any of config values is incorrect
 func (c *Config) Validate() (err error) {
@@ -89,19 +86,13 @@ func (c *Config) Validate() (err error) {
 			}
 		}
 
-		var matched bool
-		matched, err = regexp.MatchString("^[a-zA-Z0-9]{1,12}$", asset.Code)
-		if err != nil {
-			return err
-		}
-
+		matched := assetCodeMatch.MatchString(asset.Code)
 		if !matched {
 			return errors.New("Invalid asset code: " + asset.Code)
 		}
 	}
 
-	var dbURL *url.URL
-	dbURL, err = url.Parse(c.Database.URL)
+	_, err = url.Parse(c.Database.URL)
 	if err != nil {
 		err = errors.New("Cannot parse database.url param")
 		return
@@ -109,11 +100,8 @@ func (c *Config) Validate() (err error) {
 
 	switch c.Database.Type {
 	case "mysql":
-		// Add `parseTime=true` param to mysql url
-		query := dbURL.Query()
-		query.Set("parseTime", "true")
-		dbURL.RawQuery = query.Encode()
-		c.Database.URL = dbURL.String()
+		err = errors.New("Invalid database.type param, mysql support is discontinued")
+		return
 	case "postgres":
 		break
 	case "":

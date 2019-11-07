@@ -14,7 +14,6 @@ import (
 	"github.com/stellar/go/support/config"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/support/log"
-	"golang.org/x/net/http2"
 	"gopkg.in/tylerb/graceful.v1"
 )
 
@@ -58,8 +57,6 @@ type Config struct {
 // (https://github.com/tylerb/graceful).
 func Run(conf Config) {
 	srv := setup(conf)
-
-	http2.ConfigureServer(srv.Server, nil)
 
 	if conf.OnStarting != nil {
 		conf.OnStarting()

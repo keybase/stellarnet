@@ -1,10 +1,13 @@
 package cmd
 
 import (
+	"database/sql"
 	"fmt"
 	"go/types"
 	stdLog "log"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -14,21 +17,25 @@ import (
 	apkg "github.com/stellar/go/support/app"
 	support "github.com/stellar/go/support/config"
 	"github.com/stellar/go/support/log"
-	"github.com/throttled/throttled"
+	"github.com/stellar/throttled"
 )
 
-var config horizon.Config
+var (
+	config horizon.Config
 
-var rootCmd = &cobra.Command{
-	Use:   "horizon",
-	Short: "client-facing api server for the stellar network",
-	Long:  "client-facing api server for the stellar network. It acts as the interface between Stellar Core and applications that want to access the Stellar network. It allows you to submit transactions to the network, check the status of accounts, subscribe to event streams and more.",
-	Run: func(cmd *cobra.Command, args []string) {
-		initApp().Serve()
-	},
-}
+	rootCmd = &cobra.Command{
+		Use:   "horizon",
+		Short: "client-facing api server for the stellar network",
+		Long:  "client-facing api server for the stellar network. It acts as the interface between Stellar Core and applications that want to access the Stellar network. It allows you to submit transactions to the network, check the status of accounts, subscribe to event streams and more.",
+		Run: func(cmd *cobra.Command, args []string) {
+			initApp().Serve()
+		},
+	}
+)
 
-// validateBothOrNeither ensures that both options are provided, if either is provided
+const maxDBPingAttempts = 30
+
+// validateBothOrNeither ensures that both options are provided, if either is provided.
 func validateBothOrNeither(option1, option2 string) {
 	arg1, arg2 := viper.GetString(option1), viper.GetString(option2)
 	if arg1 != "" && arg2 == "" {
@@ -39,9 +46,40 @@ func validateBothOrNeither(option1, option2 string) {
 	}
 }
 
-// checkMigrations looks for necessary database migrations and fails with a descriptive error if migrations are needed
+func pingDB(db *sql.DB) {
+	for attempt := 0; attempt < maxDBPingAttempts; attempt++ {
+		if db.Ping() == nil {
+			return
+		}
+		time.Sleep(time.Second)
+		if attempt+1 < maxDBPingAttempts {
+			stdLog.Println("Waiting for a horizon DB connection...")
+		}
+	}
+
+	stdLog.Fatalf("failed to connect to horizon DB after %v attempts", maxDBPingAttempts)
+}
+
+func applyMigrations() {
+	db, err := sql.Open("postgres", config.DatabaseURL)
+	if err != nil {
+		stdLog.Fatalf("could not connect to horizon db: %v", err)
+	}
+	defer db.Close()
+	pingDB(db)
+
+	numMigrations, err := schema.Migrate(db, schema.MigrateUp, 0)
+	if err != nil {
+		stdLog.Fatalf("could not apply migrations: %v", err)
+	}
+	if numMigrations > 0 {
+		stdLog.Printf("successfully applied %v horizon migrations\n", numMigrations)
+	}
+}
+
+// checkMigrations looks for necessary database migrations and fails with a descriptive error if migrations are needed.
 func checkMigrations() {
-	migrationsToApplyUp := schema.GetMigrationsUp(viper.GetString("db-url"))
+	migrationsToApplyUp := schema.GetMigrationsUp(config.DatabaseURL)
 	if len(migrationsToApplyUp) > 0 {
 		stdLog.Printf(`There are %v migrations to apply in the "up" direction.`, len(migrationsToApplyUp))
 		stdLog.Printf("The necessary migrations are: %v", migrationsToApplyUp)
@@ -49,7 +87,7 @@ func checkMigrations() {
 		os.Exit(1)
 	}
 
-	nMigrationsDown := schema.GetNumMigrationsDown(viper.GetString("db-url"))
+	nMigrationsDown := schema.GetNumMigrationsDown(config.DatabaseURL)
 	if nMigrationsDown > 0 {
 		stdLog.Printf("A database migration DOWN to an earlier version of the schema is required to run this version (%v) of Horizon. Consult the Changelog (https://github.com/stellar/go/blob/master/services/horizon/CHANGELOG.md) for more information.", apkg.Version())
 		stdLog.Printf("In order to migrate the database DOWN, using the HIGHEST version number of Horizon you have installed (not this binary), run \"horizon db migrate down %v\".", nMigrationsDown)
@@ -57,7 +95,7 @@ func checkMigrations() {
 	}
 }
 
-// configOpts defines the complete flag configuration for horizon
+// configOpts defines the complete flag configuration for horizon.
 // Add a new entry here to connect a new field in the horizon.Config struct
 var configOpts = []*support.ConfigOption{
 	&support.ConfigOption{
@@ -82,6 +120,20 @@ var configOpts = []*support.ConfigOption{
 		OptType:   types.String,
 		Required:  true,
 		Usage:     "stellar-core to connect with (for http commands)",
+	},
+	&support.ConfigOption{
+		Name:        "history-archive-urls",
+		ConfigKey:   &config.HistoryArchiveURLs,
+		OptType:     types.String,
+		Required:    false,
+		FlagDefault: "",
+		CustomSetValue: func(co *support.ConfigOption) {
+			stringOfUrls := viper.GetString(co.Name)
+			urlStrings := strings.Split(stringOfUrls, ",")
+
+			*(co.ConfigKey.(*[]string)) = urlStrings
+		},
+		Usage: "comma-separated list of stellar history archives to connect with",
 	},
 	&support.ConfigOption{
 		Name:        "port",
@@ -293,6 +345,35 @@ var configOpts = []*support.ConfigOption{
 		FlagDefault: false,
 		Usage:       "enables asset stats during the ingestion and expose `/assets` endpoint, Enabling it has a negative impact on CPU",
 	},
+	&support.ConfigOption{
+		Name:        "enable-experimental-ingestion",
+		ConfigKey:   &config.EnableExperimentalIngestion,
+		OptType:     types.Bool,
+		FlagDefault: false,
+		Usage:       "[EXPERIMENTAL] enables experimental ingestion system",
+	},
+	&support.ConfigOption{
+		Name:        "ingest-state-reader-temp-set",
+		ConfigKey:   &config.IngestStateReaderTempSet,
+		OptType:     types.String,
+		FlagDefault: "memory",
+		Usage:       "defines where to store temporary objects during state ingestion: `memory` (default, more RAM usage, faster) or `postgres` (less RAM usage, slower)",
+	},
+	&support.ConfigOption{
+		Name:        "ingest-disable-state-verification",
+		ConfigKey:   &config.IngestDisableStateVerification,
+		OptType:     types.Bool,
+		FlagDefault: false,
+		Usage:       "experimental ingestion system runs a verification routing to compare state in local database with history buckets, this can be disabled however it's not recommended",
+	},
+	&support.ConfigOption{
+		Name:        "apply-migrations",
+		ConfigKey:   &config.ApplyMigrations,
+		OptType:     types.Bool,
+		FlagDefault: false,
+		Required:    false,
+		Usage:       "applies pending migrations before starting horizon",
+	},
 }
 
 func init() {
@@ -318,6 +399,10 @@ func initConfig() {
 		co.SetValue()
 	}
 
+	if config.ApplyMigrations {
+		applyMigrations()
+	}
+
 	// Migrations should be checked as early as possible
 	checkMigrations()
 
@@ -337,6 +422,10 @@ func initConfig() {
 
 	// Configure log level
 	log.DefaultLogger.Logger.SetLevel(config.LogLevel)
+
+	if config.IngestStateReaderTempSet != "memory" && config.IngestStateReaderTempSet != "postgres" {
+		log.Fatal("Invalid `ingest-state-reader-temp-set` value: " + config.IngestStateReaderTempSet)
+	}
 
 	// Configure DB params. When config.MaxDBConnections is set, set other
 	// DB params to that value for backward compatibility.

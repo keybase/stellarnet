@@ -77,11 +77,18 @@ func (assetStats *AssetStats) IngestOperation(op *xdr.Operation, source *xdr.Acc
 	case xdr.OperationTypePayment:
 		// payments is the only operation where we currently perform the optimization of checking against the issuer
 		return assetStats.handlePaymentOp(body.PaymentOp, sourceAccount)
-	case xdr.OperationTypePathPayment:
+	case xdr.OperationTypePathPaymentStrictReceive:
 		// if this gets expensive then we can limit it to only include those assets that includes the issuer
-		assetStats.add(body.PathPaymentOp.DestAsset)
-		assetStats.add(body.PathPaymentOp.SendAsset)
-		for _, asset := range body.PathPaymentOp.Path {
+		assetStats.add(body.PathPaymentStrictReceiveOp.DestAsset)
+		assetStats.add(body.PathPaymentStrictReceiveOp.SendAsset)
+		for _, asset := range body.PathPaymentStrictReceiveOp.Path {
+			assetStats.add(asset)
+		}
+	case xdr.OperationTypePathPaymentStrictSend:
+		// if this gets expensive then we can limit it to only include those assets that includes the issuer
+		assetStats.add(body.PathPaymentStrictSendOp.DestAsset)
+		assetStats.add(body.PathPaymentStrictSendOp.SendAsset)
+		for _, asset := range body.PathPaymentStrictSendOp.Path {
 			assetStats.add(asset)
 		}
 	case xdr.OperationTypeManageBuyOffer:

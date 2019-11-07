@@ -115,7 +115,7 @@ func (s *submissionList) Pending(ctx context.Context) []string {
 	defer s.Unlock()
 	results := make([]string, 0, len(s.submissions))
 
-	for hash, _ := range s.submissions {
+	for hash := range s.submissions {
 		results = append(results, hash)
 	}
 

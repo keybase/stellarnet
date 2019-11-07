@@ -8,6 +8,8 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/guregu/null"
+
+	"github.com/stellar/go/services/horizon/internal/db2"
 	"github.com/stellar/go/support/db"
 	"github.com/stellar/go/xdr"
 )
@@ -106,6 +108,13 @@ const (
 
 )
 
+// ExperimentalIngestionTables is a list of tables populated by the experimental
+// ingestion system
+var ExperimentalIngestionTables = []string{
+	"accounts_signers",
+	"offers",
+}
+
 // Account is a row of data from the `history_accounts` table
 type Account struct {
 	ID      int64
@@ -118,6 +127,23 @@ type AccountsQ struct {
 	Err    error
 	parent *Q
 	sql    sq.SelectBuilder
+}
+
+// AccountSigner is a row of data from the `accounts_signers` table
+type AccountSigner struct {
+	Account string `db:"account"`
+	Signer  string `db:"signer"`
+	Weight  int32  `db:"weight"`
+}
+
+type AccountSignersBatchInsertBuilder interface {
+	Add(signer AccountSigner) error
+	Exec() error
+}
+
+// accountSignersBatchInsertBuilder is a simple wrapper around db.BatchInsertBuilder
+type accountSignersBatchInsertBuilder struct {
+	builder db.BatchInsertBuilder
 }
 
 // Asset is a row of data from the `history_assets` table
@@ -145,6 +171,12 @@ type Effect struct {
 	Order              int32       `db:"order"`
 	Type               EffectType  `db:"type"`
 	DetailsString      null.String `db:"details"`
+}
+
+// SequenceBumped is a struct of data from `effects.DetailsString`
+// when the effect type is sequence bumped.
+type SequenceBumped struct {
+	NewSeq int64 `json:"new_seq"`
 }
 
 // EffectsQ is a helper struct to aid in configuring queries that loads
@@ -175,6 +207,12 @@ type FeeStats struct {
 	P90  null.Int `db:"p90"`
 	P95  null.Int `db:"p95"`
 	P99  null.Int `db:"p99"`
+}
+
+// KeyValueStoreRow represents a row in key value store.
+type KeyValueStoreRow struct {
+	Key   string `db:"key"`
+	Value string `db:"value"`
 }
 
 // LatestLedger represents a response from the raw LatestLedgerBaseFeeAndSequence
@@ -243,20 +281,75 @@ type Operation struct {
 	TransactionSuccessful *bool `db:"transaction_successful"`
 }
 
+// Offer is row of data from the `offers` table from stellar-core
+type Offer struct {
+	SellerID string    `db:"sellerid"`
+	OfferID  xdr.Int64 `db:"offerid"`
+
+	SellingAsset xdr.Asset `db:"sellingasset"`
+	BuyingAsset  xdr.Asset `db:"buyingasset"`
+
+	Amount             xdr.Int64 `db:"amount"`
+	Pricen             int32     `db:"pricen"`
+	Priced             int32     `db:"priced"`
+	Price              float64   `db:"price"`
+	Flags              uint32    `db:"flags"`
+	LastModifiedLedger uint32    `db:"last_modified_ledger"`
+}
+
+type OffersBatchInsertBuilder interface {
+	Add(offer xdr.OfferEntry, lastModifiedLedger xdr.Uint32) error
+	Exec() error
+}
+
+// offersBatchInsertBuilder is a simple wrapper around db.BatchInsertBuilder
+type offersBatchInsertBuilder struct {
+	builder db.BatchInsertBuilder
+}
+
 // OperationsQ is a helper struct to aid in configuring queries that loads
 // slices of Operation structs.
 type OperationsQ struct {
-	Err           error
-	parent        *Q
-	sql           sq.SelectBuilder
-	opIdCol       string
-	includeFailed bool
+	Err                 error
+	parent              *Q
+	sql                 sq.SelectBuilder
+	opIdCol             string
+	includeFailed       bool
+	includeTransactions bool
 }
 
 // Q is a helper struct on which to hang common_trades queries against a history
 // portion of the horizon database.
 type Q struct {
 	*db.Session
+}
+
+// QSigners defines signer related queries.
+type QSigners interface {
+	GetLastLedgerExpIngestNonBlocking() (uint32, error)
+	GetLastLedgerExpIngest() (uint32, error)
+	UpdateLastLedgerExpIngest(ledgerSequence uint32) error
+	AccountsForSigner(signer string, page db2.PageQuery) ([]AccountSigner, error)
+	NewAccountSignersBatchInsertBuilder(maxBatchSize int) AccountSignersBatchInsertBuilder
+	CreateAccountSigner(account, signer string, weight int32) (int64, error)
+	RemoveAccountSigner(account, signer string) (int64, error)
+}
+
+// OffersQuery is a helper struct to configure queries to offers
+type OffersQuery struct {
+	PageQuery db2.PageQuery
+	SellerID  string
+	Selling   *xdr.Asset
+	Buying    *xdr.Asset
+}
+
+// QOffers defines offer related queries.
+type QOffers interface {
+	GetAllOffers() ([]Offer, error)
+	NewOffersBatchInsertBuilder(maxBatchSize int) OffersBatchInsertBuilder
+	InsertOffer(offer xdr.OfferEntry, lastModifiedLedger xdr.Uint32) (int64, error)
+	UpdateOffer(offer xdr.OfferEntry, lastModifiedLedger xdr.Uint32) (int64, error)
+	RemoveOffer(offerID xdr.Int64) (int64, error)
 }
 
 // TotalOrderID represents the ID portion of rows that are identified by the
@@ -335,6 +428,24 @@ type TransactionsQ struct {
 	parent        *Q
 	sql           sq.SelectBuilder
 	includeFailed bool
+}
+
+func (q *Q) NewAccountSignersBatchInsertBuilder(maxBatchSize int) AccountSignersBatchInsertBuilder {
+	return &accountSignersBatchInsertBuilder{
+		builder: db.BatchInsertBuilder{
+			Table:        q.GetTable("accounts_signers"),
+			MaxBatchSize: maxBatchSize,
+		},
+	}
+}
+
+func (q *Q) NewOffersBatchInsertBuilder(maxBatchSize int) OffersBatchInsertBuilder {
+	return &offersBatchInsertBuilder{
+		builder: db.BatchInsertBuilder{
+			Table:        q.GetTable("offers"),
+			MaxBatchSize: maxBatchSize,
+		},
+	}
 }
 
 // ElderLedger loads the oldest ledger known to the history database

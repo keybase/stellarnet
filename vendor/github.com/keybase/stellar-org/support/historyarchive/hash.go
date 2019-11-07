@@ -7,7 +7,6 @@ package historyarchive
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"errors"
 	"fmt"
 )
 
@@ -20,11 +19,11 @@ func DecodeHash(s string) (Hash, error) {
 		return h, err
 	}
 	if len(hs) != sha256.Size {
-		return h, errors.New(fmt.Sprintf("unexpected hash size: %d", len(hs)))
+		return h, fmt.Errorf("unexpected hash size: %d", len(hs))
 	}
 	n := copy(h[:], hs)
 	if n != sha256.Size {
-		return h, errors.New(fmt.Sprintf("copy() returned unexpected count: %d", n))
+		return h, fmt.Errorf("copy() returned unexpected count: %d", n)
 	}
 	return h, nil
 }

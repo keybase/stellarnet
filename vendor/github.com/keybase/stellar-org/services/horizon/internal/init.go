@@ -1,6 +1,7 @@
 package horizon
 
 import (
+	"context"
 	"net/http"
 	"net/url"
 	"time"
@@ -8,9 +9,13 @@ import (
 	raven "github.com/getsentry/raven-go"
 	"github.com/gomodule/redigo/redis"
 	metrics "github.com/rcrowley/go-metrics"
+	ingestio "github.com/stellar/go/exp/ingest/io"
+	"github.com/stellar/go/exp/orderbook"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
+	"github.com/stellar/go/services/horizon/internal/expingest"
 	"github.com/stellar/go/services/horizon/internal/ingest"
+	"github.com/stellar/go/services/horizon/internal/simplepath"
 	"github.com/stellar/go/services/horizon/internal/txsub"
 	results "github.com/stellar/go/services/horizon/internal/txsub/results/db"
 	"github.com/stellar/go/services/horizon/internal/txsub/sequence"
@@ -52,8 +57,8 @@ func initIngester(app *App) {
 	app.ingester = ingest.New(
 		app.config.NetworkPassphrase,
 		app.config.StellarCoreURL,
-		app.CoreSession(nil),
-		app.HorizonSession(nil),
+		app.CoreSession(context.Background()),
+		app.HorizonSession(context.Background()),
 		ingest.Config{
 			EnableAssetStats:         app.config.EnableAssetStats,
 			IngestFailedTransactions: app.config.IngestFailedTransactions,
@@ -65,6 +70,41 @@ func initIngester(app *App) {
 	app.ingester.HistoryRetentionCount = app.config.HistoryRetentionCount
 }
 
+func initExpIngester(app *App, orderBookGraph *orderbook.OrderBookGraph) {
+	var tempSet ingestio.TempSet = &ingestio.MemoryTempSet{}
+	switch app.config.IngestStateReaderTempSet {
+	case "postgres":
+		tempSet = &ingestio.PostgresTempSet{
+			Session: app.HorizonSession(context.Background()),
+		}
+	}
+
+	var err error
+	app.expingester, err = expingest.NewSystem(expingest.Config{
+		CoreSession:    app.CoreSession(context.Background()),
+		HistorySession: app.HorizonSession(context.Background()),
+		// TODO:
+		// Use the first archive for now. We don't have a mechanism to
+		// use multiple archives at the same time currently.
+		HistoryArchiveURL:        app.config.HistoryArchiveURLs[0],
+		StellarCoreURL:           app.config.StellarCoreURL,
+		OrderBookGraph:           orderBookGraph,
+		TempSet:                  tempSet,
+		DisableStateVerification: app.config.IngestDisableStateVerification,
+	})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func initPathFinder(app *App, orderBookGraph *orderbook.OrderBookGraph) {
+	if app.config.EnableExperimentalIngestion {
+		app.paths = simplepath.NewInMemoryFinder(orderBookGraph)
+	} else {
+		app.paths = &simplepath.Finder{app.CoreQ()}
+	}
+}
+
 // initSentry initialized the default sentry client with the configured DSN
 func initSentry(app *App) {
 	if app.config.SentryDSN == "" {
@@ -74,7 +114,7 @@ func initSentry(app *App) {
 	log.WithField("dsn", app.config.SentryDSN).Info("Initializing sentry")
 	err := raven.SetDSN(app.config.SentryDSN)
 	if err != nil {
-		log.Panic(err)
+		log.Fatal(err)
 	}
 }
 
@@ -155,8 +195,8 @@ func initRedis(app *App) {
 		IdleTimeout: 240 * time.Second,
 		Dial:        dialRedis(redisURL),
 		TestOnBorrow: func(c redis.Conn, t time.Time) error {
-			_, err := c.Do("PING")
-			return err
+			_, pingErr := c.Do("PING")
+			return pingErr
 		},
 	}
 
@@ -193,7 +233,7 @@ func dialRedis(redisURL *url.URL) func() (redis.Conn, error) {
 }
 
 func initSubmissionSystem(app *App) {
-	cq := &core.Q{Session: app.CoreSession(nil)}
+	cq := &core.Q{Session: app.CoreSession(context.Background())}
 
 	app.submitter = &txsub.System{
 		Pending:         txsub.NewDefaultSubmissionList(),
@@ -201,7 +241,7 @@ func initSubmissionSystem(app *App) {
 		SubmissionQueue: sequence.NewManager(),
 		Results: &results.DB{
 			Core:    cq,
-			History: &history.Q{Session: app.HorizonSession(nil)},
+			History: &history.Q{Session: app.HorizonSession(context.Background())},
 		},
 		Sequences:         cq.SequenceProvider(),
 		NetworkPassphrase: app.config.NetworkPassphrase,

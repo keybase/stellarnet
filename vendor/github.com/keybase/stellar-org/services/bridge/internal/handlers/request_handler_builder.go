@@ -8,6 +8,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	hc "github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/keypair"
+	protocol "github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/services/internal/bridge-compliance-shared/http/helpers"
 	"github.com/stellar/go/services/internal/bridge-compliance-shared/protocols/bridge"
 	"github.com/stellar/go/txnbuild"
@@ -50,9 +51,9 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if request.SequenceNumber == "" {
-
 		accountRequest := hc.AccountRequest{AccountID: request.Source}
-		accountResponse, err := rh.Horizon.AccountDetail(accountRequest)
+		var accountResponse protocol.Account
+		accountResponse, err = rh.Horizon.AccountDetail(accountRequest)
 		if err != nil {
 			log.WithFields(log.Fields{"err": err}).Error("Error when loading account")
 			helpers.Write(w, helpers.InternalServerError)
@@ -94,7 +95,8 @@ func (rh *RequestHandler) Builder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, s := range request.Signers {
-		kp, err := keypair.Parse(s)
+		var kp keypair.KP
+		kp, err = keypair.Parse(s)
 		if err != nil {
 			log.WithFields(log.Fields{"err": err, "request": request}).Error("Error converting signers to keypairs")
 			helpers.Write(w, helpers.InternalServerError)

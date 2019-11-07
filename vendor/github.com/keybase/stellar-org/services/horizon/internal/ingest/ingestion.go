@@ -17,7 +17,19 @@ import (
 
 // ClearAll clears the entire history database
 func (ingest *Ingestion) ClearAll() error {
-	return ingest.Clear(0, math.MaxInt64)
+	tables := []string{
+		string(AssetStatsTableName),
+		string(AccountsTableName),
+		string(AssetsTableName),
+		string(EffectsTableName),
+		string(LedgersTableName),
+		string(OperationParticipantsTableName),
+		string(OperationsTableName),
+		string(TradesTableName),
+		string(TransactionParticipantsTableName),
+		string(TransactionsTableName),
+	}
+	return ingest.DB.TruncateTables(tables)
 }
 
 // Clear removes a range of data from the history database, exclusive of the end

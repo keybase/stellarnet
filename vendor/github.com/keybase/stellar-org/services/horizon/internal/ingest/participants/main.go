@@ -26,8 +26,10 @@ func ForOperation(
 		result = append(result, op.Body.MustCreateAccountOp().Destination)
 	case xdr.OperationTypePayment:
 		result = append(result, op.Body.MustPaymentOp().Destination)
-	case xdr.OperationTypePathPayment:
-		result = append(result, op.Body.MustPathPaymentOp().Destination)
+	case xdr.OperationTypePathPaymentStrictReceive:
+		result = append(result, op.Body.MustPathPaymentStrictReceiveOp().Destination)
+	case xdr.OperationTypePathPaymentStrictSend:
+		result = append(result, op.Body.MustPathPaymentStrictSendOp().Destination)
 	case xdr.OperationTypeManageBuyOffer:
 		// the only direct participant is the source_account
 	case xdr.OperationTypeManageSellOffer:

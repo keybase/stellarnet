@@ -11,15 +11,22 @@ If you are just starting with Horizon and want to try it out, consider the [Quic
 Building Horizon requires the following developer tools:
 
 - A [Unix-like](https://en.wikipedia.org/wiki/Unix-like) operating system with the common core commands (cp, tar, mkdir, bash, etc.)
-- Golang 1.10 or later
+- Golang 1.12 or later
 - [git](https://git-scm.com/) (to check out Horizon's source code)
-- [go-dep](https://golang.github.io/dep/) (package manager for Go)
 - [mercurial](https://www.mercurial-scm.org/) (needed for `go-dep`)
 
-1. Set your [GOPATH](https://github.com/golang/go/wiki/GOPATH) environment variable, if you haven't already. The default `GOPATH` is `$HOME/go`.
-2. Clone the [Stellar Go](https://github.com/stellar/go) monorepo:  `go get github.com/stellar/go`. You should see the repository present at `$GOPATH/src/github.com/stellar/go`.
-3. Enter the source dir: `cd $GOPATH/src/github.com/stellar/go`, and download external dependencies: `dep ensure -v`. You should see the downloaded third party dependencies in `$GOPATH/pkg`.
-4. Compile the Horizon binary: `cd $GOPATH; go install github.com/stellar/go/services/horizon`. You should see the resulting `horizon` executable in `$GOPATH/bin`.
+1. Set your [GOPATH](https://github.com/golang/go/wiki/GOPATH) environment variable, if you haven't already. The default `GOPATH` is `$HOME/go`. When building any Go package or application the binaries will be installed by default to `$GOPATH/bin`.
+2. Checkout the code into any directory you prefer:
+   ```
+   git checkout https://github.com/stellar/go
+   ```
+   Or if you prefer to develop inside `GOPATH` check it out to `$GOPATH/src/github.com/stellar/go`:
+   ```
+   git checkout https://github.com/stellar/go $GOPATH/src/github.com/stellar/go
+   ```
+   If developing inside `GOPATH` set the `GO111MODULE=on` environment variable to turn on Modules for managing dependencies. See the repository [README](../../../../README.md#dependencies) for more information.
+3. Change to the directory where the repository is checked out. e.g. `cd go`, or if developing inside the `GOPATH`, `cd $GOPATH/src/github.com/stellar/go`.
+4. Compile the Horizon binary: `go install ./services/horizon`. You should see the resulting `horizon` executable in `$GOPATH/bin`.
 5. Add Go binaries to your PATH in your `bashrc` or equivalent, for easy access: `export PATH=${GOPATH//://bin:}/bin:$PATH`
 
 Open a new terminal. Confirm everything worked by running `horizon --help` successfully. You should see an informative message listing the command line options supported by Horizon.
@@ -40,7 +47,7 @@ Horizon uses a Postgres database backend to store test fixtures and record infor
 At this point you should be able to run Horizon's unit tests:
 ```bash
 cd $GOPATH/src/github.com/stellar/go/services/horizon
-bash ../../support/scripts/run_tests
+go test ./...
 ```
 
 ## Set up Stellar Core

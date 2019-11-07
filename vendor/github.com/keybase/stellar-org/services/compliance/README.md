@@ -23,9 +23,8 @@ The `compliance.cfg` file must be present in a working directory (you can load a
    * test network: `Test SDF Network ; September 2015`
    * public network: `Public Global Stellar Network ; September 2015`
 * `database` - This database is used internally to store memo information and to keep track of what FIs have been authorized to receive customer info.
-  * `type` - database type (mysql, postgres)
+  * `type` - database type (postgres)
   * `url` - url to database connection. **IMPORTANT** The `compliance` server must not use the same database as the `bridge` server.
-    * for `mysql`: `user:password@(host:port)/dbname` ([more info](https://github.com/go-sql-driver/mysql#dsn-data-source-name))
     * for `postgres`: `postgres://user:password@host/dbname?sslmode=sslmode` ([more info](https://godoc.org/github.com/lib/pq#hdr-Connection_String_Parameters))
 * `keys`
   * `signing_seed` - The secret seed that will be used to sign messages. Public key derived from this secret key should be in your `stellar.toml` file.

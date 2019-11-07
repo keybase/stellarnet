@@ -3,6 +3,8 @@ package scraper
 import (
 	"time"
 
+	"github.com/stellar/go/services/ticker/internal/utils"
+
 	horizonclient "github.com/stellar/go/clients/horizonclient"
 	hProtocol "github.com/stellar/go/protocols/horizon"
 )
@@ -60,7 +62,14 @@ func (c *ScraperConfig) retrieveTrades(since time.Time, limit int) (trades []hPr
 		}
 		c.Logger.Debugln("Cursor currently at:", n)
 		r.Cursor = n
-		tradesPage, err = c.Client.Trades(r)
+
+		err = utils.Retry(5, 5*time.Second, c.Logger, func() error {
+			tradesPage, err = c.Client.Trades(r)
+			if err != nil {
+				c.Logger.Infoln("Horizon rate limit reached!")
+			}
+			return err
+		})
 		if err != nil {
 			return trades, err
 		}

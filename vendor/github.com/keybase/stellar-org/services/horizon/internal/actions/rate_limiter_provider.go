@@ -1,6 +1,6 @@
 package actions
 
-import "github.com/throttled/throttled"
+import "github.com/stellar/throttled"
 
 // RateLimiterProvider is an interface that provides access to the type's HTTPRateLimiter.
 type RateLimiterProvider interface {

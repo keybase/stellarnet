@@ -56,7 +56,7 @@ var cmdIngestAssets = &cobra.Command{
 
 		err = ticker.RefreshAssets(&session, Client, Logger)
 		if err != nil {
-			Logger.Fatal("could not refresh error database:", err)
+			Logger.Fatal("could not refresh asset database:", err)
 		}
 	},
 }
@@ -84,7 +84,7 @@ var cmdIngestTrades = &cobra.Command{
 		)
 		err = ticker.BackfillTrades(&session, Client, Logger, BackfillHours, 0)
 		if err != nil {
-			Logger.Fatal("could not refresh error database:", err)
+			Logger.Fatal("could not refresh trade database:", err)
 		}
 
 		if ShouldStream {
@@ -92,7 +92,7 @@ var cmdIngestTrades = &cobra.Command{
 			ctx := context.Background()
 			err = ticker.StreamTrades(ctx, &session, Client, Logger)
 			if err != nil {
-				Logger.Fatal("could not refresh error database:", err)
+				Logger.Fatal("could not refresh trade database:", err)
 			}
 		}
 	},
@@ -116,7 +116,7 @@ var cmdIngestOrderbooks = &cobra.Command{
 
 		err = ticker.RefreshOrderbookEntries(&session, Client, Logger)
 		if err != nil {
-			Logger.Fatal("could not refresh error database:", err)
+			Logger.Fatal("could not refresh orderbook database:", err)
 		}
 	},
 }

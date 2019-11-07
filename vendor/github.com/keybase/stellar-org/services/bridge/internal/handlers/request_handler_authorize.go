@@ -6,7 +6,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 	hc "github.com/stellar/go/clients/horizonclient"
-	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/services/internal/bridge-compliance-shared/http/helpers"
 	"github.com/stellar/go/services/internal/bridge-compliance-shared/protocols/bridge"
 	"github.com/stellar/go/txnbuild"
@@ -22,7 +21,7 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = helpers.Validate(request)
+	err = helpers.Validate(request, rh.Config.Assets, rh.Config.Accounts.IssuingAccountID)
 	if err != nil {
 		switch err := err.(type) {
 		case *helpers.ErrorResponse:
@@ -34,16 +33,13 @@ func (rh *RequestHandler) Authorize(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	kp, err := keypair.Parse(rh.Config.Accounts.AuthorizingSeed)
-	if err != nil {
-		log.WithFields(log.Fields{"err": err}).Error("Error parsing authorizing seed")
-		helpers.Write(w, helpers.InternalServerError)
+	var sourceAccount *string
+	if rh.Config.Accounts.IssuingAccountID != "" {
+		sourceAccount = &rh.Config.Accounts.IssuingAccountID
 	}
 
-	sourceAccount := kp.Address()
-
 	allowTrustOp := bridge.AllowTrustOperationBody{
-		Source:    &sourceAccount,
+		Source:    sourceAccount,
 		Authorize: true,
 		Trustor:   request.AccountID,
 		AssetCode: request.AssetCode,

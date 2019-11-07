@@ -3,7 +3,7 @@ package trades
 
 import (
 	"github.com/stellar/go/keypair"
-	. "github.com/stellar/go/services/horizon/internal/db2/history"
+	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/support/time"
 	"github.com/stellar/go/xdr"
 )
@@ -27,7 +27,7 @@ func GetTestAccount() xdr.AccountId {
 
 //IngestTestTrade mock ingests a trade
 func IngestTestTrade(
-	q *Q,
+	q *history.Q,
 	assetSold xdr.Asset,
 	assetBought xdr.Asset,
 	seller xdr.AccountId,
@@ -54,7 +54,7 @@ func IngestTestTrade(
 
 //PopulateTestTrades generates and ingests trades between two assets according to given parameters
 func PopulateTestTrades(
-	q *Q,
+	q *history.Q,
 	startTs int64,
 	numOfTrades int,
 	delta int64,

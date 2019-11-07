@@ -14,7 +14,7 @@ func getDBFieldTags(model interface{}, excludeID bool) (fields []string) {
 	r := reflect.ValueOf(model)
 	for i := 0; i < r.Type().NumField(); i++ {
 		dbField := r.Type().Field(i).Tag.Get("db")
-		if excludeID && dbField == "id" {
+		if (excludeID && dbField == "id") || dbField == "-" { // ensure fields marked with a "-" tag are ignored
 			continue
 		}
 		fields = append(fields, dbField)
@@ -38,7 +38,7 @@ func getDBFieldValues(model interface{}, excludeID bool) (values []interface{}) 
 	for i := 0; i < r.Type().NumField(); i++ {
 		dbField := r.Type().Field(i).Tag.Get("db")
 		dbVal := r.Field(i).Interface()
-		if excludeID && dbField == "id" {
+		if (excludeID && dbField == "id") || dbField == "-" { // ensure fields marked with a "-" tag are ignored
 			continue
 		}
 		values = append(values, dbVal)

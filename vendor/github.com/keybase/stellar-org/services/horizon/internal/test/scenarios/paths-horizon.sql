@@ -201,6 +201,13 @@ SET default_tablespace = '';
 
 SET default_with_oids = false;
 
+-- added manually
+CREATE TABLE key_value_store (
+  key varchar(255) NOT NULL,
+  value varchar(255) NOT NULL,
+  PRIMARY KEY (key)
+);
+
 --
 -- Name: asset_stats; Type: TABLE; Schema: public; Owner: -
 --

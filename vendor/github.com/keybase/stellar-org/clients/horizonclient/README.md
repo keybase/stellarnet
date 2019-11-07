@@ -12,12 +12,11 @@ This library is aimed at developers building Go applications that interact with 
 * The [txnbuild API reference](https://godoc.org/github.com/stellar/go/txnbuild).
 
 ### Prerequisites
-* Go 1.10 or greater
+* Go 1.12 or greater
+* [Modules](https://github.com/golang/go/wiki/Modules) to manage dependencies
 
 ### Installing
-* Download the Stellar Go monorepo: `git clone git@github.com:stellar/go.git`
-* Enter the source directory: `cd $GOPATH/src/github.com/stellar/go`
-* Download external dependencies: `dep ensure -v`
+* `go get github.com/stellar/go/clients/horizonclient`
 
 ### Usage
 

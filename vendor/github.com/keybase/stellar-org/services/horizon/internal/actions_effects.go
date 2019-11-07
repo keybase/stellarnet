@@ -22,6 +22,8 @@ import (
 var _ actions.JSONer = (*EffectIndexAction)(nil)
 var _ actions.EventStreamer = (*EffectIndexAction)(nil)
 
+var effectsCursorRegexp = regexp.MustCompile(`now|\d+(-\d+)?`)
+
 // EffectIndexAction renders a page of effect resources, identified by
 // a normal page query and optionally filtered by an account, ledger,
 // transaction, or operation.
@@ -180,13 +182,7 @@ func (action *EffectIndexAction) ValidateCursor() {
 		return
 	}
 
-	ok, err := regexp.MatchString("now|\\d+(-\\d+)?", c)
-	if err != nil {
-		action.Err = err
-		return
-	}
-
-	if !ok {
+	if ok := effectsCursorRegexp.MatchString(c); !ok {
 		action.SetInvalidField("cursor", errors.New("invalid format"))
 	}
 }

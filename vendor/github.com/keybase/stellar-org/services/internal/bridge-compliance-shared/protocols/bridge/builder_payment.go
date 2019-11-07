@@ -21,7 +21,7 @@ func (op PaymentOperationBody) Build() txnbuild.Operation {
 	txnOp := txnbuild.Payment{
 		Destination: op.Destination,
 		Amount:      op.Amount,
-		Asset:       txnbuild.CreditAsset{Code: op.Asset.Code, Issuer: op.Asset.Issuer},
+		Asset:       op.Asset.ToBaseAsset(),
 	}
 
 	if op.Source != nil {

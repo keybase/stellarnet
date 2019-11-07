@@ -24,6 +24,7 @@ GET /operations/{id}
 | name | notes | description | example |
 | ---- | ----- | ----------- | ------- |
 | `id` | required, number | An operation ID. | 2927608622747649 |
+| `?join` | optional, string, default: _null_ | Set to `transactions` to include the transactions which created each of the operations in the response. | `transactions` |
 
 ### curl Example Request
 

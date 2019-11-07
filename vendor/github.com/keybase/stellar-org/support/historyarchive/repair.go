@@ -27,7 +27,11 @@ func Repair(src *Archive, dst *Archive, opts *CommandOptions) error {
 	for cat, missing := range missingCheckpointFiles {
 		for _, chk := range missing {
 			pth := CategoryCheckpointPath(cat, chk)
-			if !categoryRequired(cat) && !src.backend.Exists(pth) {
+			exists, err := src.backend.Exists(pth)
+			if err != nil {
+				return err
+			}
+			if !categoryRequired(cat) && !exists {
 				log.Printf("Skipping nonexistent, optional %s file %s", cat, pth)
 				continue
 			}
@@ -50,7 +54,7 @@ func Repair(src *Archive, dst *Archive, opts *CommandOptions) error {
 	log.Printf("Examining buckets referenced by checkpoints")
 	missingBuckets := dst.CheckBucketsMissing()
 
-	for bkt, _ := range missingBuckets {
+	for bkt := range missingBuckets {
 		pth := BucketPath(bkt)
 		log.Printf("Repairing %s", pth)
 		errs += noteError(copyPath(src, dst, pth, opts))

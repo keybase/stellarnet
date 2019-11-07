@@ -18,11 +18,22 @@ type MockArchiveBackend struct {
 	files map[string][]byte
 }
 
-func (b *MockArchiveBackend) Exists(pth string) bool {
+func (b *MockArchiveBackend) Exists(pth string) (bool, error) {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 	_, ok := b.files[pth]
-	return ok
+	return ok, nil
+}
+
+func (b *MockArchiveBackend) Size(pth string) (int64, error) {
+	b.mutex.Lock()
+	defer b.mutex.Unlock()
+	f, ok := b.files[pth]
+	sz := int64(0)
+	if ok {
+		sz = int64(len(f))
+	}
+	return sz, nil
 }
 
 func (b *MockArchiveBackend) GetFile(pth string) (io.ReadCloser, error) {
@@ -53,7 +64,7 @@ func (b *MockArchiveBackend) ListFiles(pth string) (chan string, chan error) {
 	ch := make(chan string)
 	errs := make(chan error)
 	files := make([]string, 0, len(b.files))
-	for k, _ := range b.files {
+	for k := range b.files {
 		files = append(files, k)
 	}
 	go func() {

@@ -8,11 +8,12 @@ import (
 
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
-	chimiddleware "github.com/go-chi/chi/middleware"
+
 	"github.com/stellar/go/services/horizon/internal/errors"
 	"github.com/stellar/go/services/horizon/internal/hchi"
 	"github.com/stellar/go/services/horizon/internal/httpx"
 	"github.com/stellar/go/services/horizon/internal/render"
+	hProblem "github.com/stellar/go/services/horizon/internal/render/problem"
 	"github.com/stellar/go/support/log"
 	"github.com/stellar/go/support/render/problem"
 )
@@ -63,7 +64,7 @@ func loggerMiddleware(h http.Handler) http.Handler {
 		ctx := r.Context()
 		mw := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
 
-		logger := log.WithField("req", chimiddleware.GetReqID(ctx))
+		logger := log.WithField("req", middleware.GetReqID(ctx))
 		ctx = log.Set(ctx, logger)
 
 		// Checking `Accept` header from user request because if the streaming connection
@@ -76,7 +77,7 @@ func loggerMiddleware(h http.Handler) http.Handler {
 
 		h.ServeHTTP(mw, r.WithContext(ctx))
 
-		duration := time.Now().Sub(then)
+		duration := time.Since(then)
 		logEndOfRequest(ctx, r, duration, mw, streaming)
 	})
 }
@@ -110,6 +111,7 @@ func logStartOfRequest(ctx context.Context, r *http.Request, streaming bool) {
 		"method":         r.Method,
 		"path":           r.URL.String(),
 		"streaming":      streaming,
+		"referer":        r.Referer(),
 	}).Info("Starting request")
 }
 
@@ -137,6 +139,7 @@ func logEndOfRequest(ctx context.Context, r *http.Request, duration time.Duratio
 		"route":          routePattern,
 		"status":         mw.Status(),
 		"streaming":      streaming,
+		"referer":        r.Referer(),
 	}).Info("Finished request")
 }
 
@@ -186,5 +189,64 @@ func requestMetricsMiddleware(h http.Handler) http.Handler {
 			// a success is in [400, 600)
 			app.web.failureMeter.Mark(1)
 		}
+	})
+}
+
+// acceptOnlyJSON inspects the accept header of the request and responds with
+// an error if the content type is not JSON
+func acceptOnlyJSON(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		contentType := render.Negotiate(r)
+		if contentType != render.MimeHal && contentType != render.MimeJSON {
+			problem.Render(r.Context(), w, hProblem.NotAcceptable)
+			return
+		}
+
+		h.ServeHTTP(w, r)
+	})
+}
+
+// requiresExperimentalIngestion is a middleware which enables a handler
+// if the experimental ingestion system is enabled and initialized.
+// It also ensures that state (ledger entries) has been verified and are
+// correct. Otherwise returns `500 Internal Server Error` to prevent
+// returning invalid data to the user.
+func requiresExperimentalIngestion(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		app := AppFromContext(ctx)
+		if !app.config.EnableExperimentalIngestion {
+			problem.Render(r.Context(), w, problem.NotFound)
+			return
+		}
+
+		localLog := log.Ctx(ctx)
+
+		lastIngestedLedger, err := app.HistoryQ().GetLastLedgerExpIngestNonBlocking()
+		if err != nil {
+			localLog.WithField("err", err).Error("Error running GetLastLedgerExpIngestNonBlocking")
+			problem.Render(r.Context(), w, err)
+			return
+		}
+
+		// expingest has not finished processing any ledger so no data.
+		if lastIngestedLedger == 0 {
+			problem.Render(r.Context(), w, hProblem.StillIngesting)
+			return
+		}
+
+		stateInvalid, err := app.HistoryQ().GetExpStateInvalid()
+		if err != nil {
+			localLog.WithField("err", err).Error("Error running GetExpStateInvalid")
+			problem.Render(r.Context(), w, err)
+			return
+		}
+
+		if stateInvalid {
+			problem.Render(r.Context(), w, problem.ServerError)
+			return
+		}
+
+		h.ServeHTTP(w, r)
 	})
 }

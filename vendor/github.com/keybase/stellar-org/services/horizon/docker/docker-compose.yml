@@ -1,0 +1,67 @@
+version: '3'
+services:
+  core-postgres:
+    image: postgres:9.6-alpine
+    restart: on-failure
+    environment:
+      - POSTGRES_PASSWORD=mysecretpassword
+      - POSTGRES_DB=stellar
+    ports:
+      - "5641:5432"
+    volumes:
+      - "core-db-data:/var/lib/postgresql/data"
+    network_mode: '${NETWORK_MODE:-bridge}'
+
+  core:
+    # to use a specific version of stellar core
+    # image: stellar/stellar-core:$VERSION
+    image: stellar/stellar-core
+    depends_on:
+      - core-postgres
+    restart: always
+    ports:
+      - "11625:11625"
+      - "11626:11626"
+    env_file:
+      # to connect to the public stellar network
+      #- ./stellar-core-pubnet.env
+      - ./stellar-core-testnet.env
+    command: /start compat_minimal nopsql fresh
+    network_mode: '${NETWORK_MODE:-bridge}'
+
+  horizon-postgres:
+    image: postgres:9.6-alpine
+    restart: on-failure
+    environment:
+      - POSTGRES_DB=horizon
+    ports:
+      - "5432:5432"
+    volumes:
+      - "horizon-db-data:/var/lib/postgresql/data"
+    network_mode: '${NETWORK_MODE:-bridge}'
+
+  horizon:
+    depends_on:
+      - horizon-postgres
+      - core
+    build:
+      # set build context to the root directory of the go monorepo
+      context: ../../../
+      dockerfile: services/horizon/docker/Dockerfile
+    restart: on-failure
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgres://postgres@host.docker.internal:5432/horizon?sslmode=disable
+      - STELLAR_CORE_DATABASE_URL=postgres://postgres:mysecretpassword@host.docker.internal:5641/stellar?sslmode=disable
+      # to connect to the public stellar network
+      #- NETWORK_PASSPHRASE=Public Global Stellar Network ; September
+      - NETWORK_PASSPHRASE=Test SDF Network ; September 2015
+      - STELLAR_CORE_URL=http://host.docker.internal:11626
+      - INGEST=true
+    network_mode: '${NETWORK_MODE:-bridge}'
+    command: ["--apply-migrations"]
+
+volumes:
+  core-db-data:
+  horizon-db-data:
