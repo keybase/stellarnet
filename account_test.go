@@ -754,6 +754,19 @@ func TestPathPayments(t *testing.T) {
 	if pathOp.Destination.Address() != acctAlice.address.String() {
 		t.Errorf("destination: %s, expected alice %s", pathOp.Destination.Address(), acctAlice.address)
 	}
+
+	// a user tried to use path payments to send from the issuer to another
+	// account that has a trustline for the asset as a way of making more
+	// of the asset.  let's see if that works by making a path payment from
+	// issuer to alice.
+	acctIssuer := NewAccount(issuerAddr)
+	paths, err = acctIssuer.FindPaymentPaths(acctAlice.address, assetCode, issuerAddr, "10")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(paths) == 0 {
+		t.Fatalf("no paths available from issuer to alice for %s/%s", assetCode, issuerAddr)
+	}
 }
 
 type testSeqnoProv struct {
