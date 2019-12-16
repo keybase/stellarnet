@@ -118,6 +118,12 @@ var validTests = []validURITest{
 		OriginDomain: "",
 		Signed:       false,
 	},
+	{
+		URI:          "web+stellar:tx?xdr=AAAAAHN%2Bb9x5HwmNAmIgPPfK5P%2FYZFHjQkwp3njikB8qNRyXAAAAZAFb5rMAAAAlAAAAAAAAAAAAAAABAAAAAAAAAAYAAAABV0hBVAAAAABzfm%2FceR8JjQJiIDz3yuT%2F2GRR40JMKd544pAfKjUcl3%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FAAAAAAAAAAA%3D",
+		Operation:    "tx",
+		OriginDomain: "",
+		Signed:       false,
+	},
 }
 
 func TestInvalidStellarURIs(t *testing.T) {
