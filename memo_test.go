@@ -12,7 +12,7 @@ type mtest struct {
 var mtests = []mtest{
 	{
 		in:   "",
-		kind: "none",
+		kind: "NONE",
 		out:  NewMemoNone(),
 	},
 	{
@@ -22,23 +22,28 @@ var mtests = []mtest{
 	},
 	{
 		in:   "public memo",
-		kind: "none",
+		kind: "NONE",
 		err:  true,
 	},
 	{
 		in:   "public memo",
-		kind: "text",
+		kind: "TEXT",
 		out:  NewMemoText("public memo"),
 	},
 	{
 		in:   "18446744073709551615",
-		kind: "id",
+		kind: "ID",
 		out:  NewMemoID(18446744073709551615),
 	},
 	{
 		in:   "28446744073709551615",
-		kind: "id",
+		kind: "ID",
 		err:  true,
+	},
+	{
+		in:   "0a0b0c0d0e0f",
+		kind: "HASH",
+		out:  NewMemoHash(MemoHash{10, 11, 12, 13, 14, 15}),
 	},
 	{
 		in:   "0a0b0c0d0e0f",
@@ -47,12 +52,12 @@ var mtests = []mtest{
 	},
 	{
 		in:   "ga0b0c0d0e0f",
-		kind: "hash",
+		kind: "HASH",
 		err:  true,
 	},
 	{
 		in:   "0a0b0c0d0e0f",
-		kind: "return",
+		kind: "RETURN",
 		out:  NewMemoReturn(MemoHash{10, 11, 12, 13, 14, 15}),
 	},
 }

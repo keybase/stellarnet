@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 
 	"github.com/stellar/go/xdr"
 )
@@ -61,7 +62,7 @@ func NewMemoReturn(h MemoHash) *Memo {
 
 // NewMemoFromStrings returns a Memo converted from a string to the specified type.
 func NewMemoFromStrings(in, kind string) (*Memo, error) {
-	switch kind {
+	switch strings.ToLower(kind) {
 	case "none", "":
 		if in != "" {
 			return nil, errors.New("invalid memo: nonempty string for memo type none")
