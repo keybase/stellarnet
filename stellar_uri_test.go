@@ -17,6 +17,7 @@ type validURITest struct {
 	URI          string
 	Operation    string
 	OriginDomain string
+	CallbackURL  string
 	Signed       bool
 }
 
@@ -124,6 +125,13 @@ var validTests = []validURITest{
 		OriginDomain: "",
 		Signed:       false,
 	},
+	{
+		URI:          "web+stellar:pay?amount=10&callback=url%3Ahttps%3A%2F%2Fwww.yahoo.com%2Fwhat&destination=GBZX4364PEPQTDICMIQDZ56K4T75QZCR4NBEYKO6PDRJAHZKGUOJPCXB&memo=MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDEK&memo_type=MEMO_HASH&origin_domain=blog.stathat.com&signature=rEdviC9RPzgh4HGpeHjNfDdwvdJK8mv%2FUngifVy74EI3d5rBVPkADwEbkhaoSL5eM%2FNPWnc8v2GABSaBo1d8DQ%3D%3D",
+		Operation:    "pay",
+		OriginDomain: "blog.stathat.com",
+		Signed:       true,
+		CallbackURL:  "https://www.yahoo.com/what",
+	},
 }
 
 func TestInvalidStellarURIs(t *testing.T) {
@@ -155,6 +163,9 @@ func TestValidStellarURIs(t *testing.T) {
 		}
 		if v.Signed != test.Signed {
 			t.Errorf("%d. signed: %v, expected %v", i, v.Signed, test.Signed)
+		}
+		if v.CallbackURL != test.CallbackURL {
+			t.Errorf("%d. callback url: %q, expected %q", i, v.CallbackURL, test.CallbackURL)
 		}
 
 		switch v.Operation {
