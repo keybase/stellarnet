@@ -14,11 +14,12 @@ type invalidURITest struct {
 }
 
 type validURITest struct {
-	URI          string
-	Operation    string
-	OriginDomain string
-	CallbackURL  string
-	Signed       bool
+	URI                  string
+	Operation            string
+	OriginDomain         string
+	CallbackURL          string
+	Signed               bool
+	ReplaceSourceAccount bool
 }
 
 var invalidTests = []invalidURITest{
@@ -132,6 +133,11 @@ var validTests = []validURITest{
 		Signed:       true,
 		CallbackURL:  "https://www.yahoo.com/what",
 	},
+	{
+		URI:                  "web+stellar:tx?xdr=AAAAAP%2Byw%2BZEuNg533pUmwlYxfrq6%2FBoMJqiJ8vuQhf6rHWmAAAAZAB8NHAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA%2F7LD5kS42DnfelSbCVjF%2Burr8GgwmqIny%2B5CF%2FqsdaYAAAAAAAAAAACYloAAAAAAAAAAAA%3D%3D&replace=sourceAccount%3AX%3BX%3Aaccount%20on%20which%20to%20create%20the%20trustline",
+		Operation:            "tx",
+		ReplaceSourceAccount: true,
+	},
 }
 
 func TestInvalidStellarURIs(t *testing.T) {
@@ -166,6 +172,9 @@ func TestValidStellarURIs(t *testing.T) {
 		}
 		if v.CallbackURL != test.CallbackURL {
 			t.Errorf("%d. callback url: %q, expected %q", i, v.CallbackURL, test.CallbackURL)
+		}
+		if v.ReplaceSourceAccount != test.ReplaceSourceAccount {
+			t.Errorf("%d. replace source account: %v, expected %v", i, v.ReplaceSourceAccount, test.ReplaceSourceAccount)
 		}
 
 		switch v.Operation {
