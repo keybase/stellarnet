@@ -126,6 +126,7 @@ type ValidatedStellarURI struct {
 	MemoType             string
 	Signed               bool
 	ReplaceSourceAccount bool
+	UnknownReplaceFields bool
 }
 
 // ValidateStellarURI will check the validity of a web+stellar SEP7 URI.
@@ -411,6 +412,8 @@ func (u *unvalidatedURI) newValidated(op string) *ValidatedStellarURI {
 			parts := strings.Split(f, ":")
 			if parts[0] == "sourceAccount" {
 				v.ReplaceSourceAccount = true
+			} else {
+				v.UnknownReplaceFields = true
 			}
 		}
 	}
