@@ -63,7 +63,7 @@ func TestOpSummary(t *testing.T) {
 		var tx xdr.Transaction
 		if err := xdr.SafeUnmarshalBase64(test.b64xdr, &tx); err != nil {
 			t.Errorf("test %d: unmarshal error %s", i, err)
-			// continue
+			continue
 		}
 		if len(tx.Operations) != 1 {
 			t.Errorf("test %d: expected 1 operation, got %d", i, len(tx.Operations))
