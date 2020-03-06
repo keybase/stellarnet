@@ -51,6 +51,11 @@ var summarytests = []struct {
 		"Authorize trustline to HAAA for GDRK3SOWNZ43XFSBSQQVHKMPPNFRZYHIEFO4DIK2WP6PLDL4LICSIPAT",
 		"Authorized trustline to HAAA for GDRK3SOWNZ43XFSBSQQVHKMPPNFRZYHIEFO4DIK2WP6PLDL4LICSIPAT",
 	},
+	{
+		"AAAAACSsWe+Gqyd5TUPRGt2SkM2V4zD3xDmut3XwM2vSfn3iAAAnEAETAZMAAAF7AAAAAAAAAAEAAAAOZm9yIHRlc3RpbmcgdWkAAAAAAAEAAAABAAAAACSsWe+Gqyd5TUPRGt2SkM2V4zD3xDmut3XwM2vSfn3iAAAADQAAAAAAAAAABfXhAAAAAABzfm/ceR8JjQJiIDz3yuT/2GRR40JMKd544pAfKjUclwAAAAAAAAAABfXhAAAAAAAAAAAA",
+		"[Source account GASKYWPPQ2VSO6KNIPIRVXMSSDGZLYZQ67CDTLVXOXYDG26SPZ66EDCQ] Pay at least 10.0000000 XLM to account GBZX4364PEPQTDICMIQDZ56K4T75QZCR4NBEYKO6PDRJAHZKGUOJPCXB using 10.0000000 XLM",
+		"[Source account GASKYWPPQ2VSO6KNIPIRVXMSSDGZLYZQ67CDTLVXOXYDG26SPZ66EDCQ] Paid at least 10.0000000 XLM to account GBZX4364PEPQTDICMIQDZ56K4T75QZCR4NBEYKO6PDRJAHZKGUOJPCXB using 10.0000000 XLM",
+	},
 }
 
 func TestOpSummary(t *testing.T) {
@@ -58,7 +63,7 @@ func TestOpSummary(t *testing.T) {
 		var tx xdr.Transaction
 		if err := xdr.SafeUnmarshalBase64(test.b64xdr, &tx); err != nil {
 			t.Errorf("test %d: unmarshal error %s", i, err)
-			continue
+			// continue
 		}
 		if len(tx.Operations) != 1 {
 			t.Errorf("test %d: expected 1 operation, got %d", i, len(tx.Operations))
