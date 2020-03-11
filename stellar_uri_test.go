@@ -20,6 +20,7 @@ type validURITest struct {
 	CallbackURL          string
 	Signed               bool
 	ReplaceSourceAccount bool
+	ReplaceSeqnum        bool
 }
 
 var invalidTests = []invalidURITest{
@@ -138,6 +139,12 @@ var validTests = []validURITest{
 		Operation:            "tx",
 		ReplaceSourceAccount: true,
 	},
+	{
+		URI:                  "web+stellar:tx?xdr=AAAAAP%2Byw%2BZEuNg533pUmwlYxfrq6%2FBoMJqiJ8vuQhf6rHWmAAAAZAB8NHAAAAABAAAAAAAAAAAAAAABAAAAAAAAAAEAAAAA%2F7LD5kS42DnfelSbCVjF%2Burr8GgwmqIny%2B5CF%2FqsdaYAAAAAAAAAAACYloAAAAAAAAAAAA%3D%3D&replace=sourceAccount%3AX%2CseqNum%3AY%3BX%3Aaccount+from+where+you+want+to+pay+fees%2CY%3Asequence+number+to+replace",
+		Operation:            "tx",
+		ReplaceSourceAccount: true,
+		ReplaceSeqnum:        true,
+	},
 }
 
 func TestInvalidStellarURIs(t *testing.T) {
@@ -175,6 +182,9 @@ func TestValidStellarURIs(t *testing.T) {
 		}
 		if v.ReplaceSourceAccount != test.ReplaceSourceAccount {
 			t.Errorf("%d. replace source account: %v, expected %v", i, v.ReplaceSourceAccount, test.ReplaceSourceAccount)
+		}
+		if v.ReplaceSeqnum != test.ReplaceSeqnum {
+			t.Errorf("%d. replace seqnum: %v, expected %v", i, v.ReplaceSeqnum, test.ReplaceSeqnum)
 		}
 
 		switch v.Operation {
