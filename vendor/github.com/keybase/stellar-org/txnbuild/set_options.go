@@ -317,3 +317,9 @@ func (so *SetOptions) Validate() error {
 	// Refactoring is out of the scope of this issue(https://github.com/stellar/go/issues/1041) so will leave as is for now.
 	return nil
 }
+
+// GetSourceAccount returns the source account of the operation, or nil if not
+// set.
+func (so *SetOptions) GetSourceAccount() Account {
+	return so.SourceAccount
+}

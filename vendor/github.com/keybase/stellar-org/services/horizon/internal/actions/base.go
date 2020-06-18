@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/json"
 	"net/http"
+	"sync"
 	"time"
 
 	horizonContext "github.com/stellar/go/services/horizon/internal/context"
@@ -132,9 +133,19 @@ func (base *Base) Execute(action interface{}) {
 			// will never return if `newLedgers` channel is not read. From Effective Go:
 			// > If the channel is unbuffered, the sender blocks until the receiver has received the value.
 			newLedgers := make(chan bool, 1)
+			var closedLock sync.Mutex
+			var closed bool
 			go func() {
 				for {
 					time.Sleep(base.sseUpdateFrequency)
+
+					closedLock.Lock()
+					tmpClosed := closed
+					closedLock.Unlock()
+					if tmpClosed {
+						return
+					}
+
 					currentLedgerState := ledger.CurrentState()
 					if currentLedgerState.HistoryLatest >= lastLedgerState.HistoryLatest+1 {
 						newLedgers <- true
@@ -147,6 +158,9 @@ func (base *Base) Execute(action interface{}) {
 			case <-newLedgers:
 				continue
 			case <-ctx.Done():
+				closedLock.Lock()
+				closed = true
+				closedLock.Unlock()
 			case <-base.appCtx.Done():
 			}
 

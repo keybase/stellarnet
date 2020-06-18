@@ -19,7 +19,7 @@ func initFriendbot(
 	horizonURL string,
 	startingBalance string,
 	numMinions int,
-	baseFee uint32,
+	baseFee int64,
 ) (*internal.Bot, error) {
 	if friendbotSecret == "" || networkPassphrase == "" || horizonURL == "" || startingBalance == "" || numMinions < 0 {
 		return nil, errors.New("invalid input param(s)")
@@ -56,7 +56,7 @@ func initFriendbot(
 	return &internal.Bot{Minions: minions}, nil
 }
 
-func createMinionAccounts(botAccount internal.Account, botKeypair *keypair.Full, networkPassphrase, newAccountBalance, minionBalance string, numMinions int, baseFee uint32, hclient *horizonclient.Client) ([]internal.Minion, error) {
+func createMinionAccounts(botAccount internal.Account, botKeypair *keypair.Full, networkPassphrase, newAccountBalance, minionBalance string, numMinions int, baseFee int64, hclient *horizonclient.Client) ([]internal.Minion, error) {
 	var minions []internal.Minion
 	numRemainingMinions := numMinions
 	minionBatchSize := 100
@@ -100,18 +100,29 @@ func createMinionAccounts(botAccount internal.Account, botKeypair *keypair.Full,
 		}
 
 		// Build and submit batched account creation tx.
-		txn := txnbuild.Transaction{
-			SourceAccount: botAccount,
-			Operations:    ops,
-			Timebounds:    txnbuild.NewTimeout(300),
-			Network:       networkPassphrase,
-			BaseFee:       baseFee,
+		tx, err := txnbuild.NewTransaction(
+			txnbuild.TransactionParams{
+				SourceAccount:        botAccount,
+				IncrementSequenceNum: true,
+				Operations:           ops,
+				BaseFee:              txnbuild.MinBaseFee,
+				Timebounds:           txnbuild.NewTimeout(300),
+			},
+		)
+		if err != nil {
+			return minions, errors.Wrap(err, "unable to build tx")
 		}
 
-		txe, err := txn.BuildSignEncode(botKeypair)
+		tx, err = tx.Sign(networkPassphrase, botKeypair)
 		if err != nil {
-			return minions, errors.Wrap(err, "making create accounts tx")
+			return minions, errors.Wrap(err, "unable to sign tx")
 		}
+
+		txe, err := tx.Base64()
+		if err != nil {
+			return minions, errors.Wrap(err, "unable to serialize tx")
+		}
+
 		resp, err := hclient.SubmitTransactionXDR(txe)
 		if err != nil {
 			log.Println(resp)

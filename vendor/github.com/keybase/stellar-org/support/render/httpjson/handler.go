@@ -8,6 +8,7 @@ import (
 	"reflect"
 
 	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/support/http/httpdecode"
 	"github.com/stellar/go/support/render/problem"
 )
 
@@ -82,9 +83,9 @@ func (h *handler) executeFunc(ctx context.Context, req *http.Request) (interface
 	if h.inType != nil {
 		if h.readFromBody {
 			inPtr := reflect.New(h.inType)
-			err := read(req.Body, inPtr.Interface())
+			err := httpdecode.DecodeJSON(req, inPtr.Interface())
 			if err != nil {
-				return nil, err
+				return nil, ErrBadRequest
 			}
 			a = append(a, inPtr.Elem())
 		} else {

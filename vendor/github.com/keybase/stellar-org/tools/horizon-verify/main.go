@@ -105,8 +105,8 @@ var rootCmd = &cobra.Command{
 							panic(err)
 						}
 
-						if (transaction.Successful && resultXDR.Result.Code != xdr.TransactionResultCodeTxSuccess) ||
-							(!transaction.Successful && resultXDR.Result.Code == xdr.TransactionResultCodeTxSuccess) {
+						if (transaction.Successful && !resultXDR.Successful()) ||
+							(!transaction.Successful && resultXDR.Successful()) {
 							panic(fmt.Sprintf("Corrupted data! %s %s", transaction.Hash, transaction.ResultXdr))
 						}
 

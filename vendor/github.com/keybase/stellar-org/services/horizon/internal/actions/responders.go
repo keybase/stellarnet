@@ -26,3 +26,9 @@ type EventStreamer interface {
 type SingleObjectStreamer interface {
 	LoadEvent() (sse.Event, error)
 }
+
+// PrometheusResponder implementors can respond to a request whose response
+// type was negotiated to be in a Prometheus simple text-based exposition format.
+type PrometheusResponder interface {
+	PrometheusFormat() error
+}

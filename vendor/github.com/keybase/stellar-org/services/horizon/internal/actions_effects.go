@@ -109,7 +109,12 @@ func (action *EffectIndexAction) loadParams() {
 	action.PagingParams = action.GetPageQuery()
 	action.AccountFilter = action.GetAddress("account_id")
 	action.LedgerFilter = action.GetInt32("ledger_id")
-	action.TransactionFilter = action.GetString("tx_id")
+	var err error
+	action.TransactionFilter, err = actions.GetTransactionID(action.R, "tx_id")
+	if err != nil {
+		action.Err = err
+		return
+	}
 	action.OperationFilter = action.GetInt64("op_id")
 
 	filters, err := countNonEmpty(

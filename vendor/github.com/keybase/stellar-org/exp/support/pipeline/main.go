@@ -3,7 +3,13 @@ package pipeline
 import (
 	"context"
 	"sync"
+
+	"github.com/stellar/go/support/errors"
 )
+
+// ErrShutdown is an error send to post-processing hook when pipeline has been
+// shutdown.
+var ErrShutdown = errors.New("Pipeline shutdown")
 
 // BufferedReadWriter implements Reader and Writer and acts
 // like a pipe. All writes are queued in a buffered channel and are waiting

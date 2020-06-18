@@ -7,8 +7,8 @@ check an architecture overview [here](docs/Architecture.md)). In order to get up
 follow these steps:
 
 1. Install [Docker](https://hub.docker.com/editions/community/docker-ce-desktop-mac)
-2. Clone the [monorepo](https://github.com/stellar/go) and `$ cd services/ticker`
-3. Build the Ticker's docker image: `$ docker build -t ticker .`
+2. Clone the [monorepo](https://github.com/stellar/go)
+3. Build the Ticker's docker image. At the repo's root, run `$ docker build -t ticker -f services/ticker/docker/Dockerfile-dev .`
 4. Run the Ticker: `$ docker run --rm -it -p "8000:8000" ticker` (you'll be asked to enter a
    PostgreSQL password)
 5. After the initial setup (after the `supervisord started` message), you should be able to visit

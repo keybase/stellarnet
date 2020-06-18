@@ -1,9 +1,18 @@
-# Stellar Go 
-[![Build Status](https://circleci.com/gh/stellar/go.svg?style=shield)](https://circleci.com/gh/stellar/go)
-[![GoDoc](https://godoc.org/github.com/stellar/go?status.svg)](https://godoc.org/github.com/stellar/go)
-[![Go Report Card](https://goreportcard.com/badge/github.com/stellar/go)](https://goreportcard.com/report/github.com/stellar/go)
+<div align="center">
+<a href="https://stellar.org"><img alt="Stellar" src="https://github.com/stellar/.github/raw/master/stellar-logo.png" width="558" /></a>
+<br/>
+<strong>Creating equitable access to the global financial system</strong>
+<h1>Stellar Go Monorepo</h1>
+</div>
+<p align="center">
+<a href="https://circleci.com/gh/stellar/go"><img alt="Build Status" src="https://circleci.com/gh/stellar/go.svg?style=shield" /></a>
+<a href="https://godoc.org/github.com/stellar/go"><img alt="GoDoc" src="https://godoc.org/github.com/stellar/go?status.svg" /></a>
+<a href="https://goreportcard.com/report/github.com/stellar/go"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/stellar/go" /></a>
+</p>
 
-This repo is the home for all of the public go code produced by SDF.  In addition to various tools and services, this repository is the SDK from which you may develop your own applications that integrate with the stellar network.
+This repo is the home for all of the public Go code produced by the [Stellar Development Foundation].
+
+This repo contains various tools and services that you can use and deploy, as well as the SDK you can use to develop applications that integrate with the Stellar network.
 
 ## Package Index
 
@@ -19,11 +28,11 @@ This repo is the home for all of the public go code produced by SDF.  In additio
 
 ## Dependencies
 
-This repository is officially supported on the last two releases of Go, which is currently Go 1.12 and Go 1.13.
+This repository is officially supported on the last two releases of Go, which is currently Go 1.13 and Go 1.14.
 
 It depends on a [number of external dependencies](./go.mod), and uses Go [Modules](https://github.com/golang/go/wiki/Modules) to manage them. Running any `go` command will automatically download dependencies required for that operation.
 
-You can choose to checkout this repository into a [GOPATH](https://github.com/golang/go/wiki/GOPATH) or into any directory, but if you are using a GOPATH with Go 1.12 or earlier you must set environment variable `GO111MODULE=on` to enable Modules.
+You can choose to checkout this repository into a [GOPATH](https://github.com/golang/go/wiki/GOPATH) or into any directory.
 
 ## Directory Layout
 
@@ -50,10 +59,10 @@ While much of the code in individual packages is organized based upon different 
 
 In each package, there may be one or more of a set of common files:
 
-- *main.go*: Every package should have a `main.go` file.  This file contains the package documentation (unless a separate `doc.go` file is used), _all_ of the exported vars, consts, types and funcs for the package. 
-- *internal.go*:  This file should contain unexported vars, consts, types, and funcs.  Conceptually, it should be considered the private counterpart to the `main.go` file of a package
 - *errors.go*: This file should contains declarations (both types and vars) for errors that are used by the package.
 - *example_test.go*: This file should contains example tests, as described at https://blog.golang.org/examples.
+- *main.go/internal.go* (**deprecated**): Older packages may have a `main.go` (public symbols) or `internal.go` (private symbols).  These files contain, respectively, the exported and unexported vars, consts, types and funcs for the package. New packages do not follow this pattern, and instead follow the standard Go convention to co-locate structs and their methods in the same files. 
+- *main.go* (**new convention**): If present, this file contains a `main` function as part of an executable `main` package.
 
 In addition to the above files, a package often has files that contains code that is specific to one declared type.  This file uses the snake case form of the type name (for example `loggly_hook.go` would correspond to the type `LogglyHook`).  This file should contain method declarations, interface implementation assertions and any other declarations that are tied solely to that type.
 
@@ -72,3 +81,5 @@ Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for more detai
 ### Developing
 
 See [DEVELOPING.md](DEVELOPING.md) for helpful instructions for getting started developing code in this repository.
+
+[Stellar Development Foundation]: https://stellar.org

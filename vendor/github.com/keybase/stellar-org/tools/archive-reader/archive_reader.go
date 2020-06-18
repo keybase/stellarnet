@@ -1,13 +1,13 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	stdio "io"
 	"log"
 
 	"github.com/stellar/go/exp/ingest/adapters"
-	"github.com/stellar/go/exp/ingest/io"
 	"github.com/stellar/go/support/historyarchive"
 )
 
@@ -27,7 +27,7 @@ func main() {
 	}
 	haa := adapters.MakeHistoryArchiveAdapter(archive)
 
-	sr, e := haa.GetState(seqNum, &io.MemoryTempSet{})
+	sr, e := haa.GetState(context.Background(), seqNum, 0)
 	if e != nil {
 		panic(e)
 	}
@@ -45,7 +45,7 @@ func main() {
 			return
 		}
 
-		if ae, valid := le.State.Data.GetAccount(); valid {
+		if ae, valid := le.Post.Data.GetAccount(); valid {
 			addr := ae.AccountId.Address()
 			if _, exists := accounts[addr]; exists {
 				log.Fatalf("error, total seen %d entries of which %d were unique accounts; repeated account: %s", i, count, addr)

@@ -19,7 +19,7 @@ var (
 )
 
 // InMemoryFinder is an implementation of the path finding interface
-// using the experimental in memory orderbook
+// using the in memory orderbook
 type InMemoryFinder struct {
 	graph *orderbook.OrderBookGraph
 }
@@ -32,19 +32,19 @@ func NewInMemoryFinder(graph *orderbook.OrderBookGraph) InMemoryFinder {
 }
 
 // Find implements the path payments finder interface
-func (finder InMemoryFinder) Find(q paths.Query, maxLength uint) ([]paths.Path, error) {
+func (finder InMemoryFinder) Find(q paths.Query, maxLength uint) ([]paths.Path, uint32, error) {
 	if finder.graph.IsEmpty() {
-		return nil, ErrEmptyInMemoryOrderBook
+		return nil, 0, ErrEmptyInMemoryOrderBook
 	}
 
 	if maxLength == 0 {
 		maxLength = MaxInMemoryPathLength
 	}
 	if maxLength > MaxInMemoryPathLength {
-		return nil, errors.New("invalid value of maxLength")
+		return nil, 0, errors.New("invalid value of maxLength")
 	}
 
-	orderbookPaths, err := finder.graph.FindPaths(
+	orderbookPaths, lastLedger, err := finder.graph.FindPaths(
 		int(maxLength),
 		q.DestinationAsset,
 		q.DestinationAmount,
@@ -64,7 +64,7 @@ func (finder InMemoryFinder) Find(q paths.Query, maxLength uint) ([]paths.Path, 
 			DestinationAmount: path.DestinationAmount,
 		}
 	}
-	return results, err
+	return results, lastLedger, err
 }
 
 // FindFixedPaths returns a list of payment paths where the source and destination
@@ -77,19 +77,19 @@ func (finder InMemoryFinder) FindFixedPaths(
 	amountToSpend xdr.Int64,
 	destinationAssets []xdr.Asset,
 	maxLength uint,
-) ([]paths.Path, error) {
+) ([]paths.Path, uint32, error) {
 	if finder.graph.IsEmpty() {
-		return nil, ErrEmptyInMemoryOrderBook
+		return nil, 0, ErrEmptyInMemoryOrderBook
 	}
 
 	if maxLength == 0 {
 		maxLength = MaxInMemoryPathLength
 	}
 	if maxLength > MaxInMemoryPathLength {
-		return nil, errors.New("invalid value of maxLength")
+		return nil, 0, errors.New("invalid value of maxLength")
 	}
 
-	orderbookPaths, err := finder.graph.FindFixedPaths(
+	orderbookPaths, lastLedger, err := finder.graph.FindFixedPaths(
 		int(maxLength),
 		sourceAsset,
 		amountToSpend,
@@ -106,5 +106,5 @@ func (finder InMemoryFinder) FindFixedPaths(
 			DestinationAmount: path.DestinationAmount,
 		}
 	}
-	return results, err
+	return results, lastLedger, err
 }

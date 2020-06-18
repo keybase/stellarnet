@@ -200,4 +200,4 @@ This endpoint responds with a list of ledgers.  See [ledger resource](../resourc
 
 ## Errors
 
-- The [standard errors](../errors.md#Standard_Errors).
+- The [standard errors](../errors.md#standard-errors).

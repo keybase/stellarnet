@@ -46,3 +46,9 @@ func (bs *BumpSequence) Validate() error {
 	}
 	return nil
 }
+
+// GetSourceAccount returns the source account of the operation, or nil if not
+// set.
+func (bs *BumpSequence) GetSourceAccount() Account {
+	return bs.SourceAccount
+}

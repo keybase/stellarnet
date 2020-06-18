@@ -8,6 +8,15 @@ import (
 
 // Well-known and reused problems below:
 var (
+	// ServiceUnavailable is a well-known problem type.  Use it as a shortcut
+	// in your actions.
+	ServiceUnavailable = problem.P{
+		Type:   "service_unavailable",
+		Title:  "Service Unavailable",
+		Status: http.StatusServiceUnavailable,
+		Detail: "The request cannot be serviced at this time.",
+	}
+
 	// RateLimitExceeded is a well-known problem type.  Use it as a shortcut
 	// in your actions.
 	RateLimitExceeded = problem.P{

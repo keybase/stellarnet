@@ -11,29 +11,23 @@ import (
 	"github.com/stellar/go/xdr"
 )
 
-// OperationTypeNames maps from operation type to the string used to represent that type
+// TypeNames maps from operation type to the string used to represent that type
 // in horizon's JSON responses
 var TypeNames = map[xdr.OperationType]string{
-	xdr.OperationTypeCreateAccount: "create_account",
-	xdr.OperationTypePayment:       "payment",
-	// Action needed in release: horizon-v0.25.0
-	// Change name to `path_payment_strict_receive`
-	xdr.OperationTypePathPaymentStrictReceive: "path_payment",
-	// Action needed in release: horizon-v0.25.0
-	// Change name to `manage_sell_offer`
-	xdr.OperationTypeManageSellOffer: "manage_offer",
-	// Action needed in release: horizon-v0.25.0
-	// Change name to `create_passive_sell_offer`
-	xdr.OperationTypeCreatePassiveSellOffer: "create_passive_offer",
-	xdr.OperationTypeSetOptions:             "set_options",
-	xdr.OperationTypeChangeTrust:            "change_trust",
-	xdr.OperationTypeAllowTrust:             "allow_trust",
-	xdr.OperationTypeAccountMerge:           "account_merge",
-	xdr.OperationTypeInflation:              "inflation",
-	xdr.OperationTypeManageData:             "manage_data",
-	xdr.OperationTypeBumpSequence:           "bump_sequence",
-	xdr.OperationTypeManageBuyOffer:         "manage_buy_offer",
-	xdr.OperationTypePathPaymentStrictSend:  "path_payment_strict_send",
+	xdr.OperationTypeCreateAccount:            "create_account",
+	xdr.OperationTypePayment:                  "payment",
+	xdr.OperationTypePathPaymentStrictReceive: "path_payment_strict_receive",
+	xdr.OperationTypeManageSellOffer:          "manage_sell_offer",
+	xdr.OperationTypeCreatePassiveSellOffer:   "create_passive_sell_offer",
+	xdr.OperationTypeSetOptions:               "set_options",
+	xdr.OperationTypeChangeTrust:              "change_trust",
+	xdr.OperationTypeAllowTrust:               "allow_trust",
+	xdr.OperationTypeAccountMerge:             "account_merge",
+	xdr.OperationTypeInflation:                "inflation",
+	xdr.OperationTypeManageData:               "manage_data",
+	xdr.OperationTypeBumpSequence:             "bump_sequence",
+	xdr.OperationTypeManageBuyOffer:           "manage_buy_offer",
+	xdr.OperationTypePathPaymentStrictSend:    "path_payment_strict_send",
 }
 
 // Base represents the common attributes of an operation resource
@@ -151,16 +145,14 @@ type CreatePassiveSellOffer struct {
 // is ManageSellOffer.
 type ManageSellOffer struct {
 	Offer
-	// Action needed in release: horizon-v0.23.0
-	OfferID int64 `json:"offer_id"`
+	OfferID int64 `json:"offer_id,string"`
 }
 
 // ManageBuyOffer is the json resource representing a single operation whose type
 // is ManageBuyOffer.
 type ManageBuyOffer struct {
 	Offer
-	// Action needed in release: horizon-v0.23.0
-	OfferID int64 `json:"offer_id"`
+	OfferID int64 `json:"offer_id,string"`
 }
 
 // SetOptions is the json resource representing a single operation whose type is
@@ -199,9 +191,10 @@ type ChangeTrust struct {
 type AllowTrust struct {
 	Base
 	base.Asset
-	Trustee   string `json:"trustee"`
-	Trustor   string `json:"trustor"`
-	Authorize bool   `json:"authorize"`
+	Trustee                        string `json:"trustee"`
+	Trustor                        string `json:"trustor"`
+	Authorize                      bool   `json:"authorize"`
+	AuthorizeToMaintainLiabilities bool   `json:"authorize_to_maintain_liabilities"`
 }
 
 // AccountMerge is the json resource representing a single operation whose type

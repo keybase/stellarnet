@@ -49,7 +49,30 @@ func IngestTestTrade(
 		D: xdr.Int32(amountSold),
 	}
 
-	return q.InsertTrade(opCounter, 0, buyer, false, xdr.OfferEntry{}, trade, price, timestamp)
+	accounts, err := q.CreateAccounts([]string{seller.Address(), buyer.Address()}, 2)
+	if err != nil {
+		return err
+	}
+	assets, err := q.CreateAssets([]xdr.Asset{assetBought, assetSold}, 2)
+	if err != nil {
+		return err
+	}
+
+	batch := q.NewTradeBatchInsertBuilder(0)
+	batch.Add(history.InsertTrade{
+		HistoryOperationID: opCounter,
+		Order:              0,
+		BuyOfferExists:     false,
+		BuyOfferID:         0,
+		BoughtAssetID:      assets[assetBought.String()].ID,
+		SoldAssetID:        assets[assetSold.String()].ID,
+		LedgerCloseTime:    timestamp.ToTime(),
+		SellPrice:          price,
+		Trade:              trade,
+		BuyerAccountID:     accounts[buyer.Address()],
+		SellerAccountID:    accounts[seller.Address()],
+	})
+	return batch.Exec()
 }
 
 //PopulateTestTrades generates and ingests trades between two assets according to given parameters

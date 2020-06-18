@@ -60,19 +60,6 @@ func DatabaseURL() string {
 	return tdb.HorizonURL()
 }
 
-// LoadScenario populates the test databases with pre-created scenarios.  Each
-// scenario is in the scenarios subfolder of this package and are a pair of
-// sql files, one per database.
-func LoadScenario(scenarioName string) {
-	loadScenario(scenarioName, true)
-}
-
-// LoadScenarioWithoutHorizon populates the test Stellar core database a with
-// pre-created scenario.  Unlike `LoadScenario`, this
-func LoadScenarioWithoutHorizon(scenarioName string) {
-	loadScenario(scenarioName, false)
-}
-
 // OverrideLogger sets the default logger used by horizon to `l`.  This is used
 // by the testing system so that we can collect output from logs during test
 // runs.  Panics if the logger is already overridden.

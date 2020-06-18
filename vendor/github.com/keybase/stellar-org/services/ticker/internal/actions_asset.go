@@ -18,7 +18,7 @@ func RefreshAssets(s *tickerdb.TickerSession, c *horizonclient.Client, l *hlog.E
 		Client: c,
 		Logger: l,
 	}
-	finalAssetList, err := sc.FetchAllAssets(0, 500)
+	finalAssetList, err := sc.FetchAllAssets(0, 10)
 	if err != nil {
 		return
 	}

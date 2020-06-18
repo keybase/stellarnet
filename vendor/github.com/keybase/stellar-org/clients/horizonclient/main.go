@@ -21,6 +21,7 @@ import (
 	hProtocol "github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/protocols/horizon/effects"
 	"github.com/stellar/go/protocols/horizon/operations"
+	"github.com/stellar/go/support/clock"
 	"github.com/stellar/go/support/render/problem"
 	"github.com/stellar/go/txnbuild"
 )
@@ -60,6 +61,9 @@ const (
 	AssetType12 AssetType = "credit_alphanum12"
 	// AssetTypeNative represents the asset type for Stellar Lumens (XLM)
 	AssetTypeNative AssetType = "native"
+	// accountRequiresMemo is the base64 encoding of "1".
+	// SEP 29 uses this value to define transaction memo requirements for incoming payments.
+	accountRequiresMemo = "MQ=="
 )
 
 // Error struct contains the problem returned by Horizon
@@ -84,8 +88,12 @@ var (
 	// "result_xdr" extra field populated when it is expected to be.
 	ErrResultNotPopulated = errors.New("result_xdr not populated")
 
-	// HorizonTimeOut is the default number of seconds before a request to horizon times out.
-	HorizonTimeOut = time.Duration(60)
+	// ErrAccountRequiresMemo is the error returned from a call to checkMemoRequired
+	// when any of the destination accounts required a memo in the transaction.
+	ErrAccountRequiresMemo = errors.New("destination account requires a memo in the transaction")
+
+	// HorizonTimeout is the default number of nanoseconds before a request to horizon times out.
+	HorizonTimeout = 60 * time.Second
 
 	// MinuteResolution represents 1 minute used as `resolution` parameter in trade aggregation
 	MinuteResolution = time.Duration(1 * time.Minute)
@@ -131,28 +139,37 @@ type Client struct {
 
 	// AppVersion is the version of the application using the horizonclient package
 	AppVersion     string
-	horizonTimeOut time.Duration
+	horizonTimeout time.Duration
 	isTestNet      bool
 
-	// currentUniversalTime is a function that returns the current UTC unix time in seconds.
-	currentUniversalTime UniversalTimeHandler
+	// clock is a Clock returning the current time.
+	clock *clock.Clock
+}
+
+// SubmitTxOpts represents the submit transaction options
+type SubmitTxOpts struct {
+	SkipMemoRequiredCheck bool
 }
 
 // ClientInterface contains methods implemented by the horizon client
 type ClientInterface interface {
+	Accounts(request AccountsRequest) (hProtocol.AccountsPage, error)
 	AccountDetail(request AccountRequest) (hProtocol.Account, error)
 	AccountData(request AccountRequest) (hProtocol.AccountData, error)
 	Effects(request EffectRequest) (effects.EffectsPage, error)
 	Assets(request AssetRequest) (hProtocol.AssetsPage, error)
 	Ledgers(request LedgerRequest) (hProtocol.LedgersPage, error)
 	LedgerDetail(sequence uint32) (hProtocol.Ledger, error)
-	Metrics() (hProtocol.Metrics, error)
 	FeeStats() (hProtocol.FeeStats, error)
 	Offers(request OfferRequest) (hProtocol.OffersPage, error)
+	OfferDetails(offerID string) (offer hProtocol.Offer, err error)
 	Operations(request OperationRequest) (operations.OperationsPage, error)
 	OperationDetail(id string) (operations.Operation, error)
-	SubmitTransactionXDR(transactionXdr string) (hProtocol.TransactionSuccess, error)
-	SubmitTransaction(transactionXdr txnbuild.Transaction) (hProtocol.TransactionSuccess, error)
+	SubmitTransactionXDR(transactionXdr string) (hProtocol.Transaction, error)
+	SubmitFeeBumpTransactionWithOptions(transaction *txnbuild.FeeBumpTransaction, opts SubmitTxOpts) (hProtocol.Transaction, error)
+	SubmitTransactionWithOptions(transaction *txnbuild.Transaction, opts SubmitTxOpts) (hProtocol.Transaction, error)
+	SubmitFeeBumpTransaction(transaction *txnbuild.FeeBumpTransaction) (hProtocol.Transaction, error)
+	SubmitTransaction(transaction *txnbuild.Transaction) (hProtocol.Transaction, error)
 	Transactions(request TransactionRequest) (hProtocol.TransactionsPage, error)
 	TransactionDetail(txHash string) (hProtocol.Transaction, error)
 	OrderBook(request OrderBookRequest) (hProtocol.OrderBookSummary, error)
@@ -160,7 +177,7 @@ type ClientInterface interface {
 	Payments(request OperationRequest) (operations.OperationsPage, error)
 	TradeAggregations(request TradeAggregationRequest) (hProtocol.TradeAggregationsPage, error)
 	Trades(request TradeRequest) (hProtocol.TradesPage, error)
-	Fund(addr string) (hProtocol.TransactionSuccess, error)
+	Fund(addr string) (hProtocol.Transaction, error)
 	StreamTransactions(ctx context.Context, request TransactionRequest, handler TransactionHandler) error
 	StreamTrades(ctx context.Context, request TradeRequest, handler TradeHandler) error
 	StreamEffects(ctx context.Context, request EffectRequest, handler EffectHandler) error
@@ -193,19 +210,17 @@ type ClientInterface interface {
 
 // DefaultTestNetClient is a default client to connect to test network.
 var DefaultTestNetClient = &Client{
-	HorizonURL:           "https://horizon-testnet.stellar.org/",
-	HTTP:                 http.DefaultClient,
-	horizonTimeOut:       HorizonTimeOut,
-	isTestNet:            true,
-	currentUniversalTime: universalTimeFunc,
+	HorizonURL:     "https://horizon-testnet.stellar.org/",
+	HTTP:           http.DefaultClient,
+	horizonTimeout: HorizonTimeout,
+	isTestNet:      true,
 }
 
 // DefaultPublicNetClient is a default client to connect to public network.
 var DefaultPublicNetClient = &Client{
-	HorizonURL:           "https://horizon.stellar.org/",
-	HTTP:                 http.DefaultClient,
-	horizonTimeOut:       HorizonTimeOut,
-	currentUniversalTime: universalTimeFunc,
+	HorizonURL:     "https://horizon.stellar.org/",
+	HTTP:           http.DefaultClient,
+	horizonTimeout: HorizonTimeout,
 }
 
 // HorizonRequest contains methods implemented by request structs for horizon endpoints.
@@ -213,7 +228,18 @@ type HorizonRequest interface {
 	BuildURL() (string, error)
 }
 
-// AccountRequest struct contains data for making requests to the accounts endpoint of a horizon server.
+// AccountsRequest struct contains data for making requests to the accounts endpoint of a horizon server.
+// Either "Signer" or "Asset" fields should be set when retrieving Accounts.
+// At the moment, you can't use both filters at the same time.
+type AccountsRequest struct {
+	Signer string
+	Asset  string
+	Order  Order
+	Cursor string
+	Limit  uint
+}
+
+// AccountRequest struct contains data for making requests to the show account endpoint of a horizon server.
 // "AccountID" and "DataKey" fields should both be set when retrieving AccountData.
 // When getting the AccountDetail, only "AccountID" needs to be set.
 type AccountRequest struct {
@@ -223,7 +249,7 @@ type AccountRequest struct {
 
 // EffectRequest struct contains data for getting effects from a horizon server.
 // "ForAccount", "ForLedger", "ForOperation" and "ForTransaction": Not more than one of these
-//  can be set at a time. If none are set, the default is to return all effects.
+// can be set at a time. If none are set, the default is to return all effects.
 // The query parameters (Order, Cursor and Limit) are optional. All or none can be set.
 type EffectRequest struct {
 	ForAccount     string
@@ -255,19 +281,18 @@ type LedgerRequest struct {
 	forSequence uint32
 }
 
-type metricsRequest struct {
-	endpoint string
-}
-
 type feeStatsRequest struct {
 	endpoint string
 }
 
 // OfferRequest struct contains data for getting offers made by an account from a horizon server.
-// "ForAccount" is required.
 // The query parameters (Order, Cursor and Limit) are optional. All or none can be set.
 type OfferRequest struct {
+	OfferID    string
 	ForAccount string
+	Selling    string
+	Seller     string
+	Buying     string
 	Order      Order
 	Cursor     string
 	Limit      uint
@@ -321,8 +346,10 @@ type OrderBookRequest struct {
 	Limit              uint
 }
 
-// PathsRequest struct contains data for getting available payment paths from a horizon server.
-// All parameters are required.
+// PathsRequest struct contains data for getting available strict receive path payments from a horizon server.
+// All the Destination related parameters are required and you need to include either
+// SourceAccount or SourceAssets.
+// See https://www.stellar.org/developers/horizon/reference/endpoints/path-finding-strict-receive.html
 type PathsRequest struct {
 	DestinationAccount     string
 	DestinationAssetType   AssetType
@@ -330,6 +357,20 @@ type PathsRequest struct {
 	DestinationAssetIssuer string
 	DestinationAmount      string
 	SourceAccount          string
+	SourceAssets           string
+}
+
+// StrictSendPathsRequest struct contains data for getting available strict send path payments from a horizon server.
+// All the Source related parameters are required and you need to include either
+// DestinationAccount or DestinationAssets.
+// See https://www.stellar.org/developers/horizon/reference/endpoints/path-finding-strict-send.html
+type StrictSendPathsRequest struct {
+	DestinationAccount string
+	DestinationAssets  string
+	SourceAssetType    AssetType
+	SourceAssetCode    string
+	SourceAssetIssuer  string
+	SourceAmount       string
 }
 
 // TradeRequest struct contains data for getting trade details from a horizon server.

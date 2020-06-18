@@ -1,8 +1,6 @@
 package horizon
 
 import (
-	"encoding/hex"
-
 	"github.com/stellar/go/support/errors"
 )
 
@@ -29,13 +27,4 @@ func countNonEmpty(params ...interface{}) (int, error) {
 	}
 
 	return count, nil
-}
-
-func isValidTransactionHash(hash string) bool {
-	decoded, err := hex.DecodeString(hash)
-	if err != nil {
-		return false
-	}
-
-	return len(decoded) == 32
 }

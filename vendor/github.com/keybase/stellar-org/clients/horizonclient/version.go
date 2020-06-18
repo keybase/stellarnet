@@ -2,4 +2,4 @@ package horizonclient
 
 // version is the current version of the horizonclient.
 // This is updated for every release.
-const version = "1.4"
+const version = "2.1.0"

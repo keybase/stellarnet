@@ -44,7 +44,11 @@ func (md *ManageData) FromXDR(xdrOp xdr.Operation) error {
 
 	md.SourceAccount = accountFromXDR(xdrOp.SourceAccount)
 	md.Name = string(result.DataName)
-	md.Value = *result.DataValue
+	if result.DataValue != nil {
+		md.Value = *result.DataValue
+	} else {
+		md.Value = nil
+	}
 	return nil
 }
 
@@ -59,4 +63,10 @@ func (md *ManageData) Validate() error {
 		return NewValidationError("Value", "maximum length is 64 bytes")
 	}
 	return nil
+}
+
+// GetSourceAccount returns the source account of the operation, or nil if not
+// set.
+func (md *ManageData) GetSourceAccount() Account {
+	return md.SourceAccount
 }

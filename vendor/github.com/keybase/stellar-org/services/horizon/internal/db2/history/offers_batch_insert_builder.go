@@ -14,27 +14,22 @@ func (i *offersBatchInsertBuilder) Add(offer xdr.OfferEntry, lastModifiedLedger 
 	} else if offer.Price.N > 0 {
 		price = float64(offer.Price.N) / float64(offer.Price.D)
 	}
-	buyingAsset, err := xdr.MarshalBase64(offer.Buying)
-	if err != nil {
-		return errors.Wrap(err, "cannot marshal buying asset in offer")
-	}
-	sellingAsset, err := xdr.MarshalBase64(offer.Selling)
-	if err != nil {
-		return errors.Wrap(err, "cannot marshal selling asset in offer")
+
+	row := Offer{
+		SellerID:           offer.SellerId.Address(),
+		OfferID:            offer.OfferId,
+		SellingAsset:       offer.Selling,
+		BuyingAsset:        offer.Buying,
+		Amount:             offer.Amount,
+		Pricen:             int32(offer.Price.N),
+		Priced:             int32(offer.Price.D),
+		Price:              price,
+		Flags:              uint32(offer.Flags),
+		Deleted:            false,
+		LastModifiedLedger: uint32(lastModifiedLedger),
 	}
 
-	return i.builder.Row(map[string]interface{}{
-		"sellerid":             offer.SellerId.Address(),
-		"offerid":              offer.OfferId,
-		"sellingasset":         sellingAsset,
-		"buyingasset":          buyingAsset,
-		"amount":               offer.Amount,
-		"pricen":               offer.Price.N,
-		"priced":               offer.Price.D,
-		"price":                price,
-		"flags":                offer.Flags,
-		"last_modified_ledger": lastModifiedLedger,
-	})
+	return i.builder.RowStruct(row)
 }
 
 func (i *offersBatchInsertBuilder) Exec() error {

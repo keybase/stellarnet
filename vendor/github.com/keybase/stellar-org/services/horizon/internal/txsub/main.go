@@ -5,6 +5,7 @@ import (
 
 	"context"
 
+	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/xdr"
 )
 
@@ -22,7 +23,7 @@ type ResultProvider interface {
 // sequence number of an account.  It is used by the SequenceLock to
 type SequenceProvider interface {
 	// Look up a sequence by address
-	Get(addresses []string) (map[string]uint64, error)
+	GetSequenceNumbers(addresses []string) (map[string]uint64, error)
 }
 
 // Listener represents some client who is interested in retrieving the result
@@ -44,7 +45,7 @@ type OpenSubmissionList interface {
 
 	// Finish forwards the provided result on to any listeners and cleans up any
 	// resources associated with the transaction that this result is for
-	Finish(context.Context, Result) error
+	Finish(context.Context, string, Result) error
 
 	// Clean removes any open submissions over the provided age.
 	Clean(context.Context, time.Duration) (int, error)
@@ -67,24 +68,9 @@ type Result struct {
 	// Any error that occurred during the retrieval of this result
 	Err error
 
-	// The transaction hash to which this result corresponds
-	Hash string
-
-	// The ledger sequence in which the transaction this result represents was
-	// applied
-	LedgerSequence int32
-
-	// The base64-encoded TransactionEnvelope for the transaction this result
-	// corresponds to
-	EnvelopeXDR string
-
-	// The base64-encoded TransactionResult for the transaction this result
-	// corresponds to
-	ResultXDR string
-
-	// The base64-encoded TransactionMeta for the transaction this result
-	// corresponds to
-	ResultMetaXDR string
+	// The full details of the transaction which was submitted
+	// to Stellar Core
+	Transaction history.Transaction
 }
 
 // SubmissionResult gets returned in response to a call to Submitter.Submit.

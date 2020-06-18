@@ -13,6 +13,7 @@ const (
 	txHistoryQuery       = "select txbody, txresult, txmeta, txindex from txhistory where ledgerseq = ? "
 	ledgerHeaderQuery    = "select ledgerhash, data from ledgerheaders where ledgerseq = ? "
 	txFeeHistoryQuery    = "select txchanges, txindex from txfeehistory where ledgerseq = ? "
+	upgradeHistoryQuery  = "select ledgerseq, upgradeindex, upgrade, changes from upgradehistory where ledgerseq = ? order by upgradeindex asc"
 	orderBy              = "order by txindex asc"
 	dbDriver             = "postgres"
 )
@@ -44,6 +45,9 @@ func (dbb *DatabaseBackend) GetLatestLedgerSequence() (uint32, error) {
 	err := dbb.session.SelectRaw(&ledger, latestLedgerSeqQuery)
 	if err != nil {
 		return 0, errors.Wrap(err, "couldn't select ledger sequence")
+	}
+	if len(ledger) == 0 {
+		return 0, errors.New("no ledgers exist in ledgerheaders table")
 	}
 
 	return ledger[0].LedgerSeq, nil
@@ -94,6 +98,12 @@ func (dbb *DatabaseBackend) GetLedger(sequence uint32) (bool, LedgerCloseMeta, e
 		lcm.TransactionEnvelope = append(lcm.TransactionEnvelope, tx.TXBody)
 		lcm.TransactionResult = append(lcm.TransactionResult, tx.TXResult)
 		lcm.TransactionMeta = append(lcm.TransactionMeta, tx.TXMeta)
+
+		if lcm.LedgerHeader.Header.LedgerVersion < 10 && tx.TXMeta.V != 2 {
+			return false, lcm,
+				errors.New("TransactionMeta.V=2 is required in protocol version older than version 10. " +
+					"Please process ledgers again using stellar-core with SUPPORTED_META_VERSION=2 in the config file.")
+		}
 	}
 
 	// Query - txfeehistory
@@ -112,6 +122,21 @@ func (dbb *DatabaseBackend) GetLedger(sequence uint32) (bool, LedgerCloseMeta, e
 		}
 		lcm.TransactionFeeChanges = append(lcm.TransactionFeeChanges, tx.TXChanges)
 	}
+
+	// Query - upgradehistory
+	var upgradeHistoryRows []upgradeHistory
+	err = dbb.session.SelectRaw(&upgradeHistoryRows, upgradeHistoryQuery, sequence)
+	// Return errors...
+	if err != nil {
+		return false, lcm, errors.Wrap(err, "Error getting upgradeHistoryRows")
+	}
+
+	// ...otherwise store the data
+	var upgradesMeta []xdr.LedgerEntryChanges
+	for _, upgradeHistoryRow := range upgradeHistoryRows {
+		upgradesMeta = append(upgradesMeta, upgradeHistoryRow.Changes)
+	}
+	lcm.UpgradesMeta = upgradesMeta
 
 	return true, lcm, nil
 }

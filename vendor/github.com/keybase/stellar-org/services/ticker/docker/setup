@@ -9,10 +9,3 @@ mkdir -p /opt/stellar/bin
 mkdir -p /opt/stellar/www
 chown -R stellar:stellar /opt/stellar/www
 mkdir -p /opt/stellar/postgresql/data
-
-export TICKER="ticker-v1.1.0"
-export TICKER_PATH="$TICKER-linux-amd64"
-wget -O ticker.tar.gz https://github.com/stellar/go/releases/download/$TICKER/$TICKER_PATH.tar.gz
-tar -xvzf ticker.tar.gz
-mv $TICKER_PATH/ticker /opt/stellar/bin/ticker
-chmod +x /opt/stellar/bin/ticker

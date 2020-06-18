@@ -3,7 +3,7 @@ package actions
 import (
 	"context"
 
-	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/services/horizon/internal/db2"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
@@ -31,7 +31,10 @@ func TransactionPage(ctx context.Context, hq *history.Q, accountID string, ledge
 	for _, record := range records {
 		// TODO: make PopulateTransaction return horizon.Transaction directly.
 		var res horizon.Transaction
-		resourceadapter.PopulateTransaction(ctx, &res, record)
+		err = resourceadapter.PopulateTransaction(ctx, record.TransactionHash, &res, record)
+		if err != nil {
+			return hal.Page{}, errors.Wrap(err, "could not populate transaction")
+		}
 		page.Add(res)
 	}
 
@@ -69,7 +72,7 @@ func loadTransactionRecords(hq *history.Q, accountID string, ledgerID int32, inc
 
 	for _, t := range records {
 		if !includeFailedTx {
-			if !t.IsSuccessful() {
+			if !t.Successful {
 				return nil, errors.Errorf("Corrupted data! `include_failed=false` but returned transaction is failed: %s", t.TransactionHash)
 			}
 
@@ -79,7 +82,7 @@ func loadTransactionRecords(hq *history.Q, accountID string, ledgerID int32, inc
 				return nil, errors.Wrap(err, "unmarshalling tx result")
 			}
 
-			if resultXDR.Result.Code != xdr.TransactionResultCodeTxSuccess {
+			if !resultXDR.Successful() {
 				return nil, errors.Errorf("Corrupted data! `include_failed=false` but returned transaction is failed: %s %s", t.TransactionHash, t.TxResult)
 			}
 		}
@@ -100,7 +103,10 @@ func StreamTransactions(ctx context.Context, s *sse.Stream, hq *history.Q, accou
 	records := allRecords[s.SentCount():]
 	for _, record := range records {
 		var res horizon.Transaction
-		resourceadapter.PopulateTransaction(ctx, &res, record)
+		err = resourceadapter.PopulateTransaction(ctx, record.TransactionHash, &res, record)
+		if err != nil {
+			return errors.Wrap(err, "could not populate transaction")
+		}
 		s.Send(sse.Event{ID: res.PagingToken(), Data: res})
 	}
 
@@ -118,6 +124,8 @@ func TransactionResource(ctx context.Context, hq *history.Q, txHash string) (hor
 		return resource, errors.Wrap(err, "loading transaction record")
 	}
 
-	resourceadapter.PopulateTransaction(ctx, &resource, record)
+	if err = resourceadapter.PopulateTransaction(ctx, txHash, &resource, record); err != nil {
+		return resource, errors.Wrap(err, "could not populate transaction")
+	}
 	return resource, nil
 }

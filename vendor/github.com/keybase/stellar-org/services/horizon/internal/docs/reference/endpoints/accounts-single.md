@@ -113,6 +113,7 @@ This endpoint responds with the details of a single account for a given ID. See 
       "buying_liabilities": "0.0000000",
       "selling_liabilities": "0.0000000",
       "last_modified_ledger": 632070,
+      "is_authorized": true,
       "asset_type": "credit_alphanum4",
       "asset_code": "FOO",
       "asset_issuer": "GAGLYFZJMN5HEULSTH5CIGPOPAVUYPG5YSWIYDJMAPIECYEBPM2TA3QR"

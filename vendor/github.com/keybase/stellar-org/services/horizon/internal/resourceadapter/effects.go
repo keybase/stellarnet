@@ -11,30 +11,31 @@ import (
 )
 
 var EffectTypeNames = map[history.EffectType]string{
-	history.EffectAccountCreated:                     "account_created",
-	history.EffectAccountRemoved:                     "account_removed",
-	history.EffectAccountCredited:                    "account_credited",
-	history.EffectAccountDebited:                     "account_debited",
-	history.EffectAccountThresholdsUpdated:           "account_thresholds_updated",
-	history.EffectAccountHomeDomainUpdated:           "account_home_domain_updated",
-	history.EffectAccountFlagsUpdated:                "account_flags_updated",
-	history.EffectAccountInflationDestinationUpdated: "account_inflation_destination_updated",
-	history.EffectSignerCreated:                      "signer_created",
-	history.EffectSignerRemoved:                      "signer_removed",
-	history.EffectSignerUpdated:                      "signer_updated",
-	history.EffectTrustlineCreated:                   "trustline_created",
-	history.EffectTrustlineRemoved:                   "trustline_removed",
-	history.EffectTrustlineUpdated:                   "trustline_updated",
-	history.EffectTrustlineAuthorized:                "trustline_authorized",
-	history.EffectTrustlineDeauthorized:              "trustline_deauthorized",
-	history.EffectOfferCreated:                       "offer_created",
-	history.EffectOfferRemoved:                       "offer_removed",
-	history.EffectOfferUpdated:                       "offer_updated",
-	history.EffectTrade:                              "trade",
-	history.EffectDataCreated:                        "data_created",
-	history.EffectDataRemoved:                        "data_removed",
-	history.EffectDataUpdated:                        "data_updated",
-	history.EffectSequenceBumped:                     "sequence_bumped",
+	history.EffectAccountCreated:                           "account_created",
+	history.EffectAccountRemoved:                           "account_removed",
+	history.EffectAccountCredited:                          "account_credited",
+	history.EffectAccountDebited:                           "account_debited",
+	history.EffectAccountThresholdsUpdated:                 "account_thresholds_updated",
+	history.EffectAccountHomeDomainUpdated:                 "account_home_domain_updated",
+	history.EffectAccountFlagsUpdated:                      "account_flags_updated",
+	history.EffectAccountInflationDestinationUpdated:       "account_inflation_destination_updated",
+	history.EffectSignerCreated:                            "signer_created",
+	history.EffectSignerRemoved:                            "signer_removed",
+	history.EffectSignerUpdated:                            "signer_updated",
+	history.EffectTrustlineCreated:                         "trustline_created",
+	history.EffectTrustlineRemoved:                         "trustline_removed",
+	history.EffectTrustlineUpdated:                         "trustline_updated",
+	history.EffectTrustlineAuthorized:                      "trustline_authorized",
+	history.EffectTrustlineAuthorizedToMaintainLiabilities: "trustline_authorized_to_maintain_liabilities",
+	history.EffectTrustlineDeauthorized:                    "trustline_deauthorized",
+	history.EffectOfferCreated:                             "offer_created",
+	history.EffectOfferRemoved:                             "offer_removed",
+	history.EffectOfferUpdated:                             "offer_updated",
+	history.EffectTrade:                                    "trade",
+	history.EffectDataCreated:                              "data_created",
+	history.EffectDataRemoved:                              "data_removed",
+	history.EffectDataUpdated:                              "data_updated",
+	history.EffectSequenceBumped:                           "sequence_bumped",
 }
 
 // NewEffect creates a new effect resource from the provided database representation
@@ -101,19 +102,38 @@ func NewEffect(
 		e := effects.TrustlineAuthorized{Base: basev}
 		err = row.UnmarshalDetails(&e)
 		result = e
+	case history.EffectTrustlineAuthorizedToMaintainLiabilities:
+		e := effects.TrustlineAuthorizedToMaintainLiabilities{Base: basev}
+		err = row.UnmarshalDetails(&e)
+		result = e
 	case history.EffectTrustlineDeauthorized:
 		e := effects.TrustlineDeauthorized{Base: basev}
 		err = row.UnmarshalDetails(&e)
 		result = e
 	case history.EffectTrade:
 		e := effects.Trade{Base: basev}
-		err = row.UnmarshalDetails(&e)
+		tradeDetails := history.TradeEffectDetails{}
+		err = row.UnmarshalDetails(&tradeDetails)
+		if err == nil {
+			e.Seller = tradeDetails.Seller
+			e.OfferID = tradeDetails.OfferID
+			e.SoldAmount = tradeDetails.SoldAmount
+			e.SoldAssetType = tradeDetails.SoldAssetType
+			e.SoldAssetCode = tradeDetails.SoldAssetCode
+			e.SoldAssetIssuer = tradeDetails.SoldAssetIssuer
+			e.BoughtAmount = tradeDetails.BoughtAmount
+			e.BoughtAssetType = tradeDetails.BoughtAssetType
+			e.BoughtAssetCode = tradeDetails.BoughtAssetCode
+			e.BoughtAssetIssuer = tradeDetails.BoughtAssetIssuer
+		}
 		result = e
 	case history.EffectSequenceBumped:
 		e := effects.SequenceBumped{Base: basev}
 		hsb := history.SequenceBumped{}
 		err = row.UnmarshalDetails(&hsb)
-		e.NewSeq = hsb.NewSeq
+		if err == nil {
+			e.NewSeq = hsb.NewSeq
+		}
 		result = e
 	default:
 		result = basev

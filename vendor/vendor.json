@@ -21,10 +21,22 @@
 			"revisionTime": "2018-08-30T19:11:22Z"
 		},
 		{
+			"checksumSHA1": "EdO1wp9kAs3navcXXsCq7yRQbx4=",
+			"path": "github.com/go-chi/chi",
+			"revision": "86f9a6e7ce9bf453eaa339b51f88f586edbccbc1",
+			"revisionTime": "2020-06-02T19:02:25Z"
+		},
+		{
 			"checksumSHA1": "kxja3mICEw4DKBlGQdK4tmIAkCQ=",
 			"path": "github.com/go-errors/errors",
 			"revision": "d98b870cc4e05f1545532a80e9909be8216095b6",
 			"revisionTime": "2018-08-13T16:29:53Z"
+		},
+		{
+			"checksumSHA1": "7n+K/JExkkd3XVRLxIwQOZa9nog=",
+			"path": "github.com/gorilla/schema",
+			"revision": "61751c9687439bf8cd824ad7eec0d21db1a1b804",
+			"revisionTime": "2019-11-01T14:25:38Z"
 		},
 		{
 			"checksumSHA1": "r1KgEtjZ+k+50ND5y6E1+YKhH0U=",
@@ -75,11 +87,11 @@
 			"revisionTime": "2019-10-09T02:57:16Z"
 		},
 		{
-			"checksumSHA1": "EgxoUr2+Zcda0qQi1l8nCXdHqh4=",
+			"checksumSHA1": "8Ko+aF3J8tZoxOgVF3JGD81sAto=",
 			"origin": "github.com/keybase/stellar-org",
 			"path": "github.com/stellar/go",
-			"revision": "0fc3bfe3dfa7aba69074e417e7dd47101b44e219",
-			"revisionTime": "2019-10-10T20:56:48Z",
+			"revision": "a77dcd25b1e846950792e06d3f91aa82ed3e3a75",
+			"revisionTime": "2020-06-18T03:24:46Z",
 			"tree": true
 		},
 		{

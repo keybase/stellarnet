@@ -3,28 +3,19 @@ package cmd
 import (
 	"database/sql"
 	"fmt"
+	"go/types"
 	"log"
 	"os"
 	"strconv"
-	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/stellar/go/services/horizon/internal/db2/schema"
-	"github.com/stellar/go/services/horizon/internal/ingest"
-	"github.com/stellar/go/services/horizon/internal/util"
+	"github.com/stellar/go/services/horizon/internal/expingest"
+	support "github.com/stellar/go/support/config"
 	"github.com/stellar/go/support/db"
 	"github.com/stellar/go/support/errors"
 	hlog "github.com/stellar/go/support/log"
-)
-
-type reingestType int
-
-const (
-	byAll reingestType = iota
-	byRange
-	bySeq
-	byOutdated
 )
 
 var dbCmd = &cobra.Command{
@@ -32,92 +23,14 @@ var dbCmd = &cobra.Command{
 	Short: "commands to manage horizon's postgres db",
 }
 
-var dbBackfillCmd = &cobra.Command{
-	Use:   "backfill [COUNT]",
-	Short: "backfills horizon history for COUNT ledgers",
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			log.Println("Missing COUNT. Usage: backfill [COUNT].")
-			return
-		}
-
-		initApp().UpdateLedgerState()
-
-		i := ingestSystem(ingest.Config{
-			IngestFailedTransactions: config.IngestFailedTransactions,
-		})
-		i.SkipCursorUpdate = true
-		parsed, err := strconv.ParseUint(args[0], 10, 32)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		err = i.Backfill(uint(parsed))
-		if err != nil {
-			log.Fatal(err)
-		}
-	},
-}
-
-var dbInitAssetStatsCmd = &cobra.Command{
-	Use:   "init-asset-stats",
-	Short: "initializes values for assets stats",
-	Run: func(cmd *cobra.Command, args []string) {
-		initConfig()
-
-		hdb, err := db.Open("postgres", config.DatabaseURL)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		cdb, err := db.Open("postgres", config.StellarCoreDatabaseURL)
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		assetStats := ingest.AssetStats{
-			CoreSession:    cdb,
-			HistorySession: hdb,
-		}
-
-		log.Println("Getting assets from core DB...")
-
-		count, err := assetStats.AddAllAssetsFromCore()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Printf("Updating %d assets...\n", count)
-
-		err = assetStats.UpdateAssetStats()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		log.Printf("Added stats for %d assets...\n", count)
-	},
-}
-
-var dbClearCmd = &cobra.Command{
-	Use:   "clear",
-	Short: "clears all imported historical data",
-	Run: func(cmd *cobra.Command, args []string) {
-		initConfig()
-
-		err := ingestSystem(ingest.Config{
-			IngestFailedTransactions: config.IngestFailedTransactions,
-		}).ClearAll()
-		if err != nil {
-			log.Fatal(err)
-		}
-	},
-}
-
 var dbInitCmd = &cobra.Command{
 	Use:   "init",
 	Short: "install schema",
 	Long:  "init initializes the postgres database used by horizon.",
 	Run: func(cmd *cobra.Command, args []string) {
+		dbURLConfigOption.Require()
+		dbURLConfigOption.SetValue()
+
 		db, err := sql.Open("postgres", viper.GetString("db-url"))
 		if err != nil {
 			log.Fatal(err)
@@ -162,6 +75,9 @@ var dbMigrateCmd = &cobra.Command{
 			}
 		}
 
+		dbURLConfigOption.Require()
+		dbURLConfigOption.SetValue()
+
 		db, err := sql.Open("postgres", viper.GetString("db-url"))
 		if err != nil {
 			log.Fatal(err)
@@ -186,26 +102,9 @@ var dbReapCmd = &cobra.Command{
 	Short: "reaps (i.e. removes) any reapable history data",
 	Long:  "reap removes any historical data that is earlier than the configured retention cutoff",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := initApp().DeleteUnretainedHistory()
-		if err != nil {
-			log.Fatal(err)
-		}
-	},
-}
-
-var dbRebaseCmd = &cobra.Command{
-	Use:   "rebase",
-	Short: "rebases clears the horizon db and ingests the latest ledger segment from stellar-core",
-	Long:  "...",
-	Run: func(cmd *cobra.Command, args []string) {
-		initConfig()
-
-		i := ingestSystem(ingest.Config{
-			IngestFailedTransactions: config.IngestFailedTransactions,
-		})
-		i.SkipCursorUpdate = true
-
-		err := i.RebaseHistory()
+		app := initApp()
+		app.UpdateLedgerState()
+		err := app.DeleteUnretainedHistory()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -213,25 +112,26 @@ var dbRebaseCmd = &cobra.Command{
 }
 
 var dbReingestCmd = &cobra.Command{
-	Use:   "reingest [Ledger sequence numbers (leave it empty for reingesting from the very beginning)]",
-	Short: "reingest all ledgers or ledgers specified by individual sequence numbers",
-	Long:  "reingest runs the ingestion pipeline over every ledger or ledgers specified by individual sequence numbers",
+	Use:   "reingest",
+	Short: "reingest commands",
+	Long:  "reingest ingests historical data for every ledger or ledgers specified by subcommand",
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			reingest(byAll)
-		} else {
-			argsInt32 := make([]int32, 0, len(args))
-			for _, arg := range args {
-				seq, err := strconv.Atoi(arg)
-				if err != nil {
-					cmd.Usage()
-					log.Fatalf(`Invalid sequence number "%s"`, arg)
-				}
-				argsInt32 = append(argsInt32, int32(seq))
-			}
+		fmt.Println("Use one of the subcomands...")
+		cmd.Usage()
+		os.Exit(1)
+	},
+}
 
-			reingest(bySeq, argsInt32...)
-		}
+var reingestForce bool
+var reingestRangeCmdOpts = []*support.ConfigOption{
+	&support.ConfigOption{
+		Name:        "force",
+		ConfigKey:   &reingestForce,
+		OptType:     types.Bool,
+		Required:    false,
+		FlagDefault: false,
+		Usage: "[optional] if this flag is set, horizon will be blocked " +
+			"from ingesting until the reingestion command completes",
 	},
 }
 
@@ -240,208 +140,93 @@ var dbReingestRangeCmd = &cobra.Command{
 	Short: "reingests ledgers within a range",
 	Long:  "reingests ledgers between X and Y sequence number (closed intervals)",
 	Run: func(cmd *cobra.Command, args []string) {
+		for _, co := range reingestRangeCmdOpts {
+			co.Require()
+			co.SetValue()
+		}
+
 		if len(args) != 2 {
 			cmd.Usage()
 			os.Exit(1)
 		}
 
-		argsInt32 := make([]int32, 0, len(args))
-		for _, arg := range args {
+		argsInt32 := make([]uint32, 2)
+		for i, arg := range args {
 			seq, err := strconv.Atoi(arg)
 			if err != nil {
 				cmd.Usage()
 				log.Fatalf(`Invalid sequence number "%s"`, arg)
 			}
-			argsInt32 = append(argsInt32, int32(seq))
+			argsInt32[i] = uint32(seq)
 		}
 
-		reingest(byRange, argsInt32...)
-	},
-}
+		initRootConfig()
 
-var dbReingestOutdatedCmd = &cobra.Command{
-	Use:   "outdated",
-	Short: "reingests all outdated ledgers",
-	Long:  "reingests ledgers whose version is less than the current version up to a million ledgers",
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) > 0 {
-			log.Println("ignoring args...")
+		coreSession, err := db.Open("postgres", config.StellarCoreDatabaseURL)
+		if err != nil {
+			log.Fatalf("cannot open Core DB: %v", err)
 		}
 
-		reingest(byOutdated)
+		horizonSession, err := db.Open("postgres", config.DatabaseURL)
+		if err != nil {
+			log.Fatalf("cannot open Horizon DB: %v", err)
+		}
+
+		ingestConfig := expingest.Config{
+			CoreSession:              coreSession,
+			NetworkPassphrase:        config.NetworkPassphrase,
+			HistorySession:           horizonSession,
+			HistoryArchiveURL:        config.HistoryArchiveURLs[0],
+			IngestFailedTransactions: config.IngestFailedTransactions,
+		}
+
+		system, err := expingest.NewSystem(ingestConfig)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		err = system.ReingestRange(
+			argsInt32[0],
+			argsInt32[1],
+			reingestForce,
+		)
+		if err == nil {
+			hlog.Info("Range run successfully!")
+			return
+		}
+
+		if errors.Cause(err) == expingest.ErrReingestRangeConflict {
+			message := `
+			The range you have provided overlaps with Horizon's most recently ingested ledger.
+			It is not possible to run the reingest command on this range in parallel with
+			Horizon's ingestion system.
+			Either reduce the range so that it doesn't overlap with Horizon's ingestion system,
+			or, use the force flag to ensure that Horizon's ingestion system is blocked until
+			the reingest command completes.
+			`
+			log.Fatal(message)
+		}
+
+		log.Fatal(err)
 	},
 }
 
 func init() {
+	for _, co := range reingestRangeCmdOpts {
+		err := co.Init(dbReingestRangeCmd)
+		if err != nil {
+			log.Fatal(err.Error())
+		}
+	}
+
+	viper.BindPFlags(dbReingestRangeCmd.PersistentFlags())
+
 	rootCmd.AddCommand(dbCmd)
 	dbCmd.AddCommand(
 		dbInitCmd,
-		dbInitAssetStatsCmd,
-		dbBackfillCmd,
-		dbClearCmd,
 		dbMigrateCmd,
 		dbReapCmd,
 		dbReingestCmd,
-		dbRebaseCmd,
 	)
-	dbReingestCmd.AddCommand(dbReingestRangeCmd, dbReingestOutdatedCmd)
-}
-
-func ingestSystem(ingestConfig ingest.Config) *ingest.System {
-	hdb, err := db.Open("postgres", config.DatabaseURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	cdb, err := db.Open("postgres", config.StellarCoreDatabaseURL)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	passphrase := viper.GetString("network-passphrase")
-	if passphrase == "" {
-		log.Fatal("network-passphrase is blank: reingestion requires manually setting passphrase")
-	}
-
-	return ingest.New(passphrase, config.StellarCoreURL, cdb, hdb, ingestConfig)
-}
-
-func reingest(cmd reingestType, args ...int32) {
-	initConfig()
-
-	i := ingestSystem(ingest.Config{
-		IngestFailedTransactions: config.IngestFailedTransactions,
-	})
-	i.SkipCursorUpdate = true
-
-	logStatus := func(stage string) {
-		count := i.Metrics.IngestLedgerTimer.Count()
-		rate := i.Metrics.IngestLedgerTimer.RateMean()
-		loadMean := time.Duration(i.Metrics.LoadLedgerTimer.Mean())
-		ingestMean := time.Duration(i.Metrics.IngestLedgerTimer.Mean())
-		clearMean := time.Duration(i.Metrics.ClearLedgerTimer.Mean())
-		hlog.WithField("count", count).
-			WithField("rate", rate).
-			WithField("means", fmt.Sprintf("load: %s clear: %s ingest: %s", loadMean, clearMean, ingestMean)).
-			Infof("reingest: %s", stage)
-	}
-
-	done := make(chan error, 1)
-
-	// run ingestion in separate goroutine
-	go func() {
-		var err error
-		switch cmd {
-		case byAll:
-			_, err = i.ReingestAll()
-
-		case bySeq:
-			for _, seq := range args {
-				err = i.ReingestSingle(seq)
-				if err != nil {
-					break
-				}
-			}
-
-		case byRange:
-			// should already be checked by the caller
-			if len(args) != 2 {
-				log.Fatal(`"horizon db reingest range" command requires 2 sequence numbers after "range"`)
-			}
-
-			err = reingestRange(i, args[0], args[1])
-
-		case byOutdated:
-			_, err = i.ReingestOutdated()
-		}
-
-		done <- err
-		logStatus("complete")
-	}()
-
-	// output metrics
-	metrics := time.Tick(2 * time.Second)
-	for {
-		select {
-		case <-metrics:
-			logStatus("status")
-
-		case err := <-done:
-			if err != nil {
-				log.Fatal(err)
-			}
-			os.Exit(0)
-		}
-	}
-}
-
-type ledgerRange struct {
-	from, to int32
-}
-
-func reingestRange(i *ingest.System, from, to int32) error {
-	if to < from {
-		return errors.New("Invalid range")
-	}
-
-	var (
-		size    int32 = 10000
-		workers int   = 10
-	)
-
-	var pool util.WorkersPool
-	hlog.Info("Creating work...")
-	for current := from; current <= to; current += size {
-		lr := ledgerRange{from: current, to: current + size - 1}
-		if lr.to > to {
-			lr.to = to
-		}
-		pool.AddWork(lr)
-	}
-
-	allJobs := pool.WorkSize()
-
-	pool.SetWorker(func(workerID int, job interface{}) {
-		lr, ok := job.(ledgerRange)
-		if !ok {
-			hlog.Error("job is not a ledgerRange")
-			os.Exit(1)
-		}
-
-		localLog := hlog.WithFields(hlog.F{
-			"id":   workerID,
-			"from": lr.from,
-			"to":   lr.to,
-		})
-
-		localLog.Info("Worker starting range...")
-
-		_, err := i.ReingestRange(lr.from, lr.to)
-		if err != nil {
-			localLog.WithField("err", err).Error("Worker failed range, work will be processed again")
-			// Add the work again
-			pool.AddWork(lr)
-			return
-		}
-		localLog.Info("Worker finished range")
-	})
-
-	hlog.Infof("Starting %d workers...", workers)
-	done := make(chan bool)
-	go func() {
-		ticker := time.NewTicker(10 * time.Second)
-		for {
-			select {
-			case <-done:
-				ticker.Stop()
-				return
-			case <-ticker.C:
-			}
-			hlog.WithField("progress", float32(allJobs-pool.WorkSize())/float32(allJobs)*100).Info("Work status")
-		}
-	}()
-	pool.Start(workers)
-	done <- true
-	hlog.Info("Done")
-	return nil
+	dbReingestCmd.AddCommand(dbReingestRangeCmd)
 }

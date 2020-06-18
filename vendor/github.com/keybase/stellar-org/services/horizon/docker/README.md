@@ -8,6 +8,12 @@ The only dependency you will need to install is [Docker](https://www.docker.com/
 
 [start.sh](./start.sh) will setup the env file and run docker-compose to start the Stellar docker containers. Feel free to use this script, otherwise continue with the next two steps.
 
+The script takes one optional parameter which configures the Stellar network used by the docker containers. If no parameter is supplied, the containers will run on the Stellar test network.
+
+`./start.sh pubnet` will run the containers on the Stellar public network.
+
+`./start.sh standalone` will run the containers on a private standalone Stellar network.
+
 ## Set up a .env file
 
 Mac OS X and Windows users should create an [`.env`](https://docs.docker.com/compose/environment-variables/#the-env_file-configuration-option) file which consists of:
@@ -71,12 +77,20 @@ Similarly, to run Stellar core locally from source and have it interact with Hor
 
 ## Connecting to the Stellar Public Network
 
-By default, the Docker Compose file configures Stellar Core to connect to the Stellar test network. If you would like to run the docker containers against the
-Stellar public network, set the `core` container's env_file to `./stellar-core-pubnet.env` instead of `./stellar-core-testnet.env`. You will also need to
-change the `NETWORK_PASSPHRASE` variable in horizon to `Public Global Stellar Network ; September 2015`.
+By default, the Docker Compose file configures Stellar Core to connect to the Stellar test network. If you would like to run the docker containers on the
+Stellar public network, run `docker-compose -f docker-compose.yml -f docker-compose.pubnet.yml up -d --build`. 
 
-When you switch between the Stellar test network and the Stellar public network, or vice versa, you will need to clear the Stellar Core and Stellar Horizon
-databases. You can wipe out the databases by running `docker-compose down -v`.
+To run the containers on a private stand-alone network, run `docker-compose -f docker-compose.yml -f docker-compose.standalone.yml up -d --build`.
+When you run Stellar Core on a private stand-alone network, an account will be created which will hold 100 billion Lumens.
+The seed for the account will be emitted in the Stellar Core logs:
+
+```
+2020-04-22T18:39:19.248 GD5KD [Ledger INFO] Root account seed: SC5O7VZUXDJ6JBDSZ74DSERXL7W3Y5LTOAMRF7RQRL3TAGAPS7LUVG3L
+```
+
+When running Horizon on a private stand-alone network, Horizon will not start ingesting until Stellar Core creates its first history archive snapshot. Stellar Core creates snapshots every 64 ledgers, which means ingestion will be delayed until ledger 64.
+
+When you switch between different networks you will need to clear the Stellar Core and Stellar Horizon databases. You can wipe out the databases by running `docker-compose down --remove-orphans -v`.
 
 ## Using a specific version of Stellar Core
 

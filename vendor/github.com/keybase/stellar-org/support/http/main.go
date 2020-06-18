@@ -101,8 +101,9 @@ func setup(conf Config) *graceful.Server {
 		Timeout: timeout,
 
 		Server: &stdhttp.Server{
-			Addr:    conf.ListenAddr,
-			Handler: conf.Handler,
+			Addr:        conf.ListenAddr,
+			Handler:     conf.Handler,
+			ReadTimeout: 5 * time.Second,
 		},
 
 		ShutdownInitiated: func() {

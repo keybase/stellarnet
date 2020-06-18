@@ -1,6 +1,7 @@
 package horizon
 
 import (
+	"database/sql"
 	"strconv"
 	gTime "time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/stellar/go/services/horizon/internal/resourceadapter"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/support/render/hal"
+	"github.com/stellar/go/support/render/problem"
 	"github.com/stellar/go/support/time"
 	"github.com/stellar/go/xdr"
 )
@@ -119,7 +121,10 @@ func (action *TradeIndexAction) loadRecords() {
 		trades = trades.ForOffer(action.OfferFilter)
 	}
 
-	action.Err = trades.Page(action.PagingParams).Select(&action.Records)
+	err := trades.Page(action.PagingParams).Select(&action.Records)
+	if err != sql.ErrNoRows {
+		action.Err = err
+	}
 }
 
 // loadPage populates action.Page
@@ -196,20 +201,38 @@ func (action *TradeAggregateIndexAction) loadRecords() {
 	historyQ := action.HistoryQ()
 
 	//get asset ids
-	baseAssetId, err := historyQ.GetCreateAssetID(action.BaseAssetFilter)
+	baseAssetID, err := historyQ.GetAssetID(action.BaseAssetFilter)
 	if err != nil {
-		action.Err = err
+		if historyQ.NoRows(err) {
+			action.Err = problem.NewProblemWithInvalidField(
+				problem.NotFound,
+				"base_asset",
+				errors.New("not found"),
+			)
+		} else {
+			action.Err = err
+		}
+
 		return
 	}
-	counterAssetId, err := historyQ.GetCreateAssetID(action.CounterAssetFilter)
+	counterAssetID, err := historyQ.GetAssetID(action.CounterAssetFilter)
 	if err != nil {
-		action.Err = err
+		if historyQ.NoRows(err) {
+			action.Err = problem.NewProblemWithInvalidField(
+				problem.NotFound,
+				"counter_asset",
+				errors.New("not found"),
+			)
+		} else {
+			action.Err = err
+		}
+
 		return
 	}
 
 	//initialize the query builder with required params
 	tradeAggregationsQ, err := historyQ.GetTradeAggregationsQ(
-		baseAssetId, counterAssetId, action.ResolutionFilter, action.OffsetFilter, action.PagingParams)
+		baseAssetID, counterAssetID, action.ResolutionFilter, action.OffsetFilter, action.PagingParams)
 	if err != nil {
 		action.Err = err
 		return

@@ -188,4 +188,4 @@ This endpoint responds with a list of operations. See [operation resource](../re
 
 ## Possible Errors
 
-- The [standard errors](../errors.md#Standard_Errors).
+- The [standard errors](../errors.md#standard-errors).

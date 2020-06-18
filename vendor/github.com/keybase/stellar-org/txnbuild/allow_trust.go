@@ -10,10 +10,11 @@ import (
 // AllowTrust represents the Stellar allow trust operation. See
 // https://www.stellar.org/developers/guides/concepts/list-of-operations.html
 type AllowTrust struct {
-	Trustor       string
-	Type          Asset
-	Authorize     bool
-	SourceAccount Account
+	Trustor                        string
+	Type                           Asset
+	Authorize                      bool
+	AuthorizeToMaintainLiabilities bool
+	SourceAccount                  Account
 }
 
 // BuildXDR for AllowTrust returns a fully configured XDR Operation.
@@ -40,7 +41,11 @@ func (at *AllowTrust) BuildXDR() (xdr.Operation, error) {
 	}
 
 	// Set XDR auth flag
-	xdrOp.Authorize = at.Authorize
+	if at.Authorize {
+		xdrOp.Authorize = xdr.Uint32(xdr.TrustLineFlagsAuthorizedFlag)
+	} else if at.AuthorizeToMaintainLiabilities {
+		xdrOp.Authorize = xdr.Uint32(xdr.TrustLineFlagsAuthorizedToMaintainLiabilitiesFlag)
+	}
 
 	opType := xdr.OperationTypeAllowTrust
 	body, err := xdr.NewOperationBody(opType, xdrOp)
@@ -61,7 +66,9 @@ func (at *AllowTrust) FromXDR(xdrOp xdr.Operation) error {
 
 	at.SourceAccount = accountFromXDR(xdrOp.SourceAccount)
 	at.Trustor = result.Trustor.Address()
-	at.Authorize = result.Authorize
+	flag := xdr.TrustLineFlags(result.Authorize)
+	at.Authorize = flag.IsAuthorized()
+	at.AuthorizeToMaintainLiabilities = flag.IsAuthorizedToMaintainLiabilitiesFlag()
 	//Because AllowTrust has a special asset type, we don't use assetFromXDR() here.
 	if result.Asset.Type == xdr.AssetTypeAssetTypeCreditAlphanum4 {
 		code := bytes.Trim(result.Asset.AssetCode4[:], "\x00")
@@ -88,4 +95,10 @@ func (at *AllowTrust) Validate() error {
 		return NewValidationError("Type", err.Error())
 	}
 	return nil
+}
+
+// GetSourceAccount returns the source account of the operation, or nil if not
+// set.
+func (at *AllowTrust) GetSourceAccount() Account {
+	return at.SourceAccount
 }

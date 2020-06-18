@@ -38,3 +38,9 @@ func (inf *Inflation) Validate() error {
 	// no required fields, return nil.
 	return nil
 }
+
+// GetSourceAccount returns the source account of the operation, or nil if not
+// set.
+func (inf *Inflation) GetSourceAccount() Account {
+	return inf.SourceAccount
+}

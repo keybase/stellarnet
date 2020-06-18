@@ -11,6 +11,10 @@ func (tl Trustline) IsAuthorized() bool {
 	return (tl.Flags & int32(xdr.TrustLineFlagsAuthorizedFlag)) != 0
 }
 
+func (tl Trustline) IsAuthorizedToMaintainLiabilities() bool {
+	return (tl.Flags & int32(xdr.TrustLineFlagsAuthorizedToMaintainLiabilitiesFlag)) != 0
+}
+
 // AssetsForAddress returns a list of assets and balances for those assets held by
 // a given address.
 func (q *Q) AssetsForAddress(addy string) ([]xdr.Asset, []xdr.Int64, error) {

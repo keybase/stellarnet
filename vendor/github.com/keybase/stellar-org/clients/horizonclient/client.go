@@ -9,12 +9,14 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/stellar/go/txnbuild"
 
 	"github.com/manucorporat/sse"
+
 	hProtocol "github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/protocols/horizon/effects"
 	"github.com/stellar/go/protocols/horizon/operations"
@@ -37,6 +39,66 @@ func (c *Client) sendRequest(hr HorizonRequest, resp interface{}) (err error) {
 	return c.sendRequestURL(c.HorizonURL+endpoint, "get", resp)
 }
 
+// checkMemoRequired implements a memo required check as defined in
+// https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0029.md
+func (c *Client) checkMemoRequired(transaction *txnbuild.Transaction) error {
+	destinations := map[string]bool{}
+
+	for i, op := range transaction.Operations() {
+		var destination string
+
+		if err := op.Validate(); err != nil {
+			return err
+		}
+
+		switch p := op.(type) {
+		case *txnbuild.Payment:
+			destination = p.Destination
+		case *txnbuild.PathPaymentStrictReceive:
+			destination = p.Destination
+		case *txnbuild.PathPaymentStrictSend:
+			destination = p.Destination
+		case *txnbuild.AccountMerge:
+			destination = p.Destination
+		default:
+			continue
+		}
+
+		// TODO: once we support M-strkeys (SEP23), also check whether the destination
+		//       is a muxed account with a memo ID.
+
+		if destinations[destination] {
+			continue
+		}
+		destinations[destination] = true
+
+		request := AccountRequest{
+			AccountID: destination,
+			DataKey:   "config.memo_required",
+		}
+
+		data, err := c.AccountData(request)
+		if err != nil {
+			horizonError := GetError(err)
+
+			if horizonError == nil || horizonError.Response.StatusCode != 404 {
+				return err
+			}
+
+			continue
+		}
+
+		if data.Value == accountRequiresMemo {
+			return errors.Wrap(
+				ErrAccountRequiresMemo,
+				fmt.Sprintf("operation[%d]", i),
+			)
+		}
+	}
+
+	return nil
+}
+
 // sendRequestURL sends a url to a horizon server.
 // It can be used for requests that do not implement the HorizonRequest interface.
 func (c *Client) sendRequestURL(requestURL string, method string, a interface{}) (err error) {
@@ -54,10 +116,10 @@ func (c *Client) sendRequestURL(requestURL string, method string, a interface{})
 	}
 	c.setClientAppHeaders(req)
 	c.setDefaultClient()
-	if c.horizonTimeOut == 0 {
-		c.horizonTimeOut = HorizonTimeOut
+	if c.horizonTimeout == 0 {
+		c.horizonTimeout = HorizonTimeout
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*c.horizonTimeOut)
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*c.horizonTimeout)
 	resp, err := c.HTTP.Do(req.WithContext(ctx))
 	if err != nil {
 		cancel()
@@ -215,15 +277,24 @@ func (c *Client) fixHorizonURL() string {
 	return strings.TrimRight(c.HorizonURL, "/") + "/"
 }
 
-// SetHorizonTimeOut allows users to set the number of seconds before a horizon request is cancelled.
-func (c *Client) SetHorizonTimeOut(t uint) *Client {
-	c.horizonTimeOut = time.Duration(t)
+// SetHorizonTimeout allows users to set the timeout before a horizon request is cancelled.
+// The timeout is specified as a time.Duration which is in nanoseconds.
+func (c *Client) SetHorizonTimeout(t time.Duration) *Client {
+	c.horizonTimeout = t
 	return c
 }
 
-// HorizonTimeOut returns the current timeout for a horizon client
-func (c *Client) HorizonTimeOut() time.Duration {
-	return c.horizonTimeOut
+// HorizonTimeout returns the current timeout for a horizon client
+func (c *Client) HorizonTimeout() time.Duration {
+	return c.horizonTimeout
+}
+
+// Accounts returns accounts who have a given signer or
+// have a trustline to an asset.
+// See https://www.stellar.org/developers/horizon/reference/endpoints/accounts.html
+func (c *Client) Accounts(request AccountsRequest) (accounts hProtocol.AccountsPage, err error) {
+	err = c.sendRequest(request, &accounts)
+	return
 }
 
 // AccountDetail returns information for a single account.
@@ -293,14 +364,6 @@ func (c *Client) LedgerDetail(sequence uint32) (ledger hProtocol.Ledger, err err
 	return
 }
 
-// Metrics returns monitoring information about a horizon server
-// See https://www.stellar.org/developers/horizon/reference/endpoints/metrics.html
-func (c *Client) Metrics() (metrics hProtocol.Metrics, err error) {
-	request := metricsRequest{endpoint: "metrics"}
-	err = c.sendRequest(request, &metrics)
-	return
-}
-
 // FeeStats returns information about fees in the last 5 ledgers.
 // See https://www.stellar.org/developers/horizon/reference/endpoints/fee-stats.html
 func (c *Client) FeeStats() (feestats hProtocol.FeeStats, err error) {
@@ -313,6 +376,23 @@ func (c *Client) FeeStats() (feestats hProtocol.FeeStats, err error) {
 // See https://www.stellar.org/developers/horizon/reference/endpoints/offers-for-account.html
 func (c *Client) Offers(request OfferRequest) (offers hProtocol.OffersPage, err error) {
 	err = c.sendRequest(request, &offers)
+	return
+}
+
+// OfferDetails returns information for a single offer.
+// See https://www.stellar.org/developers/horizon/reference/endpoints/offer-details.html
+func (c *Client) OfferDetails(offerID string) (offer hProtocol.Offer, err error) {
+	if len(offerID) == 0 {
+		err = errors.New("no offer ID provided")
+		return
+	}
+
+	if _, err = strconv.ParseInt(offerID, 10, 64); err != nil {
+		err = errors.New("invalid offer ID provided")
+		return
+	}
+
+	err = c.sendRequest(OfferRequest{OfferID: offerID}, &offer)
 	return
 }
 
@@ -357,17 +437,76 @@ func (c *Client) OperationDetail(id string) (ops operations.Operation, err error
 
 // SubmitTransactionXDR submits a transaction represented as a base64 XDR string to the network. err can be either error object or horizon.Error object.
 // See https://www.stellar.org/developers/horizon/reference/endpoints/transactions-create.html
-func (c *Client) SubmitTransactionXDR(transactionXdr string) (txSuccess hProtocol.TransactionSuccess,
+func (c *Client) SubmitTransactionXDR(transactionXdr string) (tx hProtocol.Transaction,
 	err error) {
 	request := submitRequest{endpoint: "transactions", transactionXdr: transactionXdr}
-	err = c.sendRequest(request, &txSuccess)
+	err = c.sendRequest(request, &tx)
 	return
 }
 
-// SubmitTransaction submits a transaction to the network. err can be either error object or horizon.Error object.
+// SubmitFeeBumpTransaction submits a fee bump transaction to the network. err can be either an
+// error object or a horizon.Error object.
+//
+// This function will always check if the destination account requires a memo in the transaction as
+// defined in SEP0029: https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0029.md
+//
+// If you want to skip this check, use SubmitTransactionWithOptions.
+//
 // See https://www.stellar.org/developers/horizon/reference/endpoints/transactions-create.html
-func (c *Client) SubmitTransaction(transaction txnbuild.Transaction) (txSuccess hProtocol.TransactionSuccess,
-	err error) {
+func (c *Client) SubmitFeeBumpTransaction(transaction *txnbuild.FeeBumpTransaction) (tx hProtocol.Transaction, err error) {
+	return c.SubmitFeeBumpTransactionWithOptions(transaction, SubmitTxOpts{})
+}
+
+// SubmitFeeBumpTransactionWithOptions submits a fee bump transaction to the network, allowing
+// you to pass SubmitTxOpts. err can be either an error object or a horizon.Error object.
+//
+// See https://www.stellar.org/developers/horizon/reference/endpoints/transactions-create.html
+func (c *Client) SubmitFeeBumpTransactionWithOptions(transaction *txnbuild.FeeBumpTransaction, opts SubmitTxOpts) (tx hProtocol.Transaction, err error) {
+	// only check if memo is required if skip is false and the inner transaction
+	// doesn't have a memo.
+	if inner := transaction.InnerTransaction(); !opts.SkipMemoRequiredCheck && inner.Memo() == nil {
+		err = c.checkMemoRequired(inner)
+		if err != nil {
+			return
+		}
+	}
+
+	txeBase64, err := transaction.Base64()
+	if err != nil {
+		err = errors.Wrap(err, "Unable to convert transaction object to base64 string")
+		return
+	}
+
+	return c.SubmitTransactionXDR(txeBase64)
+}
+
+// SubmitTransaction submits a transaction to the network. err can be either an
+// error object or a horizon.Error object.
+//
+// This function will always check if the destination account requires a memo in the transaction as
+// defined in SEP0029: https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0029.md
+//
+// If you want to skip this check, use SubmitTransactionWithOptions.
+//
+// See https://www.stellar.org/developers/horizon/reference/endpoints/transactions-create.html
+func (c *Client) SubmitTransaction(transaction *txnbuild.Transaction) (tx hProtocol.Transaction, err error) {
+	return c.SubmitTransactionWithOptions(transaction, SubmitTxOpts{})
+}
+
+// SubmitTransactionWithOptions submits a transaction to the network, allowing
+// you to pass SubmitTxOpts. err can be either an error object or a horizon.Error object.
+//
+// See https://www.stellar.org/developers/horizon/reference/endpoints/transactions-create.html
+func (c *Client) SubmitTransactionWithOptions(transaction *txnbuild.Transaction, opts SubmitTxOpts) (tx hProtocol.Transaction, err error) {
+	// only check if memo is required if skip is false and the transaction
+	// doesn't have a memo.
+	if !opts.SkipMemoRequiredCheck && transaction.Memo() == nil {
+		err = c.checkMemoRequired(transaction)
+		if err != nil {
+			return
+		}
+	}
+
 	txeBase64, err := transaction.Base64()
 	if err != nil {
 		err = errors.Wrap(err, "Unable to convert transaction object to base64 string")
@@ -402,8 +541,21 @@ func (c *Client) OrderBook(request OrderBookRequest) (obs hProtocol.OrderBookSum
 	return
 }
 
-// Paths returns the available paths to make a payment. See https://www.stellar.org/developers/horizon/reference/endpoints/path-finding.html
+// Paths returns the available paths to make a strict receive path payment. See https://www.stellar.org/developers/horizon/reference/endpoints/path-finding-strict-receive.html
+// This function is an alias for `client.StrictReceivePaths` and will be deprecated, use `client.StrictReceivePaths` instead.
 func (c *Client) Paths(request PathsRequest) (paths hProtocol.PathsPage, err error) {
+	paths, err = c.StrictReceivePaths(request)
+	return
+}
+
+// StrictReceivePaths returns the available paths to make a strict receive path payment. See https://www.stellar.org/developers/horizon/reference/endpoints/path-finding-strict-receive.html
+func (c *Client) StrictReceivePaths(request PathsRequest) (paths hProtocol.PathsPage, err error) {
+	err = c.sendRequest(request, &paths)
+	return
+}
+
+// StrictSendPaths returns the available paths to make a strict send path payment. See https://www.stellar.org/developers/horizon/reference/endpoints/path-finding-strict-send.html
+func (c *Client) StrictSendPaths(request StrictSendPathsRequest) (paths hProtocol.PathsPage, err error) {
 	err = c.sendRequest(request, &paths)
 	return
 }
@@ -424,12 +576,12 @@ func (c *Client) Trades(request TradeRequest) (tds hProtocol.TradesPage, err err
 
 // Fund creates a new account funded from friendbot. It only works on test networks. See
 // https://www.stellar.org/developers/guides/get-started/create-account.html for more information.
-func (c *Client) Fund(addr string) (txSuccess hProtocol.TransactionSuccess, err error) {
+func (c *Client) Fund(addr string) (tx hProtocol.Transaction, err error) {
 	if !c.isTestNet {
-		return txSuccess, errors.New("can't fund account from friendbot on production network")
+		return tx, errors.New("can't fund account from friendbot on production network")
 	}
 	friendbotURL := fmt.Sprintf("%sfriendbot?addr=%s", c.fixHorizonURL(), addr)
-	err = c.sendRequestURL(friendbotURL, "get", &txSuccess)
+	err = c.sendRequestURL(friendbotURL, "get", &tx)
 	return
 }
 
@@ -464,7 +616,7 @@ func (c *Client) StreamEffects(ctx context.Context, request EffectRequest, handl
 // StreamOperations streams stellar operations. It can be used to stream all operations or operations
 // for an account. Use context.WithCancel to stop streaming or context.Background() if you want to
 // stream indefinitely. OperationHandler is a user-supplied function that is executed for each streamed
-//  operation received.
+// operation received.
 func (c *Client) StreamOperations(ctx context.Context, request OperationRequest, handler OperationHandler) error {
 	return request.SetOperationsEndpoint().StreamOperations(ctx, c, handler)
 }
@@ -473,7 +625,7 @@ func (c *Client) StreamOperations(ctx context.Context, request OperationRequest,
 // for an account. Payments include create_account, payment, path_payment and account_merge operations.
 // Use context.WithCancel to stop streaming or context.Background() if you want to
 // stream indefinitely. OperationHandler is a user-supplied function that is executed for each streamed
-//  operation received.
+// operation received.
 func (c *Client) StreamPayments(ctx context.Context, request OperationRequest, handler OperationHandler) error {
 	return request.SetPaymentsEndpoint().StreamOperations(ctx, c, handler)
 }
@@ -508,8 +660,7 @@ func (c *Client) FetchTimebounds(seconds int64) (txnbuild.Timebounds, error) {
 	if err != nil {
 		return txnbuild.Timebounds{}, errors.Wrap(err, "unable to parse horizon url")
 	}
-	c.setDefaultCurrentUniversalTime()
-	currentTime := currentServerTime(serverURL.Hostname(), c.currentUniversalTime())
+	currentTime := currentServerTime(serverURL.Hostname(), c.clock.Now().UTC().Unix())
 	if currentTime != 0 {
 		return txnbuild.NewTimebounds(0, currentTime+seconds), nil
 	}
@@ -650,21 +801,6 @@ func (c *Client) NextTradeAggregationsPage(page hProtocol.TradeAggregationsPage)
 func (c *Client) PrevTradeAggregationsPage(page hProtocol.TradeAggregationsPage) (ta hProtocol.TradeAggregationsPage, err error) {
 	err = c.sendRequestURL(page.Links.Prev.Href, "get", &ta)
 	return
-}
-
-// setDefaultCurrentUniversalTime sets the currentUniversalTime function for the horizon client if non has been
-// provided to the default function that returns the current UTC time. This is needed when the client is
-// initialised directly.
-func (c *Client) setDefaultCurrentUniversalTime() {
-	if c.currentUniversalTime == nil {
-		c.SetCurrentUniversalTime(universalTimeFunc)
-	}
-}
-
-// SetCurrentUniversalTime sets the currentUniversalTime function to the provided handler function. Users can
-// use this method to set a custom handler function.
-func (c *Client) SetCurrentUniversalTime(handler UniversalTimeHandler) {
-	c.currentUniversalTime = handler
 }
 
 // ensure that the horizon client implements ClientInterface

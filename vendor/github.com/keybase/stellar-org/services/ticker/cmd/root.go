@@ -15,10 +15,20 @@ var Client *horizonclient.Client
 var UseTestNet bool
 var Logger = hlog.New()
 
+var defaultDatabaseURL = getEnv("DB_URL", "postgres://localhost:5432/stellarticker01?sslmode=disable")
+
 var rootCmd = &cobra.Command{
 	Use:   "ticker",
 	Short: "Stellar Development Foundation Ticker.",
 	Long:  `A tool to provide Stellar Asset and Market data.`,
+}
+
+func getEnv(key, fallback string) string {
+	value, exists := os.LookupEnv(key)
+	if !exists {
+		value = fallback
+	}
+	return value
 }
 
 func init() {
@@ -27,7 +37,7 @@ func init() {
 		&DatabaseURL,
 		"db-url",
 		"d",
-		"postgres://localhost:5432/stellarticker01?sslmode=disable",
+		defaultDatabaseURL,
 		"database URL, such as: postgres://user:pass@localhost:5432/ticker",
 	)
 	rootCmd.PersistentFlags().BoolVar(

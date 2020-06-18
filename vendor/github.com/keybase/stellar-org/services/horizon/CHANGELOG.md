@@ -1,10 +1,313 @@
 # Changelog
 
 All notable changes to this project will be documented in this
-file.  This project adheres to [Semantic Versioning](http://semver.org/).
+file. This project adheres to [Semantic Versioning](http://semver.org/).
 
-As this project is pre 1.0, breaking changes may happen for minor version
-bumps.  A breaking change will get clearly notified in this log.
+## v1.4.0
+
+* Drop support for MuxedAccounts strkeys (spec'ed in [SEP23](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md)).
+  SEP23 is still a draft and we don't want to encourage storing strkeys which may not be definite.
+* Replace `SequenceProvider` implementation with one which queries the Horizon DB for sequence numbers instead of the Stellar Core DB.
+* Use the Horizon DB instead of Horizon's in memory order book graph to query orderbook details for the /order_book endpoint.
+* Remove JSON variant of `GET /metrics`, both in the server and client code. It's using Prometheus format by default now.
+* Decreased a memory usage of initial state ingestion stage and state verifier ([#2618](https://github.com/stellar/go/pull/2618)).
+* Remove `--exp-ingest-in-memory-only` Horizon flag. The in memory order book graph which powers the path finding endpoints is now updated using the Horizon DB instead of directly via ingestion ([#2630](https://github.com/stellar/go/pull/2630)).
+
+## v1.3.0
+
+### Breaking changes
+
+* The type for the following attributes has been changed from `int64` to `string` ([#2555](https://github.com/stellar/go/pull/2555)):
+  - Attribute `fee_charged` in [Transaction](https://www.stellar.org/developers/horizon/reference/resources/transaction.html) resource.
+  - Attribute `max_fee` in [Transaction](https://www.stellar.org/developers/horizon/reference/resources/transaction.html) resource.
+
+### Changes
+
+* Add `last_modified_time` to account responses. `last_modified_time` is the closing time of the most recent ledger in which the account was modified ([#2528](https://github.com/stellar/go/pull/2528)).
+* Balances in the Account resource are now sorted by asset code and asset issuer ([#2516](https://github.com/stellar/go/pull/2516)).
+* Ingestion system has its dedicated DB connection pool ([#2560](https://github.com/stellar/go/pull/2560)).
+* A new metric has been added to `/metrics` ([#2537](https://github.com/stellar/go/pull/2537) and [#2553](https://github.com/stellar/go/pull/2553)):
+  - `ingest.local_latest_ledger`: a gauge with the local latest ledger,
+  - `txsub.v0`: a meter counting `v0` transactions in `POST /transaction`,
+  - `txsub.v1`: a meter counting `v1` transactions in `POST /transaction`,
+  - `txsub.feebump`: a meter counting `feebump` transactions in `POST /transaction`.
+* Fix a memory leak in the code responsible for streaming ([#2548](https://github.com/stellar/go/pull/2548), [#2575](https://github.com/stellar/go/pull/2575) and [#2576](https://github.com/stellar/go/pull/2576)).
+
+## v1.2.2
+
+* Fix bug which occurs when ingesting ledgers containing both fee bump and normal transactions.
+
+## v1.2.1
+
+### Database migration notes
+
+This version removes two unused columns that could overflow in catchup complete deployments. If your Horizon database contains entire public network history, you should upgrade to this version as soon as possible and run `horizon db migrate up`.
+
+### Changes
+
+* Remove `id` columns from `history_operation_participants` and `history_transaction_participants` to prevent possible integer overflow [#2532](https://github.com/stellar/go/pull/2532).
+## v1.2.0
+
+### Scheduled Breaking Changes
+
+* The type for the following attributes will be changed from `int64` to `string` in 1.3.0:
+  - Attribute `fee_charged` in [Transaction](https://www.stellar.org/developers/horizon/reference/resources/transaction.html) resource.
+  - Attribute `max_fee` in [Transaction](https://www.stellar.org/developers/horizon/reference/resources/transaction.html) resource.
+
+The changes are required by [CAP-15](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0015.md).
+
+### Changes
+
+* Added support for [CAP-27](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0027.md) and [SEP-23](https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0023.md) [#2491](https://github.com/stellar/go/pull/2491).
+* The XDR definition of a transaction memo is a string.
+However, XDR strings are actually binary blobs with no enforced encoding. 
+It is possible to set the memo in a transaction envelope to a binary sequence which is not valid ASCII or unicode. 
+Previously, if you wanted to recover the original binary sequence for a transaction memo, you would have to decode the transaction's envelope.
+In this release, we have added a `memo_bytes` field to the Horizon transaction response for transactions with `memo_type` equal `text`.
+`memo_bytes` stores the base 64 encoding of the memo bytes set in the transaction envelope [#2485](https://github.com/stellar/go/pull/2485).
+
+## v1.1.0
+
+### **IMPORTANT**: Database migration
+
+This version includes a significant database migration which changes the column types of `fee_charged` and `max_fee` in the `history_transactions` table from `integer` to `bigint`. This essential change paves the way for fee bump transactions ([CAP 15](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0015.md)), a major improvement that will be released soon in Stellar Protocol 13.
+
+This migration will run for a long time, especially if you have a Horizon database with full history. For reference, it took around 8 hours and 42 minutes to complete this migration on a AWS db.r4.8xlarge instance with full transaction history.
+
+To execute the migration run `horizon db migrate up` using the Horizon v1.1.0 binary.
+
+**Important Note**: Horizon should not be serving requests or ingesting while the migration is running. For service continuity, if you run a production Horizon deployment it is recommended that you perform the migration on a second instance and then switch over.
+
+### Changes
+* DB: Remove unnecessary duplicate indexes: `index_history_transactions_on_id`, `index_history_ledgers_on_id`, `exp_asset_stats_by_code`, and `asset_by_code` ([#2419](https://github.com/stellar/go/pull/2419)).
+* DB: Remove asset_stats table which is no longer necessary ([#2419](https://github.com/stellar/go/pull/2419)).
+* Validate transaction hash IDs as 64 lowercase hex chars. As such, wrongly-formatted parameters which used to cause 404 (`Not found`) errors will now cause 400 (`Bad request`) HTTP errors ([#2394](https://github.com/stellar/go/pull/2394)).
+* Fix ask and bid price levels of `GET /order_book` when encountering non-canonical price values. The `limit` parameter is now respected and levels are coallesced properly. Also, `price_r` is now in canonical form ([#2400](https://github.com/stellar/go/pull/2400)).
+* Added missing top-level HAL links to the `GET /` response ([#2407](https://github.com/stellar/go/pull/2407)).
+* Full transaction details are now included in the `POST /transactions` response. If you submit a transaction and it succeeds, the response will match the `GET /transactions/{hash}` response ([#2406](https://github.com/stellar/go/pull/2406)).
+* The following attributes are now included in the transaction resource:
+    * `fee_account` (the account which paid the transaction fee)
+    * `fee_bump_transaction` (only present in Protocol 13 fee bump transactions)
+    * `inner_transaction` (only present in Protocol 13 fee bump transactions) ([#2406](https://github.com/stellar/go/pull/2406)).
+* Add support for [CAP0018](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0018.md): Fine-Grained Control of Authorization (Protocol 13) ([#2423](https://github.com/stellar/go/pull/2423)).
+  - Add `is_authorized_to_maintain_liabilities` to `Balance`.
+    <pre>
+    "balances": [
+      {
+        "is_authorized": true,
+        <b>"is_authorized_to_maintain_liabilities": true,</b>
+        "balance": "27.1374422",
+        "limit": "922337203685.4775807",
+        "buying_liabilities": "0.0000000",
+        "selling_liabilities": "0.0000000",
+        "last_modified_ledger": 28893780,
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GBSTRUSD7IRX73RQZBL3RQUH6KS3O4NYFY3QCALDLZD77XMZOPWAVTUK"
+      },
+      {
+        "balance": "1.5000000",
+        "buying_liabilities": "0.0000000",
+        "selling_liabilities": "0.0000000",
+        "asset_type": "native"
+      }
+    ]
+    </pre>
+  - Add `authorize_to_maintain_liabilities` to `AllowTrust` operation.
+    <pre>
+    {
+      "id": "124042211741474817",
+      "paging_token": "124042211741474817",
+      "transaction_successful": true,
+      "source_account": "GBSTRUSD7IRX73RQZBL3RQUH6KS3O4NYFY3QCALDLZD77XMZOPWAVTUK",
+      "type": "allow_trust",
+      "type_i": 7,
+      "created_at": "2020-03-27T03:40:10Z",
+      "transaction_hash": "a77d4ee5346d55fb8026cdcdad6e4b5e0c440c96b4627e3727f4ccfa6d199e94",
+      "asset_type": "credit_alphanum4",
+      "asset_code": "USD",
+      "asset_issuer": "GBSTRUSD7IRX73RQZBL3RQUH6KS3O4NYFY3QCALDLZD77XMZOPWAVTUK",
+      "trustee": "GBSTRUSD7IRX73RQZBL3RQUH6KS3O4NYFY3QCALDLZD77XMZOPWAVTUK",
+      "trustor": "GA332TXN6BX2DYKGYB7FW5BWV2JLQKERNX4T7EUJT4MHWOW2TSGC2SPM",
+      "authorize": true,
+      <b>"authorize_to_maintain_liabilities": true,</b>
+    }
+    </pre>
+  - Add effect `trustline_authorized_to_maintain_liabilities`.
+    <pre>
+    {
+      "id": "0124042211741474817-0000000001",
+      "paging_token": "124042211741474817-1",
+      "account": "GBSTRUSD7IRX73RQZBL3RQUH6KS3O4NYFY3QCALDLZD77XMZOPWAVTUK",
+      <b>"type": "trustline_authorized_to_maintain_liabilities",</b>
+      <b>"type_i": 25,</b>
+      "created_at": "2020-03-27T03:40:10Z",
+      "trustor": "GA332TXN6BX2DYKGYB7FW5BWV2JLQKERNX4T7EUJT4MHWOW2TSGC2SPM",
+      "asset_type": "credit_alphanum4",
+      "asset_code": "USD"
+    }    
+    </pre>
+* It is no longer possible to use Redis as a mechanism for rate-limiting requests ([#2409](https://github.com/stellar/go/pull/2409)).
+
+* Make `GET /trades` generate an empty response instead of a 404 when no
+ trades are found.
+
+## v1.0.1
+
+### Fixed
+* Fix `horizon db reap` bug which caused the command to exit without deleting any history table rows ([#2336](https://github.com/stellar/go/pull/2336)).
+* The horizon reap system now also deletes rows from `history_trades`. Previously, the reap system only deleted rows from `history_operation_participants`, `history_operations`, `history_transaction_participants`, `history_transactions`, `history_ledgers`, and `history_effects` ([#2336](https://github.com/stellar/go/pull/2336)).
+* Fix deadlock when running `horizon db reingest range` ([#2373](https://github.com/stellar/go/pull/2373)).
+* Fix signer update effects ([#2375](https://github.com/stellar/go/pull/2375)).
+* Fix incorrect error in log when shutting down the system while `verifyState` is running ([#2366](https://github.com/stellar/go/pull/2366)).
+* Expose date header to CORS clients ([#2316](https://github.com/stellar/go/pull/2316)).
+* Fix inconsistent ledger view in `/accounts/{id}` when streaming ([#2344](https://github.com/stellar/go/pull/2344)).
+
+### Removed
+* Dropped support for Go 1.12. ([#2346](https://github.com/stellar/go/pull/2346)).
+
+## v1.0.0
+
+### Before you upgrade
+
+* If you were using the new ingestion in one of the previous versions of Horizon, you must first remove `ENABLE_EXPERIMENTAL_INGESTION` feature flag and restart all Horizon instances before deploying a new version.
+* The init stage (state ingestion) for the public Stellar network requires around 1.5GB of RAM. This memory is released after the state ingestion. State ingestion is performed only once. Restarting the server will not trigger it unless Horizon has been upgraded to a newer version (with an updated ingestion pipeline). It's worth noting that the required memory will become smaller and smaller as more of the buckets in the history archive become [CAP-20](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0020.md) compatible. Some endpoints are **not available** during state ingestion.
+* The CPU footprint of the new ingestion is modest. We were able to successfully run ingestion on an [AWS `c5.xlarge`](https://aws.amazon.com/ec2/instance-types/c5/) instance. The init stage takes a few minutes on `c5.xlarge`. `c5.xlarge` is the equivalent of 4 vCPUs and 8GB of RAM. The definition of vCPU for the c5 large family in AWS is the following:
+> The 2nd generation Intel Xeon Scalable Processors (Cascade Lake) or 1st generation Intel Xeon Platinum 8000 series (Skylake-SP) processor with a sustained all core Turbo frequency of up to 3.4GHz, and single core turbo frequency of up to 3.5 GHz.
+
+* The state data requires an additional 6GB DB disk space for the public Stellar network (as of February 2020). The disk usage will increase when the number of Stellar ledger entries increases.
+  * `accounts_signers` table: 2340 MB
+  * `trust_lines` table: 2052 MB
+  * `accounts` table: 1545 MB
+  * `offers` table: 61 MB
+  * `accounts_data` table: 15 MB
+  * `exp_asset_stats` table: less than 1 MB
+* A new environment variable (or command line flag) needs to be set so that Horizon can ingest state from the history archives:
+   * `HISTORY_ARCHIVE_URLS="archive1,archive2,archive3"` (if you don't have your own pubnet history archive, you can use one of SDF's archives, for example `https://history.stellar.org/prd/core-live/core_live_001`)
+* Horizon serves the endpoints `/paths` and `/order_book` from an in-memory graph, which is only available on ingesting instances. If some of the instances in your cluster are not configured to ingest, you can configure your proxy server to route those endpoints to the ingesting instances. This is beyond the scope of this document - consult the relevant documentation for your proxy server. A better solution for this will be released in the next Horizon version.
+
+### New Ingestion System
+
+The most substantial element of this release is a full rewrite of Horizon's ledger ingestion engine, which enables some key features:
+
+* A set of important new endpoints (see below). Some of these were impossible under the previous ingestion architecture.
+* An in-memory order book graph for rapid querying.
+* The ability to run parallel ingestion over multiple Horizon hosts, improving service availability for production deployments.
+
+The new engine resolves multiple issues that were present in the old system. For example:
+
+* Horizon's coupling to Stellar-Core's database is dramatically reduced.
+* Data inconsistency due to lag between endpoints is eliminated.
+* Slow endpoints (path-finding for example) are now speedy.
+
+Finally, the rearchitecting makes new reliability features possible. An example is the new internal state verifier, which guarantees consistency between the local Horizon state and the public history archives.
+
+The [admin guide](https://github.com/stellar/go/blob/release-horizon-v0.25.0/services/horizon/internal/docs/admin.md) contains all the information needed to operate the new ingestion system.
+
+### Added
+
+- Add [/accounts](https://www.stellar.org/developers/horizon/reference/endpoints/accounts.html) endpoint, which allows filtering accounts that have a given signer or a trustline to an asset.
+- Add [/offers](https://www.stellar.org/developers/horizon/reference/endpoints/offers.html) endpoint, which lists all offers on the network and allows filtering by seller account or by selling or buying asset.
+- Add [/paths/strict-send](https://www.stellar.org/developers/horizon/reference/endpoints/path-finding-strict-send.html) endpoint, which enables discovery of optimal "strict send" paths between assets.
+- Add [/paths/strict-receive](https://www.stellar.org/developers/horizon/reference/endpoints/path-finding-strict-receive.html) endpoint, which enables discovery of optimal "strict receive" paths between assets.
+- Add the fields `max_fee` and `fee_charged` to [/fee_stats](https://www.stellar.org/developers/horizon/reference/endpoints/fee-stats.html).
+
+### Breaking changes
+
+### Changed
+
+- Change multiple operation types to their canonical names for [operation resources](https://www.stellar.org/developers/horizon/reference/resources/operation.html) ([#2134](https://github.com/stellar/go/pull/2134)).
+- Change the type of the following fields from `number` to `string`:
+
+    - Attribute `offer_id` in [manage buy offer](https://www.stellar.org/developers/horizon/reference/resources/operation.html#manage-buy-offer) and [manage sell offer](https://www.stellar.org/developers/horizon/reference/resources/operation.html#manage-sell-offer) operations.
+    - Attribute `offer_id` in `Trade` [effect](https://www.stellar.org/developers/horizon/reference/resources/effect.html#trading-effects).
+    - Attribute `id` in [Offer](https://www.stellar.org/developers/horizon/reference/resources/offer.html) resource.
+    - Attribute `timestamp` and `trade_count` in [Trade Aggregation](https://www.stellar.org/developers/horizon/reference/resources/trade_aggregation.html) resource.
+
+    See [#1609](https://github.com/stellar/go/issues/1609), [#1909](https://github.com/stellar/go/pull/1909) and [#1912](https://github.com/stellar/go/issues/1912) for more details.
+
+### Removed
+
+- `/metrics` endpoint is no longer part of the public API. It is now served on `ADMIN_PORT/metrics`. `ADMIN_PORT` can be set using env variable or `--admin-port` CLI param.
+- Remove the following fields from [/fee_stats](https://www.stellar.org/developers/horizon/reference/endpoints/fee-stats.html):
+
+    - `min_accepted_fee`
+    - `mode_accepted_fee`
+    - `p10_accepted_fee`
+    - `p20_accepted_fee`
+    - `p30_accepted_fee`
+    - `p40_accepted_fee`
+    - `p50_accepted_fee`
+    - `p60_accepted_fee`
+    - `p70_accepted_fee`
+    - `p80_accepted_fee`
+    - `p90_accepted_fee`
+    - `p95_accepted_fee`
+    - `p99_accepted_fee`
+
+- Remove `fee_paid` field from [Transaction resource](https://www.stellar.org/developers/horizon/reference/resources/transaction.html) (Use `fee_charged` and `max_fee` fields instead - see [#1372](https://github.com/stellar/go/issues/1372)).
+
+## v0.24.1
+
+* Add cache to improve performance of experimental ingestion system (#[2004](https://github.com/stellar/go/pull/2004)).
+* Fix experimental ingestion bug where ledger changes were not applied in the correct order (#[2050](https://github.com/stellar/go/pull/2050)).
+* Fix experimental ingestion bug where unique constraint errors are incurred when the ingestion system has to reingest state from history archive checkpoints (#[2055](https://github.com/stellar/go/pull/2055)).
+* Fix experimental ingestion bug where a race condition during shutdown leads to a crash (#[2058](https://github.com/stellar/go/pull/2058)).
+
+## v0.24.0
+
+* Add `fee_charged` and `max_fee` objects to `/fee_stats` endpoint ([#1964](https://github.com/stellar/go/pull/1964)).
+* Experimental ledger header ingestion processor ([#1949](https://github.com/stellar/go/pull/1949)).
+* Improved performance of asset stats processor ([#1987](https://github.com/stellar/go/pull/1987)).
+* Provide mechanism for retrying XDR stream errors ([#1899](https://github.com/stellar/go/pull/1899)).
+* Emit error level log after 3 failed attempts to validate state ([#1918](https://github.com/stellar/go/pull/1918)).
+* Fixed out of bounds error in ledger backend reader ([#1914](https://github.com/stellar/go/pull/1914)).
+* Fixed out of bounds error in URL params handler ([#1973](https://github.com/stellar/go/pull/1973)).
+* Rename `OperationFeeStats` to `FeeStats` ([#1952](https://github.com/stellar/go/pull/1952)).
+* All DB queries are now cancelled when request is cancelled/timeout. ([#1950](https://github.com/stellar/go/pull/1950)).
+* Fixed multiple issues connected to graceful shutdown of Horizon.
+
+### Scheduled Breaking Changes
+
+* All `*_accepted_fee` fields in `/fee_stats` endpoint are deprecated. Fields will be removed in Horizon 0.25.0.
+
+Previously scheduled breaking changes reminders:
+
+* The following operation type names have been deprecated: `path_payment`, `manage_offer` and `create_passive_offer`. The names will be changed to: `path_payment_strict_receive`, `manage_sell_offer` and `create_passive_sell_offer` in 0.25.0. This has been previously scheduled for 0.22.0 release.
+* `fee_paid` field on Transaction resource has been deprecated and will be removed in 0.25.0 (previously scheduled for 0.22.0). Please use new fields added in 0.18.0: `max_fee` that defines the maximum fee the source account is willing to pay and `fee_charged` that defines the fee that was actually paid for a transaction. See [CAP-0005](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0005.md) for more information.
+* The type for the following attributes will be changed from `int64` to `string` in 0.25.0 (previously scheduled for 0.22.0):
+  - Attribute `offer_id` in [manage buy offer](https://www.stellar.org/developers/horizon/reference/resources/operation.html#manage-buy-offer) and [manage sell offer](https://www.stellar.org/developers/horizon/reference/resources/operation.html#manage-sell-offer) operations.
+  - Attribute `offer_id` in `Trade` effect.
+  - Attribute `id` in [Offer](https://www.stellar.org/developers/horizon/reference/resources/offer.html) resource.
+  - Attribute `timestamp` and `trade_count` in [Trade Aggregation](https://www.stellar.org/developers/horizon/reference/resources/trade_aggregation.html) resource.
+
+Check [Beta Testing New Ingestion System](https://github.com/stellar/go/blob/master/services/horizon/internal/expingest/BETA_TESTING.md) if you want to test the new ingestion system.
+
+## v0.23.1
+
+* Add `ReadTimeout` to Horizon HTTP server configuration to fix potential DoS vector.
+
+## v0.23.0
+
+* New features in experimental ingestion (to enable: set `--enable-experimental-ingestion` CLI param or `ENABLE_EXPERIMENTAL_INGESTION=true` env variable):
+  * All state-related endpoints (i.e. ledger entries) are now served from Horizon DB (except `/account/{account_id}`)
+
+  * `/order_book` offers data is served from in-memory store ([#1761](https://github.com/stellar/go/pull/1761))
+
+  * Add `Latest-Ledger` header with the sequence number of the most recent ledger processed by the experimental ingestion system. Endpoints built on the experimental ingestion system will always respond with data which is consistent with the ledger in `Latest-Ledger` ([#1830](https://github.com/stellar/go/pull/1830))
+
+  * Add experimental support for filtering accounts who are trustees to an asset via `/accounts`. Example:\
+  `/accounts?asset=COP:GC2GFGZ5CZCFCDJSQF3YYEAYBOS3ZREXJSPU7LUJ7JU3LP3BQNHY7YKS`\
+  returns all accounts who have a trustline to the asset `COP` issued by account `GC2GFG...` ([#1835](https://github.com/stellar/go/pull/1835))
+
+  * Experimental "Accounts For Signers" end-point now returns a full account resource ([#1876](https://github.com/stellar/go/issues/1875))
+* Prevent "`multiple response.WriteHeader calls`" errors when streaming ([#1870](https://github.com/stellar/go/issues/1870))
+* Fix an interpolation bug in `/fee_stats` ([#1857](https://github.com/stellar/go/pull/1857))
+* Fix a bug in `/paths/strict-send` where occasionally bad paths were returned ([#1863](https://github.com/stellar/go/pull/1863))
+
+## v0.22.2
+
+* Fixes a bug in accounts for signer ingestion processor.
 
 ## v0.22.1
 
@@ -16,7 +319,7 @@ bumps.  A breaking change will get clearly notified in this log.
 
 ### Scheduled Breaking Changes
 
-* The following operation type names have been deprecated: `path_payment`, `manage_offer` and `create_passive_offer`. The names will be changed to: `path_payment_strict_receive`, `manage_sell_offer` and `create_passive_offer` in 0.25.0. This has been previously scheduled for 0.22.0 release.
+* The following operation type names have been deprecated: `path_payment`, `manage_offer` and `create_passive_offer`. The names will be changed to: `path_payment_strict_receive`, `manage_sell_offer` and `create_passive_sell_offer` in 0.25.0. This has been previously scheduled for 0.22.0 release.
 * `fee_paid` field on Transaction resource has been deprecated and will be removed in 0.23.0 (previously scheduled for 0.22.0). Please use new fields added in 0.18.0: `max_fee` that defines the maximum fee the source account is willing to pay and `fee_charged` that defines the fee that was actually paid for a transaction. See [CAP-0005](https://github.com/stellar/stellar-protocol/blob/master/core/cap-0005.md) for more information.
 * The type for the following attributes will be changed from `int64` to `string` in 0.23.0 (previously scheduled for 0.22.0):
   - Attribute `offer_id` in [manage buy offer](https://www.stellar.org/developers/horizon/reference/resources/operation.html#manage-buy-offer) and [manage sell offer](https://www.stellar.org/developers/horizon/reference/resources/operation.html#manage-sell-offer) operations.
@@ -62,7 +365,7 @@ If you want to use experimental ingestion skip this version and use v0.20.1 inst
 ### Changes
 
 * Experimental ingestion system is now run concurrently on all Horizon servers (with feature flag set - see below). This improves ingestion availability.
-* Add experimental path finding endpoints which use an in memory order book for improved performance. To enable the endpoints set `--enable-experimental-ingestion` CLI param or `ENABLE_EXPERIMENTAL_INGESTION=true` env variable. Note that the `enable-experimental-ingestion` flag enables both the new path finding endpoints and the accounts for signer endpoint. There are two path finding endpoints. `/paths/strict-send` returns payment paths where both the source and destination assets are fixed. This endpoint is able to answer questions like: "Get me the most EUR possible for my 10 USD." `/paths/strict-receive` is the other endpoint which is an alias to the existing `/paths` endpoint. 
+* Add experimental path finding endpoints which use an in memory order book for improved performance. To enable the endpoints set `--enable-experimental-ingestion` CLI param or `ENABLE_EXPERIMENTAL_INGESTION=true` env variable. Note that the `enable-experimental-ingestion` flag enables both the new path finding endpoints and the accounts for signer endpoint. There are two path finding endpoints. `/paths/strict-send` returns payment paths where both the source and destination assets are fixed. This endpoint is able to answer questions like: "Get me the most EUR possible for my 10 USD." `/paths/strict-receive` is the other endpoint which is an alias to the existing `/paths` endpoint.
 * `--enable-accounts-for-signer` CLI param or `ENABLE_ACCOUNTS_FOR_SIGNER=true` env variable are merged with `--enable-experimental-ingestion` CLI param or `ENABLE_EXPERIMENTAL_INGESTION=true` env variable.
 * Add experimental get offers by id endpoint`/offers/{id}` which uses the new ingestion system to fill up the offers table. To enable it, set `--enable-experimental-ingestion` CLI param or `ENABLE_EXPERIMENTAL_INGESTION=true` env variable.
 
@@ -372,7 +675,7 @@ This release is a bug fix release for v0.12.1 and v0.12.2.  *Please see the upgr
 
 ### Changes
 
-- Remove strict validation on the `resolution` parameter for trade aggregations endpoint.  We will add this feature back in to the next major release. 
+- Remove strict validation on the `resolution` parameter for trade aggregations endpoint.  We will add this feature back in to the next major release.
 
 
 ## v0.12.1 - 2017-03-13
@@ -387,7 +690,7 @@ This release is a bug fix release for v0.12.0.  *Please see the upgrade notes be
 
 ## v0.12.0 - 2017-03-08
 
-Big release this time for horizon:  We've made a number of breaking changes since v0.11.0 and have revised both our database schema as well as our data ingestion system.  We recommend that you take a backup of your horizon database prior to upgrading, just in case.  
+Big release this time for horizon:  We've made a number of breaking changes since v0.11.0 and have revised both our database schema as well as our data ingestion system.  We recommend that you take a backup of your horizon database prior to upgrading, just in case.
 
 ### Upgrade Notes
 
@@ -407,17 +710,17 @@ Since this release changes both the schema and the data ingestion system, we rec
 
 ### Bug fixes
 
-- Ingestion performance and stability has been improved. 
+- Ingestion performance and stability has been improved.
 - Changes to an account's inflation destination no longer produce erroneous "signer_updated" effects. (https://github.com/stellar/horizon/issues/390)
 
 
 ### Changed
 
-- BREAKING CHANGE: The `base_fee` property of the ledger resource has been renamed to `base_fee_in_stroops` 
-- BREAKING CHANGE: The `base_reserve` property of the ledger resource has been renamed to `base_reserve_in_stroops` and is now expressed in stroops (rather than lumens) and as a JSON number. 
+- BREAKING CHANGE: The `base_fee` property of the ledger resource has been renamed to `base_fee_in_stroops`
+- BREAKING CHANGE: The `base_reserve` property of the ledger resource has been renamed to `base_reserve_in_stroops` and is now expressed in stroops (rather than lumens) and as a JSON number.
 - BREAKING CHANGE: The "Orderbook Trades" (`/orderbook/trades`) endpoint has been removed and replaced by the "All Trades" (`/trades`) endpoint.
-- BREAKING CHANGE: The Trade resource has been modified to generalize assets as (`base`, `counter`) pairs, rather than the previous (`sold`,`bought`) pairs.  
-- Full reingestion (i.e. running `horizon db reingest`) now runs in reverse chronological order.  
+- BREAKING CHANGE: The Trade resource has been modified to generalize assets as (`base`, `counter`) pairs, rather than the previous (`sold`,`bought`) pairs.
+- Full reingestion (i.e. running `horizon db reingest`) now runs in reverse chronological order.
 
 ### Removed
 
@@ -443,7 +746,7 @@ Since this release changes both the schema and the data ingestion system, we rec
 ## [v0.10.1] - 2017-03-29
 
 ### Fixed
-- Ingestion was fixed to protect against text memos that contain null bytes.  While memos with null bytes are legal in stellar-core, PostgreSQL does not support such values in string columns.  Horizon now strips those null bytes to fix the issue. 
+- Ingestion was fixed to protect against text memos that contain null bytes.  While memos with null bytes are legal in stellar-core, PostgreSQL does not support such values in string columns.  Horizon now strips those null bytes to fix the issue.
 
 ## [v0.10.0] - 2017-03-20
 
@@ -541,7 +844,7 @@ This release contains the initial implementation of the "Abridged History System
 
 - BREAKING: When making a streaming request, a normal error response will be returned if an error occurs prior to sending the first event.  Additionally, the initial http response and streaming preamble will not be sent until the first event is available.
 - BREAKING: `horizon_latest_ledger` has renamed to `history_latest_ledger`
-- Horizon no longer needs to begin the ingestion of historical data from ledger sequence 1.  
+- Horizon no longer needs to begin the ingestion of historical data from ledger sequence 1.
 - Rows in the `history_accounts` table are no longer identified using the "Total Order ID" that other historical records  use, but are rather using a simple auto-incremented id.
 
 ### Removed

@@ -57,24 +57,28 @@ func main() {
 	}
 
 	// Construct the transaction that will carry the operation
-	tx := txnbuild.Transaction{
-		SourceAccount: &hAccount0,
-		Operations:    []txnbuild.Operation{&createAccountOp},
-		Timebounds:    txnbuild.NewTimeout(300),
-		Network:       network.TestNetworkPassphrase,
+	txParams := txnbuild.TransactionParams{
+		SourceAccount:        &hAccount0,
+		IncrementSequenceNum: true,
+		Operations:           []txnbuild.Operation{&createAccountOp},
+		Timebounds:           txnbuild.NewTimeout(300),
+		BaseFee:              100,
 	}
+	tx, _ := txnbuild.NewTransaction(txParams)
 
-	// Sign the transaction, serialise it to XDR, and base 64 encode it
-	txeBase64, err := tx.BuildSignEncode(pair)
+	// Sign the transaction, and base 64 encode its XDR representation
+	signedTx, _ := tx.Sign(network.TestNetworkPassphrase, pair)
+	txeBase64, _ := signedTx.Base64()
 	log.Println("Transaction base64: ", txeBase64)
 
 	// Submit the transaction
 	resp, err := client.SubmitTransactionXDR(txeBase64)
 	if err != nil {
 		hError := err.(*horizonclient.Error)
-		log.Fatal("Error submitting transaction:", hError)
+		log.Fatal("Error submitting transaction:", hError.Problem)
 	}
 
 	log.Println("\nTransaction response: ", resp)
 }
+
 ```

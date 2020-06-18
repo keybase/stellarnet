@@ -1,7 +1,6 @@
 package scraper
 
 import (
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"math"
@@ -17,6 +16,7 @@ import (
 	horizonclient "github.com/stellar/go/clients/horizonclient"
 	hProtocol "github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/services/ticker/internal/utils"
+	"github.com/stellar/go/support/errors"
 )
 
 // shouldDiscardAsset maps the criteria for discarding an asset from the asset index
@@ -75,8 +75,12 @@ func fetchTOMLData(asset hProtocol.AssetStat) (data string, err error) {
 	}
 
 	req, err := http.NewRequest("GET", tomlURL, nil)
-	req.Header.Set("User-Agent", "Stellar Ticker v1.0")
+	if err != nil {
+		err = errors.Wrap(err, "invalid URL or request")
+		return
+	}
 
+	req.Header.Set("User-Agent", "Stellar Ticker v1.0")
 	resp, err := client.Do(req)
 	if err != nil {
 		return

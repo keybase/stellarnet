@@ -27,15 +27,18 @@ type Path struct {
 
 // Finder finds paths.
 type Finder interface {
-	// Returns path for a Query of a maximum length `maxLength`
-	Find(q Query, maxLength uint) ([]Path, error)
-	// FindFixedPaths return a list of payment paths each of which
-	// start by spending `amountToSpend` of `sourceAsset` and end
-	// with delivering a postive amount of `destinationAsset`
+	// Return a list of payment paths and the most recent ledger
+	// for a Query of a maximum length `maxLength`. The payment paths
+	// are accurate and consistent with the returned ledger sequence number
+	Find(q Query, maxLength uint) ([]Path, uint32, error)
+	// FindFixedPaths return a list of payment paths the most recent ledger
+	// Each of the payment paths start by spending `amountToSpend` of `sourceAsset` and end
+	// with delivering a postive amount of `destinationAsset`.
+	// The payment paths are accurate and consistent with the returned ledger sequence number
 	FindFixedPaths(
 		sourceAsset xdr.Asset,
 		amountToSpend xdr.Int64,
 		destinationAssets []xdr.Asset,
 		maxLength uint,
-	) ([]Path, error)
+	) ([]Path, uint32, error)
 }

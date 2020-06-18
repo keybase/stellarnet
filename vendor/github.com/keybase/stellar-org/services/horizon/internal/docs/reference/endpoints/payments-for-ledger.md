@@ -4,7 +4,7 @@ clientData:
   laboratoryUrl: https://www.stellar.org/laboratory/#explorer?resource=payments&endpoint=for_ledger
 ---
 
-This endpoint represents all payment-releated [operations](../resources/operation.md) that are part
+This endpoint represents all payment-related [operations](../resources/operation.md) that are part
 of a valid [transactions](../resources/transaction.md) in a given [ledger](../resources/ledger.md).
 
 The operations that can be returned in by this endpoint are:

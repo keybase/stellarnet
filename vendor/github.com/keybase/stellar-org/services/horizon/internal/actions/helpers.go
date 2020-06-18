@@ -2,16 +2,19 @@ package actions
 
 import (
 	"context"
+	"encoding/hex"
 	"fmt"
 	"mime"
 	"net/http"
 	"net/url"
-	"regexp"
+	"reflect"
 	"strconv"
 	"strings"
 	"unicode/utf8"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/go-chi/chi"
+	"github.com/gorilla/schema"
 
 	"github.com/stellar/go/amount"
 	"github.com/stellar/go/services/horizon/internal/assets"
@@ -36,6 +39,8 @@ const (
 	ParamOrder = "order"
 	// ParamLimit is a query string param name
 	ParamLimit = "limit"
+	// LastLedgerHeaderName is the header which is set on all endpoints
+	LastLedgerHeaderName = "Latest-Ledger"
 )
 
 type Opt int
@@ -49,7 +54,15 @@ const (
 	maxAssetCodeLength = 12
 )
 
-var validAssetCode = regexp.MustCompile("^[[:alnum:]]{1,12}$")
+// HeaderWriter is an interface for setting HTTP response headers
+type HeaderWriter interface {
+	Header() http.Header
+}
+
+// SetLastLedgerHeader sets the Latest-Ledger header
+func SetLastLedgerHeader(w HeaderWriter, lastLedger uint32) {
+	w.Header().Set(LastLedgerHeaderName, strconv.FormatUint(uint64(lastLedger), 10))
+}
 
 // GetCursor retrieves a string from either the URLParams, form or query string.
 // This method uses the priority (URLParams, Form, Query).
@@ -95,14 +108,6 @@ func GetCursor(r *http.Request, name string) (string, error) {
 	return cursor, nil
 }
 
-// checkUTF8 checks if value is a valid UTF-8 string, otherwise sets
-// error to `action.Err`.
-func (base *Base) checkUTF8(name, value string) {
-	if err := checkUTF8(name, value); err != nil {
-		base.SetInvalidField(name, err)
-	}
-}
-
 func checkUTF8(name, value string) error {
 	if !utf8.ValidString(value) {
 		return problem.MakeInvalidFieldProblem(name, errors.New("invalid value"))
@@ -111,24 +116,32 @@ func checkUTF8(name, value string) error {
 }
 
 // GetStringFromURLParam retrieves a string from the URLParams.
+func GetStringFromURLParam(r *http.Request, name string) (string, error) {
+	fromURL, ok := GetURLParam(r, name)
+	if ok {
+		ret, err := url.PathUnescape(fromURL)
+		if err != nil {
+			return "", problem.MakeInvalidFieldProblem(name, err)
+		}
+
+		if err := checkUTF8(name, ret); err != nil {
+			return "", err
+		}
+		return ret, nil
+	}
+
+	return "", nil
+}
+
+// GetStringFromURLParam retrieves a string from the URLParams.
 func (base *Base) GetStringFromURLParam(name string) string {
 	if base.Err != nil {
 		return ""
 	}
 
-	fromURL, ok := base.GetURLParam(name)
-	if ok {
-		ret, err := url.PathUnescape(fromURL)
-		if err != nil {
-			base.SetInvalidField(name, err)
-			return ""
-		}
-
-		base.checkUTF8(name, ret)
-		return ret
-	}
-
-	return ""
+	var ret string
+	ret, base.Err = GetString(base.R, name)
+	return ret
 }
 
 // GetString retrieves a string from either the URLParams, form or query string.
@@ -176,24 +189,34 @@ func (base *Base) GetString(name string) (result string) {
 }
 
 // GetInt64 retrieves an int64 from the action parameter of the given name.
+func GetInt64(r *http.Request, name string) (int64, error) {
+	asStr, err := GetString(r, name)
+	if err != nil {
+		return 0, err
+	}
+	if asStr == "" {
+		return 0, nil
+	}
+
+	asI64, err := strconv.ParseInt(asStr, 10, 64)
+	if err != nil {
+		return 0, problem.MakeInvalidFieldProblem(name, errors.New("unparseable value"))
+	}
+
+	return asI64, nil
+}
+
+// GetInt64 retrieves an int64 from the action parameter of the given name.
 // Populates err if the value is not a valid int64
 func (base *Base) GetInt64(name string) int64 {
 	if base.Err != nil {
 		return 0
 	}
 
-	asStr := base.GetString(name)
-	if asStr == "" {
-		return 0
-	}
+	var parsed int64
+	parsed, base.Err = GetInt64(base.R, name)
 
-	asI64, err := strconv.ParseInt(asStr, 10, 64)
-	if err != nil {
-		base.SetInvalidField(name, errors.New("unparseable value"))
-		return 0
-	}
-
-	return asI64
+	return parsed
 }
 
 // GetInt32 retrieves an int32 from the action parameter of the given name.
@@ -367,6 +390,23 @@ func (base *Base) GetAddress(name string, opts ...Opt) (result string) {
 	return result
 }
 
+// GetTransactionID retireves a transaction identifier by attempting to decode an hex-encoded,
+// 64-digit lowercase string at the provided name.
+func GetTransactionID(r *http.Request, name string) (string, error) {
+	value, err := GetStringFromURLParam(r, name)
+	if err != nil {
+		return "", err
+	}
+
+	if value != "" {
+		if _, err = hex.DecodeString(value); err != nil || len(value) != 64 || strings.ToLower(value) != value {
+			return "", problem.MakeInvalidFieldProblem(name, errors.New("invalid hash format"))
+		}
+	}
+
+	return value, nil
+}
+
 // GetAccountID retireves an xdr.AccountID by attempting to decode a stellar
 // address at the provided name.
 func GetAccountID(r *http.Request, name string) (xdr.AccountId, error) {
@@ -375,8 +415,8 @@ func GetAccountID(r *http.Request, name string) (xdr.AccountId, error) {
 		return xdr.AccountId{}, err
 	}
 
-	result := xdr.AccountId{}
-	if err := result.SetAddress(value); err != nil {
+	result, err := xdr.AddressToAccountId(value)
+	if err != nil {
 		return result, problem.MakeInvalidFieldProblem(
 			name,
 			errors.New("invalid address"),
@@ -530,56 +570,13 @@ func GetAssets(r *http.Request, name string) ([]xdr.Asset, error) {
 		return nil, err
 	}
 
-	var assets []xdr.Asset
-	if s == "" {
-		return assets, nil
-	}
+	assets, err := xdr.BuildAssets(s)
 
-	assetStrings := strings.Split(s, ",")
-	for _, assetString := range assetStrings {
-		var asset xdr.Asset
-
-		// Technically https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0011.md allows
-		// any string up to 12 characters not containing an unescaped colon to represent XLM
-		// however, this function only accepts the string "native" to represent XLM
-		if strings.ToLower(assetString) == "native" {
-			if err := asset.SetNative(); err != nil {
-				return nil, err
-			}
-		} else {
-			parts := strings.Split(assetString, ":")
-			if len(parts) != 2 {
-				return nil, problem.MakeInvalidFieldProblem(
-					name,
-					fmt.Errorf("%s is not a valid asset", assetString),
-				)
-			}
-
-			code := parts[0]
-			if !validAssetCode.MatchString(code) {
-				return nil, problem.MakeInvalidFieldProblem(
-					name,
-					fmt.Errorf("%s is not a valid asset, it contains an invalid asset code", assetString),
-				)
-			}
-
-			issuer := xdr.AccountId{}
-			if err := issuer.SetAddress(parts[1]); err != nil {
-				return nil, problem.MakeInvalidFieldProblem(
-					name,
-					fmt.Errorf("%s is not a valid asset, it contains an invalid issuer", assetString),
-				)
-			}
-
-			if err := asset.SetCredit(string(code), issuer); err != nil {
-				return nil, problem.MakeInvalidFieldProblem(
-					name,
-					fmt.Errorf("%s is not a valid asset", assetString),
-				)
-			}
-		}
-
-		assets = append(assets, asset)
+	if err != nil {
+		return nil, problem.MakeInvalidFieldProblem(
+			name,
+			err,
+		)
 	}
 
 	return assets, nil
@@ -641,6 +638,14 @@ func (base *Base) GetTimeMillis(name string) (timeMillis time.Millis) {
 // Ref: https://github.com/go-chi/chi/blob/d132b31857e5922a2cc7963f4fcfd8f46b3f2e97/context.go#L69
 func GetURLParam(r *http.Request, key string) (string, bool) {
 	rctx := chi.RouteContext(r.Context())
+
+	// Return immediately if keys does not match Values
+	// This can happen when a named param is not specified.
+	// This is a bug in chi: https://github.com/go-chi/chi/issues/426
+	if len(rctx.URLParams.Keys) != len(rctx.URLParams.Values) {
+		return "", false
+	}
+
 	for k := len(rctx.URLParams.Keys) - 1; k >= 0; k-- {
 		if rctx.URLParams.Keys[k] == key {
 			return rctx.URLParams.Values[k], true
@@ -700,4 +705,233 @@ func FullURL(ctx context.Context) *url.URL {
 		url.RawQuery = r.URL.RawQuery
 	}
 	return url
+}
+
+// Note from chi: it is a good idea to set a Decoder instance as a package
+// global, because it caches meta-data about structs, and an instance can be
+// shared safely:
+var decoder = schema.NewDecoder()
+
+// GetParams fills a struct with values read from a request's query parameters.
+func GetParams(dst interface{}, r *http.Request) error {
+	query := r.URL.Query()
+
+	// Merge chi's URLParams with URL Query Params. Given
+	// `/accounts/{account_id}/transactions?foo=bar`, chi's URLParams will
+	// contain `account_id` and URL Query params will contain `foo`.
+	if rctx := chi.RouteContext(r.Context()); rctx != nil {
+		for _, key := range rctx.URLParams.Keys {
+			if key == "*" {
+				continue
+			}
+			val := query.Get(key)
+			if len(val) > 0 {
+				return problem.MakeInvalidFieldProblem(
+					key,
+					errors.New("The parameter should not be included in the request"),
+				)
+			}
+
+			param, _ := GetURLParam(r, key)
+			query.Set(key, param)
+		}
+	}
+
+	decoder.IgnoreUnknownKeys(true)
+	if err := decoder.Decode(dst, query); err != nil {
+		for k, e := range err.(schema.MultiError) {
+			return problem.NewProblemWithInvalidField(
+				problem.BadRequest,
+				k,
+				getSchemaErrorFieldMessage(k, e),
+			)
+		}
+	}
+
+	if _, err := govalidator.ValidateStruct(dst); err != nil {
+		field, message := getErrorFieldMessage(err)
+		err = problem.MakeInvalidFieldProblem(
+			getSchemaTag(dst, field),
+			errors.New(message),
+		)
+
+		return err
+	}
+
+	if v, ok := dst.(Validateable); ok {
+		if err := v.Validate(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func getSchemaTag(params interface{}, field string) string {
+	v := reflect.ValueOf(params).Elem()
+	qt := v.Type()
+	f, _ := qt.FieldByName(field)
+	return f.Tag.Get("schema")
+}
+
+// GetURIParams returns a list of query parameters for a given query struct
+func GetURIParams(query interface{}, paginated bool) []string {
+	params := getSchemaTags(reflect.ValueOf(query).Elem())
+	if paginated {
+		pagingParams := []string{
+			"cursor",
+			"limit",
+			"order",
+		}
+		params = append(params, pagingParams...)
+	}
+	return params
+}
+
+func getSchemaTags(v reflect.Value) []string {
+	qt := v.Type()
+	fields := make([]string, 0, v.NumField())
+
+	for i := 0; i < qt.NumField(); i++ {
+		f := qt.Field(i)
+		// Query structs can have embedded query structs
+		if f.Type.Kind() == reflect.Struct {
+			fields = append(fields, getSchemaTags(v.Field(i))...)
+		} else {
+			tag, ok := f.Tag.Lookup("schema")
+			if ok {
+				fields = append(fields, tag)
+			}
+		}
+	}
+
+	return fields
+}
+
+// ValidateAssetParams runs multiple checks on an asset query parameter
+func ValidateAssetParams(aType, code, issuer, prefix string) error {
+	// If asset type is not present but code or issuer are, then there is a
+	// missing parameter and the request is unprocessable.
+	if len(aType) == 0 {
+		if len(code) > 0 || len(issuer) > 0 {
+			return problem.MakeInvalidFieldProblem(
+				prefix+"asset_type",
+				errors.New("Missing parameter"),
+			)
+		}
+
+		return nil
+	}
+
+	t, err := assets.Parse(aType)
+	if err != nil {
+		return problem.MakeInvalidFieldProblem(
+			prefix+"asset_type",
+			err,
+		)
+	}
+
+	var validLen int
+	switch t {
+	case xdr.AssetTypeAssetTypeNative:
+		// If asset type is native, issuer or code should not be included in the
+		// request
+		switch {
+		case len(code) > 0:
+			return problem.MakeInvalidFieldProblem(
+				prefix+"asset_code",
+				errors.New("native asset does not have a code"),
+			)
+		case len(issuer) > 0:
+			return problem.MakeInvalidFieldProblem(
+				prefix+"asset_issuer",
+				errors.New("native asset does not have an issuer"),
+			)
+		}
+
+		return nil
+	case xdr.AssetTypeAssetTypeCreditAlphanum4:
+		validLen = len(xdr.AssetAlphaNum4{}.AssetCode)
+	case xdr.AssetTypeAssetTypeCreditAlphanum12:
+		validLen = len(xdr.AssetAlphaNum12{}.AssetCode)
+	}
+
+	codeLen := len(code)
+	if codeLen == 0 || codeLen > validLen {
+		return problem.MakeInvalidFieldProblem(
+			prefix+"asset_code",
+			errors.New("Asset code must be 1-12 alphanumeric characters"),
+		)
+	}
+
+	if len(issuer) == 0 {
+		return problem.MakeInvalidFieldProblem(
+			prefix+"asset_issuer",
+			errors.New("Missing parameter"),
+		)
+	}
+
+	return nil
+}
+
+// ValidateCursorWithinHistory compares the requested page of data against the
+// ledger state of the history database.  In the event that the cursor is
+// guaranteed to return no results, we return a 410 GONE http response.
+func ValidateCursorWithinHistory(pq db2.PageQuery) error {
+	// an ascending query should never return a gone response:  An ascending query
+	// prior to known history should return results at the beginning of history,
+	// and an ascending query beyond the end of history should not error out but
+	// rather return an empty page (allowing code that tracks the procession of
+	// some resource more easily).
+	if pq.Order != "desc" {
+		return nil
+	}
+
+	var cursor int64
+	var err error
+
+	// Checking for the presence of "-" to see whether we should use CursorInt64
+	// or CursorInt64Pair
+	if strings.Contains(pq.Cursor, "-") {
+		cursor, _, err = pq.CursorInt64Pair("-")
+	} else {
+		cursor, err = pq.CursorInt64()
+	}
+
+	if err != nil {
+		return problem.MakeInvalidFieldProblem("cursor", errors.New("invalid value"))
+	}
+
+	elder := toid.New(ledger.CurrentState().HistoryElder, 0, 0)
+
+	if cursor <= elder.ToInt64() {
+		return &hProblem.BeforeHistory
+	}
+
+	return nil
+}
+
+func countNonEmpty(params ...interface{}) (int, error) {
+	count := 0
+
+	for _, param := range params {
+		switch param := param.(type) {
+		default:
+			return 0, errors.Errorf("unexpected type %T", param)
+		case int32:
+			if param != int32(0) {
+				count++
+			}
+		case int64:
+			if param != int64(0) {
+				count++
+			}
+		case string:
+			if param != "" {
+				count++
+			}
+		}
+	}
+
+	return count, nil
 }

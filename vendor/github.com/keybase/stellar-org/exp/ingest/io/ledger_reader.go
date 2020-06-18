@@ -1,37 +1,55 @@
 package io
 
 import (
+	"context"
 	"io"
-	"sync"
 
 	"github.com/stellar/go/exp/ingest/ledgerbackend"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
+// LedgerReader provides convenient, streaming access to the transactions within a ledger.
+type LedgerReader interface {
+	GetSequence() uint32
+	GetHeader() xdr.LedgerHeaderHistoryEntry
+	// Read should return the next transaction. If there are no more
+	// transactions it should return `io.EOF` error.
+	Read() (LedgerTransaction, error)
+	// Close should be called when reading is finished. This is especially
+	// helpful when there are still some transactions available so reader can stop
+	// streaming them.
+	Close() error
+}
+
 // DBLedgerReader is a database-backed implementation of the io.LedgerReader interface.
+// Use NewDBLedgerReader to create a new instance.
 type DBLedgerReader struct {
-	sequence     uint32
-	backend      ledgerbackend.LedgerBackend
-	header       xdr.LedgerHeaderHistoryEntry
-	transactions []LedgerTransaction
-	readIdx      int
-	initOnce     sync.Once
-	readMutex    sync.Mutex
+	ctx            context.Context
+	sequence       uint32
+	backend        ledgerbackend.LedgerBackend
+	header         xdr.LedgerHeaderHistoryEntry
+	transactions   []LedgerTransaction
+	upgradeChanges []Change
+	readIdx        int
+	upgradeReadIdx int
 }
 
 // Ensure DBLedgerReader implements LedgerReader
 var _ LedgerReader = (*DBLedgerReader)(nil)
 
-// NewDBLedgerReader is a factory method for LedgerReader.
-func NewDBLedgerReader(sequence uint32, backend ledgerbackend.LedgerBackend) (*DBLedgerReader, error) {
+// NewDBLedgerReader creates a new DBLedgerReader instance.
+// Note that DBLedgerReader is not thread safe and should not be shared by multiple goroutines
+func NewDBLedgerReader(
+	ctx context.Context, sequence uint32, backend ledgerbackend.LedgerBackend,
+) (*DBLedgerReader, error) {
 	reader := &DBLedgerReader{
+		ctx:      ctx,
 		sequence: sequence,
 		backend:  backend,
 	}
 
-	var err error
-	reader.initOnce.Do(func() { err = reader.init() })
+	err := reader.init()
 	if err != nil {
 		return nil, err
 	}
@@ -46,28 +64,15 @@ func (dblrc *DBLedgerReader) GetSequence() uint32 {
 
 // GetHeader returns the XDR Header data associated with the stored ledger.
 func (dblrc *DBLedgerReader) GetHeader() xdr.LedgerHeaderHistoryEntry {
-	var err error
-	dblrc.initOnce.Do(func() { err = dblrc.init() })
-	if err != nil {
-		// TODO, object should be initialized in constructor.
-		// Not returning error here, makes this much simpler.
-		panic(err)
-	}
 	return dblrc.header
 }
 
 // Read returns the next transaction in the ledger, ordered by tx number, each time it is called. When there
 // are no more transactions to return, an EOF error is returned.
 func (dblrc *DBLedgerReader) Read() (LedgerTransaction, error) {
-	var err error
-	dblrc.initOnce.Do(func() { err = dblrc.init() })
-	if err != nil {
+	if err := dblrc.ctx.Err(); err != nil {
 		return LedgerTransaction{}, err
 	}
-
-	// Protect all accesses to dblrc.readIdx
-	dblrc.readMutex.Lock()
-	defer dblrc.readMutex.Unlock()
 
 	if dblrc.readIdx < len(dblrc.transactions) {
 		dblrc.readIdx++
@@ -76,13 +81,23 @@ func (dblrc *DBLedgerReader) Read() (LedgerTransaction, error) {
 	return LedgerTransaction{}, io.EOF
 }
 
-// Close moves the read pointer so that subsequent calls to Read() will return EOF.
-func (dblrc *DBLedgerReader) Close() error {
-	dblrc.readMutex.Lock()
-	dblrc.readIdx = len(dblrc.transactions)
-	dblrc.readMutex.Unlock()
+// readUpgradeChange returns the next upgrade change in the ledger, each time it
+// is called. When there are no more upgrades to return, an EOF error is returned.
+func (dblrc *DBLedgerReader) readUpgradeChange() (Change, error) {
+	if err := dblrc.ctx.Err(); err != nil {
+		return Change{}, err
+	}
 
-	return nil
+	if dblrc.upgradeReadIdx < len(dblrc.upgradeChanges) {
+		dblrc.upgradeReadIdx++
+		return dblrc.upgradeChanges[dblrc.upgradeReadIdx-1], nil
+	}
+	return Change{}, io.EOF
+}
+
+// Rewind resets the reader back to the first transaction in the ledger
+func (dblrc *DBLedgerReader) rewind() {
+	dblrc.readIdx = 0
 }
 
 // Init pulls data from the backend to set this object up for use.
@@ -100,6 +115,11 @@ func (dblrc *DBLedgerReader) init() error {
 
 	dblrc.storeTransactions(ledgerCloseMeta)
 
+	for _, upgradeChanges := range ledgerCloseMeta.UpgradesMeta {
+		changes := getChangesFromLedgerEntryChanges(upgradeChanges)
+		dblrc.upgradeChanges = append(dblrc.upgradeChanges, changes...)
+	}
+
 	return nil
 }
 
@@ -115,4 +135,10 @@ func (dblrc *DBLedgerReader) storeTransactions(lcm ledgerbackend.LedgerCloseMeta
 			FeeChanges: lcm.TransactionFeeChanges[i],
 		})
 	}
+}
+
+func (dblrc *DBLedgerReader) Close() error {
+	dblrc.transactions = nil
+	dblrc.upgradeChanges = nil
+	return nil
 }

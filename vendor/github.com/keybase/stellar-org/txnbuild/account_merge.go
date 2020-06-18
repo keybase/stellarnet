@@ -14,7 +14,7 @@ type AccountMerge struct {
 
 // BuildXDR for AccountMerge returns a fully configured XDR Operation.
 func (am *AccountMerge) BuildXDR() (xdr.Operation, error) {
-	var xdrOp xdr.AccountId
+	var xdrOp xdr.MuxedAccount
 
 	err := xdrOp.SetAddress(am.Destination)
 	if err != nil {
@@ -39,7 +39,8 @@ func (am *AccountMerge) FromXDR(xdrOp xdr.Operation) error {
 
 	am.SourceAccount = accountFromXDR(xdrOp.SourceAccount)
 	if xdrOp.Body.Destination != nil {
-		am.Destination = xdrOp.Body.Destination.Address()
+		aid := xdrOp.Body.Destination.ToAccountId()
+		am.Destination = aid.Address()
 	}
 
 	return nil
@@ -48,9 +49,15 @@ func (am *AccountMerge) FromXDR(xdrOp xdr.Operation) error {
 // Validate for AccountMerge validates the required struct fields. It returns an error if any of the fields are
 // invalid. Otherwise, it returns nil.
 func (am *AccountMerge) Validate() error {
-	err := validateStellarPublicKey(am.Destination)
+	_, err := xdr.AddressToAccountId(am.Destination)
 	if err != nil {
 		return NewValidationError("Destination", err.Error())
 	}
 	return nil
+}
+
+// GetSourceAccount returns the source account of the operation, or nil if not
+// set.
+func (am *AccountMerge) GetSourceAccount() Account {
+	return am.SourceAccount
 }

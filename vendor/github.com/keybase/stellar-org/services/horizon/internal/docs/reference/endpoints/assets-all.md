@@ -7,7 +7,9 @@ clientData:
 This endpoint represents all [assets](../resources/asset.md).
 It will give you all the assets in the system along with various statistics about each.
 
-Note: When running this in `catchup_recent` mode you will only get a subset of all the assets in the system.
+### Notes
+- The attribute `num_accounts` includes authorized trust lines only.
+- When running this in `catchup_recent` mode you will only get a subset of all the assets in the system.
 This is because we only register assets when they are encountered during ingestion.
 
 ## Request
@@ -128,4 +130,4 @@ If called normally this endpoint responds with a [page](../resources/page.md) of
 
 ## Possible Errors
 
-- The [standard errors](../errors.md#Standard_Errors).
+- The [standard errors](../errors.md#standard-errors).

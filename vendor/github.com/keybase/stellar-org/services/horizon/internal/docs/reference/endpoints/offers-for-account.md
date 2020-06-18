@@ -100,7 +100,7 @@ The list of offers.
             "href": "https://horizon-testnet.stellar.org/accounts/GBYUUJHG6F4EPJGNLERINATVQLNDOFRUD7SGJZ26YZLG5PAYLG7XUSGF"
           }
         },
-        "id": 5443256,
+        "id": "5443256",
         "paging_token": "5443256",
         "seller": "GBYUUJHG6F4EPJGNLERINATVQLNDOFRUD7SGJZ26YZLG5PAYLG7XUSGF",
         "selling": {
@@ -127,4 +127,4 @@ The list of offers.
 
 ## Possible Errors
 
-- The [standard errors](../errors.md#Standard_Errors).
+- The [standard errors](../errors.md#standard-errors).

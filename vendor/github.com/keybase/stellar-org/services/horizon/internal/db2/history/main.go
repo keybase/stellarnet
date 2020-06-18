@@ -3,14 +3,18 @@
 package history
 
 import (
+	"database/sql"
+	"fmt"
 	"sync"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/guregu/null"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/stellar/go/services/horizon/internal/db2"
 	"github.com/stellar/go/support/db"
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
@@ -77,6 +81,10 @@ const (
 	// it issues.
 	EffectTrustlineDeauthorized EffectType = 24 // from allow_trust
 
+	// EffectTrustlineAuthorizedToMaintainLiabilities occurs when an anchor has AUTH_REQUIRED flag set
+	// to true and it authorizes another account's trustline to maintain liabilities
+	EffectTrustlineAuthorizedToMaintainLiabilities EffectType = 25 // from allow_trust
+
 	// trading effects
 
 	// EffectOfferCreated occurs when an account offers to trade an asset
@@ -108,16 +116,9 @@ const (
 
 )
 
-// ExperimentalIngestionTables is a list of tables populated by the experimental
-// ingestion system
-var ExperimentalIngestionTables = []string{
-	"accounts_signers",
-	"offers",
-}
-
 // Account is a row of data from the `history_accounts` table
 type Account struct {
-	ID      int64
+	ID      int64  `db:"id"`
 	Address string `db:"address"`
 }
 
@@ -129,9 +130,76 @@ type AccountsQ struct {
 	sql    sq.SelectBuilder
 }
 
+// AccountEntry is a row of data from the `account` table
+type AccountEntry struct {
+	AccountID            string `db:"account_id"`
+	Balance              int64  `db:"balance"`
+	BuyingLiabilities    int64  `db:"buying_liabilities"`
+	SellingLiabilities   int64  `db:"selling_liabilities"`
+	SequenceNumber       int64  `db:"sequence_number"`
+	NumSubEntries        uint32 `db:"num_subentries"`
+	InflationDestination string `db:"inflation_destination"`
+	HomeDomain           string `db:"home_domain"`
+	Flags                uint32 `db:"flags"`
+	MasterWeight         byte   `db:"master_weight"`
+	ThresholdLow         byte   `db:"threshold_low"`
+	ThresholdMedium      byte   `db:"threshold_medium"`
+	ThresholdHigh        byte   `db:"threshold_high"`
+	LastModifiedLedger   uint32 `db:"last_modified_ledger"`
+}
+
+type AccountsBatchInsertBuilder interface {
+	Add(account xdr.AccountEntry, lastModifiedLedger xdr.Uint32) error
+	Exec() error
+}
+
+type IngestionQ interface {
+	QAccounts
+	QAssetStats
+	QData
+	QEffects
+	QLedgers
+	QOffers
+	QOperations
+	// QParticipants
+	// Copy the small interfaces with shared methods directly, otherwise error:
+	// duplicate method CreateAccounts
+	NewTransactionParticipantsBatchInsertBuilder(maxBatchSize int) TransactionParticipantsBatchInsertBuilder
+	NewOperationParticipantBatchInsertBuilder(maxBatchSize int) OperationParticipantBatchInsertBuilder
+	QSigners
+	//QTrades
+	NewTradeBatchInsertBuilder(maxBatchSize int) TradeBatchInsertBuilder
+	CreateAssets(assets []xdr.Asset, batchSize int) (map[string]Asset, error)
+	QTransactions
+	QTrustLines
+
+	Begin() error
+	BeginTx(*sql.TxOptions) error
+	Commit() error
+	CloneIngestionQ() IngestionQ
+	Rollback() error
+	GetTx() *sqlx.Tx
+	GetExpIngestVersion() (int, error)
+	UpdateExpStateInvalid(bool) error
+	UpdateExpIngestVersion(int) error
+	GetExpStateInvalid() (bool, error)
+	GetLatestLedger() (uint32, error)
+	GetOfferCompactionSequence() (uint32, error)
+	TruncateExpingestStateTables() error
+	DeleteRangeAll(start, end int64) error
+}
+
+// QAccounts defines account related queries.
+type QAccounts interface {
+	NewAccountsBatchInsertBuilder(maxBatchSize int) AccountsBatchInsertBuilder
+	GetAccountsByIDs(ids []string) ([]AccountEntry, error)
+	UpsertAccounts(accounts []xdr.LedgerEntry) error
+	RemoveAccount(accountID string) (int64, error)
+}
+
 // AccountSigner is a row of data from the `accounts_signers` table
 type AccountSigner struct {
-	Account string `db:"account"`
+	Account string `db:"account_id"`
 	Signer  string `db:"signer"`
 	Weight  int32  `db:"weight"`
 }
@@ -144,6 +212,36 @@ type AccountSignersBatchInsertBuilder interface {
 // accountSignersBatchInsertBuilder is a simple wrapper around db.BatchInsertBuilder
 type accountSignersBatchInsertBuilder struct {
 	builder db.BatchInsertBuilder
+}
+
+// Data is a row of data from the `account_data` table
+type Data struct {
+	AccountID          string           `db:"account_id"`
+	Name               string           `db:"name"`
+	Value              AccountDataValue `db:"value"`
+	LastModifiedLedger uint32           `db:"last_modified_ledger"`
+}
+
+type AccountDataValue []byte
+
+type AccountDataBatchInsertBuilder interface {
+	Add(data xdr.DataEntry, lastModifiedLedger xdr.Uint32) error
+	Exec() error
+}
+
+// accountDataBatchInsertBuilder is a simple wrapper around db.BatchInsertBuilder
+type accountDataBatchInsertBuilder struct {
+	builder db.BatchInsertBuilder
+}
+
+// QData defines account data related queries.
+type QData interface {
+	NewAccountDataBatchInsertBuilder(maxBatchSize int) AccountDataBatchInsertBuilder
+	CountAccountsData() (int, error)
+	GetAccountDataByKeys(keys []xdr.LedgerKeyData) ([]Data, error)
+	InsertAccountData(data xdr.DataEntry, lastModifiedLedger xdr.Uint32) (int64, error)
+	UpdateAccountData(data xdr.DataEntry, lastModifiedLedger xdr.Uint32) (int64, error)
+	RemoveAccountData(key xdr.LedgerKeyData) (int64, error)
 }
 
 // Asset is a row of data from the `history_assets` table
@@ -163,6 +261,40 @@ type AssetStat struct {
 	Toml        string `db:"toml"`
 }
 
+// ExpAssetStat is a row in the exp_asset_stats table representing the stats per Asset
+type ExpAssetStat struct {
+	AssetType   xdr.AssetType `db:"asset_type"`
+	AssetCode   string        `db:"asset_code"`
+	AssetIssuer string        `db:"asset_issuer"`
+	Amount      string        `db:"amount"`
+	NumAccounts int32         `db:"num_accounts"`
+}
+
+// PagingToken returns a cursor for this asset stat
+func (e ExpAssetStat) PagingToken() string {
+	return fmt.Sprintf(
+		"%s_%s_%s",
+		e.AssetCode,
+		e.AssetIssuer,
+		xdr.AssetTypeToString[e.AssetType],
+	)
+}
+
+// QAssetStats defines exp_asset_stats related queries.
+type QAssetStats interface {
+	InsertAssetStats(stats []ExpAssetStat, batchSize int) error
+	InsertAssetStat(stat ExpAssetStat) (int64, error)
+	UpdateAssetStat(stat ExpAssetStat) (int64, error)
+	GetAssetStat(assetType xdr.AssetType, assetCode, assetIssuer string) (ExpAssetStat, error)
+	RemoveAssetStat(assetType xdr.AssetType, assetCode, assetIssuer string) (int64, error)
+	GetAssetStats(assetCode, assetIssuer string, page db2.PageQuery) ([]ExpAssetStat, error)
+	CountTrustLines() (int, error)
+}
+
+type QCreateAccountsHistory interface {
+	CreateAccounts(addresses []string, maxBatchSize int) (map[string]int64, error)
+}
+
 // Effect is a row of data from the `history_effects` table
 type Effect struct {
 	HistoryAccountID   int64       `db:"history_account_id"`
@@ -171,6 +303,21 @@ type Effect struct {
 	Order              int32       `db:"order"`
 	Type               EffectType  `db:"type"`
 	DetailsString      null.String `db:"details"`
+}
+
+// TradeEffectDetails is a struct of data from `effects.DetailsString`
+// when the effect type is trade
+type TradeEffectDetails struct {
+	Seller            string `json:"seller"`
+	OfferID           int64  `json:"offer_id"`
+	SoldAmount        string `json:"sold_amount"`
+	SoldAssetType     string `json:"sold_asset_type"`
+	SoldAssetCode     string `json:"sold_asset_code,omitempty"`
+	SoldAssetIssuer   string `json:"sold_asset_issuer,omitempty"`
+	BoughtAmount      string `json:"bought_amount"`
+	BoughtAssetType   string `json:"bought_asset_type"`
+	BoughtAssetCode   string `json:"bought_asset_code,omitempty"`
+	BoughtAssetIssuer string `json:"bought_asset_issuer,omitempty"`
 }
 
 // SequenceBumped is a struct of data from `effects.DetailsString`
@@ -194,19 +341,34 @@ type EffectType int
 // FeeStats is a row of data from the min, mode, percentile aggregate functions over the
 // `history_transactions` table.
 type FeeStats struct {
-	Min  null.Int `db:"min"`
-	Mode null.Int `db:"mode"`
-	P10  null.Int `db:"p10"`
-	P20  null.Int `db:"p20"`
-	P30  null.Int `db:"p30"`
-	P40  null.Int `db:"p40"`
-	P50  null.Int `db:"p50"`
-	P60  null.Int `db:"p60"`
-	P70  null.Int `db:"p70"`
-	P80  null.Int `db:"p80"`
-	P90  null.Int `db:"p90"`
-	P95  null.Int `db:"p95"`
-	P99  null.Int `db:"p99"`
+	FeeChargedMax  null.Int `db:"fee_charged_max"`
+	FeeChargedMin  null.Int `db:"fee_charged_min"`
+	FeeChargedMode null.Int `db:"fee_charged_mode"`
+	FeeChargedP10  null.Int `db:"fee_charged_p10"`
+	FeeChargedP20  null.Int `db:"fee_charged_p20"`
+	FeeChargedP30  null.Int `db:"fee_charged_p30"`
+	FeeChargedP40  null.Int `db:"fee_charged_p40"`
+	FeeChargedP50  null.Int `db:"fee_charged_p50"`
+	FeeChargedP60  null.Int `db:"fee_charged_p60"`
+	FeeChargedP70  null.Int `db:"fee_charged_p70"`
+	FeeChargedP80  null.Int `db:"fee_charged_p80"`
+	FeeChargedP90  null.Int `db:"fee_charged_p90"`
+	FeeChargedP95  null.Int `db:"fee_charged_p95"`
+	FeeChargedP99  null.Int `db:"fee_charged_p99"`
+	MaxFeeMax      null.Int `db:"max_fee_max"`
+	MaxFeeMin      null.Int `db:"max_fee_min"`
+	MaxFeeMode     null.Int `db:"max_fee_mode"`
+	MaxFeeP10      null.Int `db:"max_fee_p10"`
+	MaxFeeP20      null.Int `db:"max_fee_p20"`
+	MaxFeeP30      null.Int `db:"max_fee_p30"`
+	MaxFeeP40      null.Int `db:"max_fee_p40"`
+	MaxFeeP50      null.Int `db:"max_fee_p50"`
+	MaxFeeP60      null.Int `db:"max_fee_p60"`
+	MaxFeeP70      null.Int `db:"max_fee_p70"`
+	MaxFeeP80      null.Int `db:"max_fee_p80"`
+	MaxFeeP90      null.Int `db:"max_fee_p90"`
+	MaxFeeP95      null.Int `db:"max_fee_p95"`
+	MaxFeeP99      null.Int `db:"max_fee_p99"`
 }
 
 // KeyValueStoreRow represents a row in key value store.
@@ -270,30 +432,36 @@ type LedgersQ struct {
 // Operation is a row of data from the `history_operations` table
 type Operation struct {
 	TotalOrderID
-	TransactionID    int64             `db:"transaction_id"`
-	TransactionHash  string            `db:"transaction_hash"`
-	TxResult         string            `db:"tx_result"`
-	ApplicationOrder int32             `db:"application_order"`
-	Type             xdr.OperationType `db:"type"`
-	DetailsString    null.String       `db:"details"`
-	SourceAccount    string            `db:"source_account"`
-	// Check db2/history.Transaction.Successful field comment for more information.
-	TransactionSuccessful *bool `db:"transaction_successful"`
+	TransactionID         int64             `db:"transaction_id"`
+	TransactionHash       string            `db:"transaction_hash"`
+	TxResult              string            `db:"tx_result"`
+	ApplicationOrder      int32             `db:"application_order"`
+	Type                  xdr.OperationType `db:"type"`
+	DetailsString         null.String       `db:"details"`
+	SourceAccount         string            `db:"source_account"`
+	TransactionSuccessful bool              `db:"transaction_successful"`
 }
 
-// Offer is row of data from the `offers` table from stellar-core
-type Offer struct {
-	SellerID string    `db:"sellerid"`
-	OfferID  xdr.Int64 `db:"offerid"`
+// ManageOffer is a struct of data from `operations.DetailsString`
+// when the operation type is manage sell offer or manage buy offer
+type ManageOffer struct {
+	OfferID int64 `json:"offer_id"`
+}
 
-	SellingAsset xdr.Asset `db:"sellingasset"`
-	BuyingAsset  xdr.Asset `db:"buyingasset"`
+// Offer is row of data from the `offers` table from horizon DB
+type Offer struct {
+	SellerID string    `db:"seller_id"`
+	OfferID  xdr.Int64 `db:"offer_id"`
+
+	SellingAsset xdr.Asset `db:"selling_asset"`
+	BuyingAsset  xdr.Asset `db:"buying_asset"`
 
 	Amount             xdr.Int64 `db:"amount"`
 	Pricen             int32     `db:"pricen"`
 	Priced             int32     `db:"priced"`
 	Price              float64   `db:"price"`
 	Flags              uint32    `db:"flags"`
+	Deleted            bool      `db:"deleted"`
 	LastModifiedLedger uint32    `db:"last_modified_ledger"`
 }
 
@@ -333,6 +501,8 @@ type QSigners interface {
 	NewAccountSignersBatchInsertBuilder(maxBatchSize int) AccountSignersBatchInsertBuilder
 	CreateAccountSigner(account, signer string, weight int32) (int64, error)
 	RemoveAccountSigner(account, signer string) (int64, error)
+	SignersForAccounts(accounts []string) ([]AccountSigner, error)
+	CountAccounts() (int, error)
 }
 
 // OffersQuery is a helper struct to configure queries to offers
@@ -341,15 +511,6 @@ type OffersQuery struct {
 	SellerID  string
 	Selling   *xdr.Asset
 	Buying    *xdr.Asset
-}
-
-// QOffers defines offer related queries.
-type QOffers interface {
-	GetAllOffers() ([]Offer, error)
-	NewOffersBatchInsertBuilder(maxBatchSize int) OffersBatchInsertBuilder
-	InsertOffer(offer xdr.OfferEntry, lastModifiedLedger xdr.Uint32) (int64, error)
-	UpdateOffer(offer xdr.OfferEntry, lastModifiedLedger xdr.Uint32) (int64, error)
-	RemoveOffer(offerID xdr.Int64) (int64, error)
 }
 
 // TotalOrderID represents the ID portion of rows that are identified by the
@@ -392,33 +553,8 @@ type TradesQ struct {
 
 // Transaction is a row of data from the `history_transactions` table
 type Transaction struct {
-	TotalOrderID
-	TransactionHash  string      `db:"transaction_hash"`
-	LedgerSequence   int32       `db:"ledger_sequence"`
-	LedgerCloseTime  time.Time   `db:"ledger_close_time"`
-	ApplicationOrder int32       `db:"application_order"`
-	Account          string      `db:"account"`
-	AccountSequence  string      `db:"account_sequence"`
-	MaxFee           int32       `db:"max_fee"`
-	FeeCharged       int32       `db:"fee_charged"`
-	OperationCount   int32       `db:"operation_count"`
-	TxEnvelope       string      `db:"tx_envelope"`
-	TxResult         string      `db:"tx_result"`
-	TxMeta           string      `db:"tx_meta"`
-	TxFeeMeta        string      `db:"tx_fee_meta"`
-	SignatureString  string      `db:"signatures"`
-	MemoType         string      `db:"memo_type"`
-	Memo             null.String `db:"memo"`
-	ValidAfter       null.Int    `db:"valid_after"`
-	ValidBefore      null.Int    `db:"valid_before"`
-	CreatedAt        time.Time   `db:"created_at"`
-	UpdatedAt        time.Time   `db:"updated_at"`
-	// NULL indicates successful transaction. We wanted a migration to be fast
-	// however Postgres performs a table rewrite if a new column has a default
-	// non-null value. We need `NULL` to indicate successful transaction because
-	// otherwise all existing transactions would be interpreted as failed until
-	// ledger is reingested.
-	Successful *bool `db:"successful"`
+	LedgerCloseTime time.Time `db:"ledger_close_time"`
+	TransactionWithoutLedger
 }
 
 // TransactionsQ is a helper struct to aid in configuring queries that loads
@@ -430,10 +566,62 @@ type TransactionsQ struct {
 	includeFailed bool
 }
 
+// TrustLine is row of data from the `trust_lines` table from horizon DB
+type TrustLine struct {
+	AccountID          string        `db:"account_id"`
+	AssetType          xdr.AssetType `db:"asset_type"`
+	AssetIssuer        string        `db:"asset_issuer"`
+	AssetCode          string        `db:"asset_code"`
+	Balance            int64         `db:"balance"`
+	Limit              int64         `db:"trust_line_limit"`
+	BuyingLiabilities  int64         `db:"buying_liabilities"`
+	SellingLiabilities int64         `db:"selling_liabilities"`
+	Flags              uint32        `db:"flags"`
+	LastModifiedLedger uint32        `db:"last_modified_ledger"`
+}
+
+// QTrustLines defines trust lines related queries.
+type QTrustLines interface {
+	NewTrustLinesBatchInsertBuilder(maxBatchSize int) TrustLinesBatchInsertBuilder
+	GetTrustLinesByKeys(keys []xdr.LedgerKeyTrustLine) ([]TrustLine, error)
+	InsertTrustLine(trustLine xdr.TrustLineEntry, lastModifiedLedger xdr.Uint32) (int64, error)
+	UpdateTrustLine(trustLine xdr.TrustLineEntry, lastModifiedLedger xdr.Uint32) (int64, error)
+	UpsertTrustLines(trustLines []xdr.LedgerEntry) error
+	RemoveTrustLine(key xdr.LedgerKeyTrustLine) (int64, error)
+}
+
+type TrustLinesBatchInsertBuilder interface {
+	Add(trustLine xdr.TrustLineEntry, lastModifiedLedger xdr.Uint32) error
+	Exec() error
+}
+
+// trustLinesBatchInsertBuilder is a simple wrapper around db.BatchInsertBuilder
+type trustLinesBatchInsertBuilder struct {
+	builder db.BatchInsertBuilder
+}
+
+func (q *Q) NewAccountsBatchInsertBuilder(maxBatchSize int) AccountsBatchInsertBuilder {
+	return &accountsBatchInsertBuilder{
+		builder: db.BatchInsertBuilder{
+			Table:        q.GetTable("accounts"),
+			MaxBatchSize: maxBatchSize,
+		},
+	}
+}
+
 func (q *Q) NewAccountSignersBatchInsertBuilder(maxBatchSize int) AccountSignersBatchInsertBuilder {
 	return &accountSignersBatchInsertBuilder{
 		builder: db.BatchInsertBuilder{
 			Table:        q.GetTable("accounts_signers"),
+			MaxBatchSize: maxBatchSize,
+		},
+	}
+}
+
+func (q *Q) NewAccountDataBatchInsertBuilder(maxBatchSize int) AccountDataBatchInsertBuilder {
+	return &accountDataBatchInsertBuilder{
+		builder: db.BatchInsertBuilder{
+			Table:        q.GetTable("accounts_data"),
 			MaxBatchSize: maxBatchSize,
 		},
 	}
@@ -448,9 +636,26 @@ func (q *Q) NewOffersBatchInsertBuilder(maxBatchSize int) OffersBatchInsertBuild
 	}
 }
 
+func (q *Q) NewTrustLinesBatchInsertBuilder(maxBatchSize int) TrustLinesBatchInsertBuilder {
+	return &trustLinesBatchInsertBuilder{
+		builder: db.BatchInsertBuilder{
+			Table:        q.GetTable("trust_lines"),
+			MaxBatchSize: maxBatchSize,
+		},
+	}
+}
+
 // ElderLedger loads the oldest ledger known to the history database
 func (q *Q) ElderLedger(dest interface{}) error {
 	return q.GetRaw(dest, `SELECT COALESCE(MIN(sequence), 0) FROM history_ledgers`)
+}
+
+// GetLatestLedger loads the latest known ledger. Returns 0 if no ledgers in
+// `history_ledgers` table.
+func (q *Q) GetLatestLedger() (uint32, error) {
+	var value uint32
+	err := q.LatestLedger(&value)
+	return value, err
 }
 
 // LatestLedger loads the latest known ledger
@@ -477,4 +682,44 @@ func (q *Q) OldestOutdatedLedgers(dest interface{}, currentVersion int) error {
 		WHERE importer_version < $1
 		ORDER BY sequence ASC
 		LIMIT 1000000`, currentVersion)
+}
+
+// CloneIngestionQ clones underlying db.Session and returns IngestionQ
+func (q *Q) CloneIngestionQ() IngestionQ {
+	return &Q{q.Clone()}
+}
+
+// DeleteRangeAll deletes a range of rows from all history tables between
+// `start` and `end` (exclusive).
+func (q *Q) DeleteRangeAll(start, end int64) error {
+	err := q.DeleteRange(start, end, "history_effects", "history_operation_id")
+	if err != nil {
+		return errors.Wrap(err, "Error clearing history_effects")
+	}
+	err = q.DeleteRange(start, end, "history_operation_participants", "history_operation_id")
+	if err != nil {
+		return errors.Wrap(err, "Error clearing history_operation_participants")
+	}
+	err = q.DeleteRange(start, end, "history_operations", "id")
+	if err != nil {
+		return errors.Wrap(err, "Error clearing history_operations")
+	}
+	err = q.DeleteRange(start, end, "history_transaction_participants", "history_transaction_id")
+	if err != nil {
+		return errors.Wrap(err, "Error clearing history_transaction_participants")
+	}
+	err = q.DeleteRange(start, end, "history_transactions", "id")
+	if err != nil {
+		return errors.Wrap(err, "Error clearing history_transactions")
+	}
+	err = q.DeleteRange(start, end, "history_ledgers", "id")
+	if err != nil {
+		return errors.Wrap(err, "Error clearing history_ledgers")
+	}
+	err = q.DeleteRange(start, end, "history_trades", "history_operation_id")
+	if err != nil {
+		return errors.Wrap(err, "Error clearing history_trades")
+	}
+
+	return nil
 }

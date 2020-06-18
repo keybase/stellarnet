@@ -25,6 +25,7 @@ type LedgerCloseMeta struct {
 	TransactionResult     []xdr.TransactionResultPair
 	TransactionMeta       []xdr.TransactionMeta
 	TransactionFeeChanges []xdr.LedgerEntryChanges
+	UpgradesMeta          []xdr.LedgerEntryChanges
 }
 
 // ledgerHeaderHistory is a helper struct used to unmarshall header fields from a stellar-core DB.
@@ -69,9 +70,9 @@ type txFeeHistory struct {
 // }
 
 // upgradeHistory holds a row of data from the stellar-core `upgradehistory` table.
-// type upgradeHistory struct {
-// 	LedgerSeq    uint32 `db:"ledgerseq"`
-// 	UpgradeIndex uint32 `db:"upgradeindex"`
-// 	Upgrade      string `db:"upgrade"`
-// 	Changes      string `db:"changes"`
-// }
+type upgradeHistory struct {
+	LedgerSeq    uint32                 `db:"ledgerseq"`
+	UpgradeIndex uint32                 `db:"upgradeindex"`
+	Upgrade      xdr.LedgerUpgrade      `db:"upgrade"`
+	Changes      xdr.LedgerEntryChanges `db:"changes"`
+}

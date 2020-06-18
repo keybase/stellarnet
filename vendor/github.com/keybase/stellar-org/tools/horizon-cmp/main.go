@@ -28,13 +28,17 @@ import (
 const maxLevels = 3
 const pathsQueueCap = 10000
 
+const timeFormat = "2006-01-02-15-04-05"
+
 // pathAccessLog is a regexp that gets path from ELB access log line. Example:
 // 2015-05-13T23:39:43.945958Z my-loadbalancer 192.168.131.39:2817 10.0.0.1:80 0.000086 0.001048 0.001337 200 200 0 57 "GET https://www.example.com:443/transactions?order=desc HTTP/1.1" "curl/7.38.0" DHE-RSA-AES128-SHA TLSv1.2
 var pathAccessLog = regexp.MustCompile(`([A-Z]+) https?://[^/]*(/[^ ]*)`)
 
 var (
-	paths        = make(chan cmp.Path, pathsQueueCap)
-	visitedPaths map[string]bool
+	paths = make(chan cmp.Path, pathsQueueCap)
+
+	visitedPathsMutex sync.Mutex
+	visitedPaths      map[string]bool
 )
 
 // CLI params
@@ -56,6 +60,14 @@ var rootCmd = &cobra.Command{
 	},
 }
 
+var historyCmd = &cobra.Command{
+	Use:   "history",
+	Short: "compares history endpoints for a given range of ledgers",
+	Run: func(cmd *cobra.Command, args []string) {
+		runHistoryCmp(cmd)
+	},
+}
+
 func init() {
 	log = slog.New()
 	log.SetLevel(slog.InfoLevel)
@@ -67,11 +79,13 @@ func init() {
 
 	visitedPaths = make(map[string]bool)
 
-	rootCmd.Flags().StringVarP(&horizonBase, "base", "b", "", "URL of the base/old version Horizon server")
-	rootCmd.Flags().StringVarP(&horizonTest, "test", "t", "", "URL of the test/new version Horizon server")
+	rootCmd.PersistentFlags().StringVarP(&horizonBase, "base", "b", "", "URL of the base/old version Horizon server")
+	rootCmd.PersistentFlags().StringVarP(&horizonTest, "test", "t", "", "URL of the test/new version Horizon server")
 	rootCmd.Flags().StringVarP(&elbAccessLogFile, "elb-access-log-file", "a", "", "ELB access log file to replay")
 	rootCmd.Flags().IntVarP(&elbAccessLogStartLine, "elb-access-log-start-line", "s", 1, "Start line of ELB access log (useful to continue from a given point)")
 	rootCmd.Flags().IntVar(&requestsPerSecond, "rps", 1, "Requests per second")
+
+	rootCmd.AddCommand(historyCmd)
 }
 
 func main() {
@@ -86,7 +100,7 @@ func run(cmd *cobra.Command) {
 	}
 
 	// Get latest ledger and operate on it's cursor to get responses at a given ledger.
-	ledger := getLatestLedger()
+	ledger := getLatestLedger(horizonBase)
 	cursor := ledger.PagingToken()
 
 	var accessLog *cmp.Scanner
@@ -119,7 +133,7 @@ func run(cmd *cobra.Command) {
 	if err != nil {
 		panic(err)
 	}
-	outputDir := fmt.Sprintf("%s/horizon-cmp-diff/%d", pwd, time.Now().Unix())
+	outputDir := fmt.Sprintf("%s/horizon-cmp-diff/%s", pwd, time.Now().Format(timeFormat))
 
 	log.WithFields(slog.F{
 		"base":       horizonBase,
@@ -146,18 +160,45 @@ func run(cmd *cobra.Command) {
 			continue
 		}
 
+		visitedPathsMutex.Lock()
 		if visitedPaths[pl.ID()] {
+			visitedPathsMutex.Unlock()
 			continue
 		}
 		visitedPaths[pl.ID()] = true
+		visitedPathsMutex.Unlock()
 
 		time.Sleep(time.Second / time.Duration(requestsPerSecond))
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
 
-			a := cmp.NewResponse(horizonBase, pl.Path, pl.Stream)
-			b := cmp.NewResponse(horizonTest, pl.Path, pl.Stream)
+			var requestWg sync.WaitGroup
+			requestWg.Add(2)
+
+			var a, b *cmp.Response
+			go func() {
+				a = cmp.NewResponse(horizonBase, pl.Path, pl.Stream)
+				requestWg.Done()
+			}()
+			go func() {
+				b = cmp.NewResponse(horizonTest, pl.Path, pl.Stream)
+				requestWg.Done()
+			}()
+
+			requestWg.Wait()
+
+			// Retry when LatestLedger not equal but only if not empty because
+			// older Horizon versions don't send this header.
+			if a.LatestLedger != "" && b.LatestLedger != "" &&
+				a.LatestLedger != b.LatestLedger {
+				visitedPathsMutex.Lock()
+				visitedPaths[pl.ID()] = false
+				visitedPathsMutex.Unlock()
+				paths <- pl
+				log.Warnf("LatestLedger does not match, retry queued: %s", pl.Path)
+				return
+			}
 
 			var status string
 			if a.Equal(b) {
@@ -194,9 +235,9 @@ func run(cmd *cobra.Command) {
 	wg.Wait()
 }
 
-func getLatestLedger() protocol.Ledger {
+func getLatestLedger(url string) protocol.Ledger {
 	horizon := client.Client{
-		HorizonURL: horizonBase,
+		HorizonURL: url,
 		HTTP:       http.DefaultClient,
 	}
 

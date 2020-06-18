@@ -10,6 +10,7 @@ import (
 	"github.com/stellar/go/services/horizon/internal/db2/schema"
 	"github.com/stellar/go/services/horizon/internal/ledger"
 	"github.com/stellar/go/services/horizon/internal/operationfeestats"
+	"github.com/stellar/go/services/horizon/internal/test/scenarios"
 	"github.com/stellar/go/support/db"
 	"github.com/stellar/go/support/render/hal"
 )
@@ -44,17 +45,28 @@ func (t *T) HorizonSession() *db.Session {
 	}
 }
 
+func (t *T) loadScenario(scenarioName string, includeHorizon bool) {
+	stellarCorePath := scenarioName + "-core.sql"
+
+	scenarios.Load(StellarCoreDatabaseURL(), stellarCorePath)
+
+	if includeHorizon {
+		horizonPath := scenarioName + "-horizon.sql"
+		scenarios.Load(DatabaseURL(), horizonPath)
+	}
+}
+
 // Scenario loads the named sql scenario into the database
 func (t *T) Scenario(name string) *T {
 	clearHorizonDB(t.T, t.HorizonDB)
-	LoadScenario(name)
+	t.loadScenario(name, true)
 	t.UpdateLedgerState()
 	return t
 }
 
 // ScenarioWithoutHorizon loads the named sql scenario into the database
 func (t *T) ScenarioWithoutHorizon(name string) *T {
-	LoadScenarioWithoutHorizon(name)
+	t.loadScenario(name, false)
 	ResetHorizonDB(t.T, t.HorizonDB)
 	t.UpdateLedgerState()
 	return t

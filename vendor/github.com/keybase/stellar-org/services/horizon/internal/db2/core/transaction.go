@@ -9,14 +9,13 @@ import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/guregu/null"
 	"github.com/stellar/go/services/horizon/internal/utf8"
-	"github.com/stellar/go/strkey"
 	"github.com/stellar/go/xdr"
 )
 
 // Base64Signatures returns a slice of strings where each element is a base64
 // encoded representation of a signature attached to this transaction.
 func (tx *Transaction) Base64Signatures() []string {
-	raw := tx.Envelope.Signatures
+	raw := tx.Envelope.Signatures()
 	results := make([]string, len(raw))
 
 	for i := range raw {
@@ -36,7 +35,7 @@ func (tx *Transaction) EnvelopeXDR() string {
 
 // Fee returns the max fee that was set for `tx`
 func (tx *Transaction) MaxFee() int32 {
-	return int32(tx.Envelope.Tx.Fee)
+	return int32(tx.Envelope.Fee())
 }
 
 // FeeCharged returns the fee that was actually charged for `tx`
@@ -46,7 +45,7 @@ func (tx *Transaction) FeeCharged() int32 {
 
 // IsSuccessful returns true when the transaction was successful.
 func (tx *Transaction) IsSuccessful() bool {
-	return tx.Result.Result.Result.Code == xdr.TransactionResultCodeTxSuccess
+	return tx.Result.Successful()
 }
 
 // Memo returns the memo for this transaction, if there is one.
@@ -55,27 +54,28 @@ func (tx *Transaction) Memo() null.String {
 		value string
 		valid bool
 	)
-	switch tx.Envelope.Tx.Memo.Type {
+	memo := tx.Envelope.Memo()
+	switch memo.Type {
 	case xdr.MemoTypeMemoNone:
 		value, valid = "", false
 	case xdr.MemoTypeMemoText:
-		scrubbed := utf8.Scrub(tx.Envelope.Tx.Memo.MustText())
+		scrubbed := utf8.Scrub(memo.MustText())
 		notnull := strings.Join(strings.Split(scrubbed, "\x00"), "")
 		value, valid = notnull, true
 	case xdr.MemoTypeMemoId:
-		value, valid = fmt.Sprintf("%d", tx.Envelope.Tx.Memo.MustId()), true
+		value, valid = fmt.Sprintf("%d", memo.MustId()), true
 	case xdr.MemoTypeMemoHash:
-		hash := tx.Envelope.Tx.Memo.MustHash()
+		hash := memo.MustHash()
 		value, valid =
 			base64.StdEncoding.EncodeToString(hash[:]),
 			true
 	case xdr.MemoTypeMemoReturn:
-		hash := tx.Envelope.Tx.Memo.MustRetHash()
+		hash := memo.MustRetHash()
 		value, valid =
 			base64.StdEncoding.EncodeToString(hash[:]),
 			true
 	default:
-		panic(fmt.Errorf("invalid memo type: %v", tx.Envelope.Tx.Memo.Type))
+		panic(fmt.Errorf("invalid memo type: %v", memo.Type))
 	}
 
 	return null.NewString(value, valid)
@@ -83,7 +83,7 @@ func (tx *Transaction) Memo() null.String {
 
 // MemoType returns the memo type for this transaction
 func (tx *Transaction) MemoType() string {
-	switch tx.Envelope.Tx.Memo.Type {
+	switch tx.Envelope.Memo().Type {
 	case xdr.MemoTypeMemoNone:
 		return "none"
 	case xdr.MemoTypeMemoText:
@@ -95,7 +95,7 @@ func (tx *Transaction) MemoType() string {
 	case xdr.MemoTypeMemoReturn:
 		return "return"
 	default:
-		panic(fmt.Errorf("invalid memo type: %v", tx.Envelope.Tx.Memo.Type))
+		panic(fmt.Errorf("invalid memo type: %v", tx.Envelope.Memo().Type))
 	}
 }
 
@@ -119,17 +119,14 @@ func (tx *Transaction) ResultMetaXDR() string {
 
 // Sequence returns the sequence number for `tx`
 func (tx *Transaction) Sequence() int64 {
-	return int64(tx.Envelope.Tx.SeqNum)
+	return int64(tx.Envelope.SeqNum())
 }
 
 // SourceAddress returns the strkey-encoded account id that paid the fee for
 // `tx`.
 func (tx *Transaction) SourceAddress() string {
-	sa := tx.Envelope.Tx.SourceAccount
-	pubkey := sa.MustEd25519()
-	raw := make([]byte, 32)
-	copy(raw, pubkey[:])
-	return strkey.MustEncode(strkey.VersionByteAccountID, raw)
+	sa := tx.Envelope.SourceAccount().ToAccountId()
+	return sa.Address()
 }
 
 // TransactionByHashAfterLedger is a query that loads a single row from the `txhistory`.

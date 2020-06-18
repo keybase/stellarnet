@@ -114,4 +114,4 @@ The summary of the orderbook and its bids and asks.
 
 ## Possible Errors
 
-- The [standard errors](../errors.md#Standard_Errors).
+- The [standard errors](../errors.md#standard-errors).

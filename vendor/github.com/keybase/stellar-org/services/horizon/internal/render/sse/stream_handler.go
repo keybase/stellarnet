@@ -8,10 +8,14 @@ import (
 	"github.com/stellar/throttled"
 )
 
+type LedgerSourceFactory interface {
+	Get() ledger.Source
+}
+
 // StreamHandler represents a stream handling action
 type StreamHandler struct {
-	RateLimiter  *throttled.HTTPRateLimiter
-	LedgerSource ledger.Source
+	RateLimiter         *throttled.HTTPRateLimiter
+	LedgerSourceFactory LedgerSourceFactory
 }
 
 // GenerateEventsFunc generates a slice of sse.Event which are sent via
@@ -30,7 +34,10 @@ func (handler StreamHandler) ServeStream(
 	stream := NewStream(ctx, w)
 	stream.SetLimit(limit)
 
-	currentLedgerSequence := handler.LedgerSource.CurrentLedger()
+	ledgerSource := handler.LedgerSourceFactory.Get()
+	defer ledgerSource.Close()
+
+	currentLedgerSequence := ledgerSource.CurrentLedger()
 	for {
 		// Rate limit the request if it's a call to stream since it queries the DB every second. See
 		// https://github.com/stellar/go/issues/715 for more details.
@@ -71,9 +78,10 @@ func (handler StreamHandler) ServeStream(
 		stream.Init()
 
 		select {
-		case currentLedgerSequence = <-handler.LedgerSource.NextLedger(currentLedgerSequence):
+		case currentLedgerSequence = <-ledgerSource.NextLedger(currentLedgerSequence):
 			continue
 		case <-ctx.Done():
+			stream.Done()
 			return
 		}
 	}

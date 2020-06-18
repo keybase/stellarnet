@@ -36,6 +36,6 @@ On a modern laptop this test setup takes about 15 minutes to synchronise with th
 
 See the [Quickstart Docker Image](https://github.com/stellar/docker-stellar-core-horizon) documentation for more details, and alternative ways to run the container. 
 
-You can test your Horizon instance with a query like: http://localhost:8001/transactions?cursor=&limit=10&order=asc. Use the [Stellar Laboratory](https://www.stellar.org/laboratory/) to craft other queries to try out,
+You can test your Horizon instance with a query like: http://localhost:8000/transactions?cursor=&limit=10&order=asc. Use the [Stellar Laboratory](https://www.stellar.org/laboratory/) to craft other queries to try out,
 and read about the available endpoints and see examples in the [Horizon API reference](https://www.stellar.org/developers/horizon/reference/).
 

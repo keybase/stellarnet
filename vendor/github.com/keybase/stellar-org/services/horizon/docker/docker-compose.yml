@@ -1,7 +1,7 @@
 version: '3'
 services:
   core-postgres:
-    image: postgres:9.6-alpine
+    image: postgres:9.6.17-alpine
     restart: on-failure
     environment:
       - POSTGRES_PASSWORD=mysecretpassword
@@ -18,21 +18,21 @@ services:
     image: stellar/stellar-core
     depends_on:
       - core-postgres
-    restart: always
+    restart: on-failure
     ports:
       - "11625:11625"
       - "11626:11626"
-    env_file:
-      # to connect to the public stellar network
-      #- ./stellar-core-pubnet.env
-      - ./stellar-core-testnet.env
-    command: /start compat_minimal nopsql fresh
+    command: /start
+    volumes:
+      - ./stellar-core-testnet.cfg:/stellar-core.cfg
+      - ./core-start.sh:/start
     network_mode: '${NETWORK_MODE:-bridge}'
 
   horizon-postgres:
-    image: postgres:9.6-alpine
+    image: postgres:9.6.17-alpine
     restart: on-failure
     environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
       - POSTGRES_DB=horizon
     ports:
       - "5432:5432"
@@ -54,11 +54,11 @@ services:
     environment:
       - DATABASE_URL=postgres://postgres@host.docker.internal:5432/horizon?sslmode=disable
       - STELLAR_CORE_DATABASE_URL=postgres://postgres:mysecretpassword@host.docker.internal:5641/stellar?sslmode=disable
-      # to connect to the public stellar network
-      #- NETWORK_PASSPHRASE=Public Global Stellar Network ; September
+      - HISTORY_ARCHIVE_URLS=https://history.stellar.org/prd/core-testnet/core_testnet_001
       - NETWORK_PASSPHRASE=Test SDF Network ; September 2015
       - STELLAR_CORE_URL=http://host.docker.internal:11626
       - INGEST=true
+      - PER_HOUR_RATE_LIMIT=0
     network_mode: '${NETWORK_MODE:-bridge}'
     command: ["--apply-migrations"]
 

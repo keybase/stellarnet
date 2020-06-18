@@ -2,7 +2,6 @@ package txnbuild
 
 import (
 	"github.com/stellar/go/amount"
-	"github.com/stellar/go/price"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
@@ -14,6 +13,7 @@ type CreatePassiveSellOffer struct {
 	Buying        Asset
 	Amount        string
 	Price         string
+	price         price
 	SourceAccount Account
 }
 
@@ -34,8 +34,7 @@ func (cpo *CreatePassiveSellOffer) BuildXDR() (xdr.Operation, error) {
 		return xdr.Operation{}, errors.Wrap(err, "failed to parse 'Amount'")
 	}
 
-	xdrPrice, err := price.Parse(cpo.Price)
-	if err != nil {
+	if err = cpo.price.parse(cpo.Price); err != nil {
 		return xdr.Operation{}, errors.Wrap(err, "failed to parse 'Price'")
 	}
 
@@ -43,7 +42,7 @@ func (cpo *CreatePassiveSellOffer) BuildXDR() (xdr.Operation, error) {
 		Selling: xdrSelling,
 		Buying:  xdrBuying,
 		Amount:  xdrAmount,
-		Price:   xdrPrice,
+		Price:   cpo.price.toXDR(),
 	}
 
 	opType := xdr.OperationTypeCreatePassiveSellOffer
@@ -66,7 +65,8 @@ func (cpo *CreatePassiveSellOffer) FromXDR(xdrOp xdr.Operation) error {
 	cpo.SourceAccount = accountFromXDR(xdrOp.SourceAccount)
 	cpo.Amount = amount.String(result.Amount)
 	if result.Price != (xdr.Price{}) {
-		cpo.Price = price.StringFromFloat64(float64(result.Price.N) / float64(result.Price.D))
+		cpo.price.fromXDR(result.Price)
+		cpo.Price = cpo.price.string()
 	}
 	buyingAsset, err := assetFromXDR(result.Buying)
 	if err != nil {
@@ -86,4 +86,10 @@ func (cpo *CreatePassiveSellOffer) FromXDR(xdrOp xdr.Operation) error {
 // of the fields are invalid. Otherwise, it returns nil.
 func (cpo *CreatePassiveSellOffer) Validate() error {
 	return validatePassiveOffer(cpo.Buying, cpo.Selling, cpo.Amount, cpo.Price)
+}
+
+// GetSourceAccount returns the source account of the operation, or nil if not
+// set.
+func (cpo *CreatePassiveSellOffer) GetSourceAccount() Account {
+	return cpo.SourceAccount
 }

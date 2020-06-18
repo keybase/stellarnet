@@ -1,11 +1,16 @@
 package history
 
 import (
+	"encoding/hex"
 	"fmt"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/guregu/null"
 	"github.com/stellar/go/services/horizon/internal/db2"
+	"github.com/stellar/go/services/horizon/internal/toid"
 	"github.com/stellar/go/support/errors"
+	"github.com/stellar/go/xdr"
 )
 
 // LedgerBySequence loads the single ledger at `seq` into `dest`
@@ -78,6 +83,81 @@ func (q *LedgersQ) Select(dest interface{}) error {
 
 	q.Err = q.parent.Select(dest, q.sql)
 	return q.Err
+}
+
+// QLedgers defines ingestion ledger related queries.
+type QLedgers interface {
+	InsertLedger(
+		ledger xdr.LedgerHeaderHistoryEntry,
+		successTxsCount int,
+		failedTxsCount int,
+		opCount int,
+		ingestVersion int,
+	) (int64, error)
+}
+
+// InsertLedger creates a row in the history_ledgers table.
+// Returns number of rows affected and error.
+func (q *Q) InsertLedger(
+	ledger xdr.LedgerHeaderHistoryEntry,
+	successTxsCount int,
+	failedTxsCount int,
+	opCount int,
+	ingestVersion int,
+) (int64, error) {
+	m, err := ledgerHeaderToMap(
+		ledger,
+		successTxsCount,
+		failedTxsCount,
+		opCount,
+		ingestVersion,
+	)
+	if err != nil {
+		return 0, err
+	}
+
+	sql := sq.Insert("history_ledgers").SetMap(m)
+	result, err := q.Exec(sql)
+	if err != nil {
+		return 0, err
+	}
+
+	return result.RowsAffected()
+}
+
+func ledgerHeaderToMap(
+	ledger xdr.LedgerHeaderHistoryEntry,
+	successTxsCount int,
+	failedTxsCount int,
+	opCount int,
+	importerVersion int,
+) (map[string]interface{}, error) {
+	ledgerHeaderBase64, err := xdr.MarshalBase64(ledger.Header)
+	if err != nil {
+		return nil, err
+	}
+	closeTime := time.Unix(int64(ledger.Header.ScpValue.CloseTime), 0).UTC()
+	return map[string]interface{}{
+		"importer_version":             importerVersion,
+		"id":                           toid.New(int32(ledger.Header.LedgerSeq), 0, 0).ToInt64(),
+		"sequence":                     ledger.Header.LedgerSeq,
+		"ledger_hash":                  hex.EncodeToString(ledger.Hash[:]),
+		"previous_ledger_hash":         null.NewString(hex.EncodeToString(ledger.Header.PreviousLedgerHash[:]), ledger.Header.LedgerSeq > 1),
+		"total_coins":                  ledger.Header.TotalCoins,
+		"fee_pool":                     ledger.Header.FeePool,
+		"base_fee":                     ledger.Header.BaseFee,
+		"base_reserve":                 ledger.Header.BaseReserve,
+		"max_tx_set_size":              ledger.Header.MaxTxSetSize,
+		"closed_at":                    closeTime,
+		"created_at":                   time.Now().UTC(),
+		"updated_at":                   time.Now().UTC(),
+		"transaction_count":            successTxsCount,
+		"successful_transaction_count": successTxsCount,
+		"failed_transaction_count":     failedTxsCount,
+		"operation_count":              opCount,
+		"protocol_version":             ledger.Header.LedgerVersion,
+		"ledger_header":                ledgerHeaderBase64,
+	}, nil
 }
 
 var selectLedger = sq.Select(

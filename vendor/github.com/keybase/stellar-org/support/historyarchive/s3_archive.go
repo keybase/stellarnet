@@ -6,6 +6,7 @@ package historyarchive
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"path"
@@ -17,6 +18,7 @@ import (
 )
 
 type S3ArchiveBackend struct {
+	ctx              context.Context
 	svc              *s3.S3
 	bucket           string
 	prefix           string
@@ -33,6 +35,7 @@ func (b *S3ArchiveBackend) GetFile(pth string) (io.ReadCloser, error) {
 	if b.unsignedRequests {
 		req.Handlers.Sign.Clear() // makes this request unsigned
 	}
+	req.SetContext(b.ctx)
 	err := req.Send()
 	if err != nil {
 		return nil, err
@@ -51,6 +54,7 @@ func (b *S3ArchiveBackend) Head(pth string) (*http.Response, error) {
 	if b.unsignedRequests {
 		req.Handlers.Sign.Clear() // makes this request unsigned
 	}
+	req.SetContext(b.ctx)
 	err := req.Send()
 
 	if req != nil && req.HTTPResponse.StatusCode == http.StatusNotFound {
@@ -115,6 +119,7 @@ func (b *S3ArchiveBackend) PutFile(pth string, in io.ReadCloser) error {
 	if b.unsignedRequests {
 		req.Handlers.Sign.Clear() // makes this request unsigned
 	}
+	req.SetContext(b.ctx)
 	err = req.Send()
 
 	in.Close()
@@ -135,6 +140,7 @@ func (b *S3ArchiveBackend) ListFiles(pth string) (chan string, chan error) {
 	if b.unsignedRequests {
 		req.Handlers.Sign.Clear() // makes this request unsigned
 	}
+	req.SetContext(b.ctx)
 	err := req.Send()
 	if err != nil {
 		errs <- err
@@ -153,6 +159,7 @@ func (b *S3ArchiveBackend) ListFiles(pth string) (chan string, chan error) {
 				if b.unsignedRequests {
 					req.Handlers.Sign.Clear() // makes this request unsigned
 				}
+				req.SetContext(b.ctx)
 				err := req.Send()
 				if err != nil {
 					errs <- err
@@ -184,6 +191,7 @@ func makeS3Backend(bucket string, prefix string, opts ConnectOptions) (ArchiveBa
 	}
 
 	backend := S3ArchiveBackend{
+		ctx:              opts.Context,
 		svc:              s3.New(sess),
 		bucket:           bucket,
 		prefix:           prefix,

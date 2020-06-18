@@ -174,4 +174,4 @@ The list of trades. `base` and `counter` in the records will match the asset pai
 
 ## Possible Errors
 
-- The [standard errors](../errors.md#Standard_Errors).
+- The [standard errors](../errors.md#standard-errors).

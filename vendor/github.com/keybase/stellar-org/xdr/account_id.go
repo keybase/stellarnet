@@ -10,18 +10,31 @@ import (
 // Address returns the strkey encoded form of this AccountId.  This method will
 // panic if the accountid is backed by a public key of an unknown type.
 func (aid *AccountId) Address() string {
+	address, err := aid.GetAddress()
+	if err != nil {
+		panic(err)
+	}
+	return address
+}
+
+// GetAddress returns the strkey encoded form of this AccountId, and an error
+// if the AccountId is backed by a public key of an unknown type.
+func (aid *AccountId) GetAddress() (string, error) {
 	if aid == nil {
-		return ""
+		return "", nil
 	}
 
 	switch aid.Type {
 	case PublicKeyTypePublicKeyTypeEd25519:
-		ed := aid.MustEd25519()
+		ed, ok := aid.GetEd25519()
+		if !ok {
+			return "", fmt.Errorf("Could not get Ed25519")
+		}
 		raw := make([]byte, 32)
 		copy(raw, ed[:])
-		return strkey.MustEncode(strkey.VersionByteAccountID, raw)
+		return strkey.Encode(strkey.VersionByteAccountID, raw)
 	default:
-		panic(fmt.Errorf("Unknown account id type: %v", aid.Type))
+		return "", fmt.Errorf("Unknown account id type: %v", aid.Type)
 	}
 }
 
@@ -84,6 +97,15 @@ func MustAddress(address string) AccountId {
 	return aid
 }
 
+// AddressToAccountId returns an AccountId for a given address string.
+// If the address is not valid the error returned will not be nil
+func AddressToAccountId(address string) (AccountId, error) {
+	result := AccountId{}
+	err := result.SetAddress(address)
+
+	return result, err
+}
+
 // SetAddress modifies the receiver, setting it's value to the AccountId form
 // of the provided address.
 func (aid *AccountId) SetAddress(address string) error {
@@ -106,4 +128,17 @@ func (aid *AccountId) SetAddress(address string) error {
 	*aid, err = NewAccountId(PublicKeyTypePublicKeyTypeEd25519, ui)
 
 	return err
+}
+
+// ToMuxedAccount transforms an AccountId into a MuxedAccount with
+// a zero memo id
+func (aid *AccountId) ToMuxedAccount() MuxedAccount {
+	result := MuxedAccount{Type: CryptoKeyTypeKeyTypeEd25519}
+	switch aid.Type {
+	case PublicKeyTypePublicKeyTypeEd25519:
+		result.Ed25519 = aid.Ed25519
+	default:
+		panic(fmt.Errorf("Unknown account id type: %v", aid.Type))
+	}
+	return result
 }

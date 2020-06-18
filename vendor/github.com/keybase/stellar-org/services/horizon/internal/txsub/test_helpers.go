@@ -27,19 +27,23 @@ func (sub *MockSubmitter) Submit(ctx context.Context, env string) SubmissionResu
 // MockResultProvider is a test helper that simplements the ResultProvider
 // interface
 type MockResultProvider struct {
-	Results []Result
+	Results            []Result
+	ResultForInnerHash map[string]Result
 }
 
 // ResultByHash implements `txsub.ResultProvider`
-func (results *MockResultProvider) ResultByHash(ctx context.Context, hash string) (r Result) {
-	if len(results.Results) > 0 {
-		r = results.Results[0]
-		results.Results = results.Results[1:]
-	} else {
-		r = Result{Err: ErrNoResults}
+func (results *MockResultProvider) ResultByHash(ctx context.Context, hash string) Result {
+	if r, ok := results.ResultForInnerHash[hash]; ok {
+		return r
 	}
 
-	return
+	if len(results.Results) > 0 {
+		r := results.Results[0]
+		results.Results = results.Results[1:]
+		return r
+	}
+
+	return Result{Err: ErrNoResults}
 }
 
 // MockSequenceProvider is a test helper that simplements the SequenceProvider
@@ -49,7 +53,7 @@ type MockSequenceProvider struct {
 }
 
 // Get implements `txsub.SequenceProvider`
-func (o *MockSequenceProvider) Get(addresses []string) (map[string]uint64, error) {
+func (o *MockSequenceProvider) GetSequenceNumbers(addresses []string) (map[string]uint64, error) {
 	args := o.Called(addresses)
 	return args.Get(0).(map[string]uint64), args.Error(1)
 }

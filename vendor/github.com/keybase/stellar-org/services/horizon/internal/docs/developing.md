@@ -11,7 +11,7 @@ If you are just starting with Horizon and want to try it out, consider the [Quic
 Building Horizon requires the following developer tools:
 
 - A [Unix-like](https://en.wikipedia.org/wiki/Unix-like) operating system with the common core commands (cp, tar, mkdir, bash, etc.)
-- Golang 1.12 or later
+- Golang 1.13 or later
 - [git](https://git-scm.com/) (to check out Horizon's source code)
 - [mercurial](https://www.mercurial-scm.org/) (needed for `go-dep`)
 

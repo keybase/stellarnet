@@ -39,6 +39,12 @@ func String(code interface{}) (string, error) {
 	switch code := code.(type) {
 	case xdr.TransactionResultCode:
 		switch code {
+		case xdr.TransactionResultCodeTxFeeBumpInnerSuccess:
+			return "tx_fee_bump_inner_success", nil
+		case xdr.TransactionResultCodeTxFeeBumpInnerFailed:
+			return "tx_fee_bump_inner_failed", nil
+		case xdr.TransactionResultCodeTxNotSupported:
+			return "tx_not_supported", nil
 		case xdr.TransactionResultCodeTxSuccess:
 			return "tx_success", nil
 		case xdr.TransactionResultCodeTxFailed:

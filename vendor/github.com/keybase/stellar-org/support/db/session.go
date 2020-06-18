@@ -21,13 +21,18 @@ func (s *Session) Begin() error {
 		return errors.New("already in transaction")
 	}
 
-	tx, err := s.DB.Beginx()
+	tx, err := s.DB.BeginTxx(s.Ctx, nil)
 	if err != nil {
+		if s.cancelled(err) {
+			return ErrCancelled
+		}
+
 		return errors.Wrap(err, "beginx failed")
 	}
 	s.logBegin()
 
 	s.tx = tx
+	s.txOptions = nil
 	return nil
 }
 
@@ -40,16 +45,25 @@ func (s *Session) BeginTx(opts *sql.TxOptions) error {
 
 	tx, err := s.DB.BeginTxx(s.Ctx, opts)
 	if err != nil {
+		if s.cancelled(err) {
+			return ErrCancelled
+		}
+
 		return errors.Wrap(err, "beginTx failed")
 	}
 	s.logBegin()
 
 	s.tx = tx
+	s.txOptions = opts
 	return nil
 }
 
 func (s *Session) GetTx() *sqlx.Tx {
 	return s.tx
+}
+
+func (s *Session) GetTxOptions() *sql.TxOptions {
+	return s.txOptions
 }
 
 // Clone clones the receiver, returning a new instance backed by the same
@@ -78,6 +92,7 @@ func (s *Session) Commit() error {
 	err := s.tx.Commit()
 	s.logCommit()
 	s.tx = nil
+	s.txOptions = nil
 	return err
 }
 
@@ -121,11 +136,15 @@ func (s *Session) GetRaw(dest interface{}, query string, args ...interface{}) er
 	}
 
 	start := time.Now()
-	err = s.conn().Get(dest, query, args...)
+	err = s.conn().GetContext(s.Ctx, dest, query, args...)
 	s.log("get", start, query, args)
 
 	if err == nil {
 		return nil
+	}
+
+	if s.cancelled(err) {
+		return ErrCancelled
 	}
 
 	if s.NoRows(err) {
@@ -186,11 +205,15 @@ func (s *Session) ExecRaw(query string, args ...interface{}) (sql.Result, error)
 	}
 
 	start := time.Now()
-	result, err := s.conn().Exec(query, args...)
+	result, err := s.conn().ExecContext(s.Ctx, query, args...)
 	s.log("exec", start, query, args)
 
 	if err == nil {
 		return result, nil
+	}
+
+	if s.cancelled(err) {
+		return nil, ErrCancelled
 	}
 
 	if s.NoRows(err) {
@@ -204,6 +227,11 @@ func (s *Session) ExecRaw(query string, args ...interface{}) (sql.Result, error)
 // no results.
 func (s *Session) NoRows(err error) bool {
 	return err == sql.ErrNoRows
+}
+
+// Cancelled returns true if the provided error resulted from a cancel.
+func (s *Session) cancelled(err error) bool {
+	return strings.Contains(err.Error(), "pq: canceling statement due to user request")
 }
 
 // Query runs `query`, returns a *sqlx.Rows instance
@@ -223,11 +251,15 @@ func (s *Session) QueryRaw(query string, args ...interface{}) (*sqlx.Rows, error
 	}
 
 	start := time.Now()
-	result, err := s.conn().Queryx(query, args...)
+	result, err := s.conn().QueryxContext(s.Ctx, query, args...)
 	s.log("query", start, query, args)
 
 	if err == nil {
 		return result, nil
+	}
+
+	if s.cancelled(err) {
+		return nil, ErrCancelled
 	}
 
 	if s.NoRows(err) {
@@ -258,6 +290,7 @@ func (s *Session) Rollback() error {
 	err := s.tx.Rollback()
 	s.logRollback()
 	s.tx = nil
+	s.txOptions = nil
 	return err
 }
 
@@ -283,11 +316,15 @@ func (s *Session) SelectRaw(
 	}
 
 	start := time.Now()
-	err = s.conn().Select(dest, query, args...)
+	err = s.conn().SelectContext(s.Ctx, dest, query, args...)
 	s.log("select", start, query, args)
 
 	if err == nil {
 		return nil
+	}
+
+	if s.cancelled(err) {
+		return ErrCancelled
 	}
 
 	if s.NoRows(err) {

@@ -2,7 +2,6 @@ package txnbuild
 
 import (
 	"fmt"
-
 	"github.com/stellar/go/amount"
 	"github.com/stellar/go/strkey"
 	"github.com/stellar/go/support/errors"

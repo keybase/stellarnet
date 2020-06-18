@@ -26,13 +26,19 @@ import (
 // postgresQueryMaxParams defines the maximum number of parameters in a query.
 var postgresQueryMaxParams = 65535
 
+var (
+	// ErrCancelled is an error returned by Session methods when request has
+	// been cancelled (ex. context cancelled).
+	ErrCancelled = errors.New("canceling statement due to user request")
+)
+
 // Conn represents a connection to a single database.
 type Conn interface {
-	Exec(query string, args ...interface{}) (sql.Result, error)
-	Get(dest interface{}, query string, args ...interface{}) error
+	ExecContext(ctx context.Context, query string, args ...interface{}) (sql.Result, error)
+	GetContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 	Rebind(sql string) string
-	Queryx(query string, args ...interface{}) (*sqlx.Rows, error)
-	Select(dest interface{}, query string, args ...interface{}) error
+	QueryxContext(ctx context.Context, query string, args ...interface{}) (*sqlx.Rows, error)
+	SelectContext(ctx context.Context, dest interface{}, query string, args ...interface{}) error
 }
 
 // DeleteBuilder is a helper struct used to construct sql queries of the DELETE
@@ -53,22 +59,6 @@ type InsertBuilder struct {
 	rows        []interface{}
 	ignoredCols map[string]bool
 	sql         squirrel.InsertBuilder
-}
-
-// BatchInsertBuilder works like sq.InsertBuilder but has a better support for batching
-// large number of rows.
-// It is NOT safe for concurrent use.
-type BatchInsertBuilder struct {
-	Table *Table
-	// MaxBatchSize defines the maximum size of a batch. If this number is
-	// reached after calling Row() it will call Exec() immediately inserting
-	// all rows to a DB.
-	// Zero (default) will not add rows until explicitly calling Exec.
-	MaxBatchSize int
-
-	columns []string
-	rows    [][]interface{}
-	sql     squirrel.InsertBuilder
 }
 
 // GetBuilder is a helper struct used to construct sql queries of the SELECT
@@ -108,10 +98,28 @@ type Session struct {
 	// DB is the database connection that queries should be executed against.
 	DB *sqlx.DB
 
-	// Ctx is the optional context in which the repo is operating under.
+	// Ctx is the context in which the repo is operating under.
 	Ctx context.Context
 
-	tx *sqlx.Tx
+	tx        *sqlx.Tx
+	txOptions *sql.TxOptions
+}
+
+type SessionInterface interface {
+	BeginTx(opts *sql.TxOptions) error
+	Begin() error
+	Rollback() error
+	TruncateTables(tables []string) error
+	Clone() *Session
+	Close() error
+	Get(dest interface{}, query squirrel.Sqlizer) error
+	GetRaw(dest interface{}, query string, args ...interface{}) error
+	Select(dest interface{}, query squirrel.Sqlizer) error
+	SelectRaw(dest interface{}, query string, args ...interface{}) error
+	GetTable(name string) *Table
+	Exec(query squirrel.Sqlizer) (sql.Result, error)
+	ExecRaw(query string, args ...interface{}) (sql.Result, error)
+	NoRows(err error) bool
 }
 
 // Table helps to build sql queries against a given table.  It logically
@@ -130,7 +138,7 @@ func Open(dialect, dsn string) (*Session, error) {
 		return nil, errors.Wrap(err, "connect failed")
 	}
 
-	return &Session{DB: db}, nil
+	return &Session{DB: db, Ctx: context.Background()}, nil
 }
 
 // Wrap wraps a bare *sql.DB (from the database/sql stdlib package) in a
@@ -138,7 +146,7 @@ func Open(dialect, dsn string) (*Session, error) {
 // control the instantiation of the database connection, but would still like to
 // leverage the facilities provided in Session.
 func Wrap(base *sql.DB, dialect string) *Session {
-	return &Session{DB: sqlx.NewDb(base, dialect)}
+	return &Session{DB: sqlx.NewDb(base, dialect), Ctx: context.Background()}
 }
 
 // ensure various types conform to Conn interface

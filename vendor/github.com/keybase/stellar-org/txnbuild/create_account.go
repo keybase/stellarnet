@@ -67,3 +67,9 @@ func (ca *CreateAccount) Validate() error {
 
 	return nil
 }
+
+// GetSourceAccount returns the source account of the operation, or nil if not
+// set.
+func (ca *CreateAccount) GetSourceAccount() Account {
+	return ca.SourceAccount
+}

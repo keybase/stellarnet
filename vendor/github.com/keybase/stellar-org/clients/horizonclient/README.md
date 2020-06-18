@@ -12,7 +12,7 @@ This library is aimed at developers building Go applications that interact with 
 * The [txnbuild API reference](https://godoc.org/github.com/stellar/go/txnbuild).
 
 ### Prerequisites
-* Go 1.12 or greater
+* Go 1.13 or greater
 * [Modules](https://github.com/golang/go/wiki/Modules) to manage dependencies
 
 ### Installing

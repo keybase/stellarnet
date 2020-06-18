@@ -3,6 +3,7 @@ package cmp
 import (
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"net/http"
 	"os/exec"
 	"regexp"
@@ -32,15 +33,52 @@ var removeRegexps = []*regexp.Regexp{
 	// regexp.MustCompile(`\s*"transaction_count": [0-9]+,`),
 	// regexp.MustCompile(`\s*"last_modified_ledger": [0-9]+,`),
 	// regexp.MustCompile(`\s*"public_key": "G.*",`),
+	// regexp.MustCompile(`,\s*"paging_token": ?""`),
+	// Removes last_modified_time field, introduced in horizon 1.3.0
+	regexp.MustCompile(`\s*"last_modified_time": ?"[^"]*",`),
 }
+
+type replace struct {
+	regexp *regexp.Regexp
+	repl   string
+}
+
+var replaceRegexps = []replace{
+	// Offer ID in /offers
+	{regexp.MustCompile(`"id":( ?)([0-9]+)`), `"id":${1}"${2}"`},
+	{regexp.MustCompile(`"offer_id":( ?)([0-9]+)`), `"offer_id":${1}"${2}"`},
+	{regexp.MustCompile(`"timestamp":( ?)([0-9]+)`), `"timestamp":${1}"${2}"`},
+	{regexp.MustCompile(`"trade_count":( ?)([0-9]+)`), `"trade_count":${1}"${2}"`},
+	{regexp.MustCompile(`"type":( ?)"manage_offer",`), `"type":${1}"manage_sell_offer",`},
+	{regexp.MustCompile(`"type":( ?)"path_payment",`), `"type":${1}"path_payment_strict_receive",`},
+	{regexp.MustCompile(`"type":( ?)"create_passive_offer",`), `"type":${1}"create_passive_sell_offer",`},
+	{regexp.MustCompile(
+		// Removes paging_token from /accounts/*
+		`"data":( ?){([^}]*)},\s*"paging_token":( ?)"([0-9A-Z]*)"`),
+		`"data":${1}{${2}},"paging_token":${3}""`,
+	},
+	{regexp.MustCompile(
+		// fee_charged is a string since horizon 1.3.0
+		`"fee_charged":( ?)([\d]+),`),
+		`"fee_charged":${1}"${2}",`,
+	},
+	{regexp.MustCompile(
+		// max_fee is a string since horizon 1.3.0
+		`"max_fee":( ?)([\d]+),`),
+		`"max_fee":${1}"${2}",`,
+	},
+}
+
+var newAccountDetailsPathWithLastestLedger = regexp.MustCompile(`^/accounts/[A-Z0-9]+/(transactions|operations|payments|effects|trades)/?`)
 
 type Response struct {
 	Domain string
 	Path   string
 	Stream bool
 
-	StatusCode int
-	Body       string
+	StatusCode   int
+	LatestLedger string
+	Body         string
 	// NormalizedBody is body without parts that identify a single
 	// server (ex. domain) and fields known to be different between
 	// instances (ex. `result_meta_xdr`).
@@ -80,7 +118,9 @@ func NewResponse(domain, path string, stream bool) *Response {
 	if resp.StatusCode != http.StatusOK &&
 		resp.StatusCode != http.StatusNotFound &&
 		resp.StatusCode != http.StatusNotAcceptable &&
-		resp.StatusCode != http.StatusBadRequest {
+		resp.StatusCode != http.StatusBadRequest &&
+		resp.StatusCode != http.StatusGatewayTimeout &&
+		resp.StatusCode != http.StatusGone {
 		panic(resp.StatusCode)
 	}
 
@@ -94,9 +134,10 @@ func NewResponse(domain, path string, stream bool) *Response {
 	}
 
 	if string(body) == "" {
-		panic("Empty body")
+		response.Body = fmt.Sprintf("Empty body [%d]", rand.Uint64())
 	}
 
+	response.LatestLedger = resp.Header.Get("Latest-Ledger")
 	response.Body = string(body)
 
 	normalizedBody := response.Body
@@ -109,7 +150,21 @@ func NewResponse(domain, path string, stream bool) *Response {
 		normalizedBody = reg.ReplaceAllString(normalizedBody, "")
 	}
 
-	response.NormalizedBody = normalizedBody
+	for _, reg := range replaceRegexps {
+		normalizedBody = reg.regexp.ReplaceAllString(normalizedBody, reg.repl)
+	}
+
+	// 1.1.0 - skip Latest-Ledger header in newly incorporated endpoints
+	if !(newAccountDetailsPathWithLastestLedger.Match([]byte(path)) ||
+		strings.HasPrefix(path, "/ledgers") ||
+		strings.HasPrefix(path, "/transactions") ||
+		strings.HasPrefix(path, "/operations") ||
+		strings.HasPrefix(path, "/payments") ||
+		strings.HasPrefix(path, "/effects") ||
+		strings.HasPrefix(path, "/transactions") ||
+		strings.Contains(path, "/trade")) {
+		response.NormalizedBody = fmt.Sprintf("Latest-Ledger: %s\n%s", resp.Header.Get("Latest-Ledger"), normalizedBody)
+	}
 	return response
 }
 

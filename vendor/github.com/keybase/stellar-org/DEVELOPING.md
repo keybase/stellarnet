@@ -11,12 +11,11 @@ If you're making changes to Horizon, look for documentation in its [docs](servic
 ## Requirements
 To checkout, build, and run most tests these tools are required:
 - Git
-- [Go 1.12 or Go 1.13](https://golang.org/dl)
+- [Go 1.13 or Go 1.14](https://golang.org/dl)
 
 To run some tests these tools are also required:
 - PostgreSQL 9.6+ server running locally, or set [environment variables](https://www.postgresql.org/docs/9.6/libpq-envars.html) (e.g. `PGHOST`, etc) for alternative host.
 - MySQL 10.1+ server running locally.
-- Redis 5.0+ server running on localhost port 6379.
 
 ## Get the code
 
@@ -25,8 +24,6 @@ Check the code out anywhere, using a `GOPATH` is not required.
 ```
 git clone https://github.com/stellar/go
 ```
-
-Note: If you're using Go 1.12 and you checkout to a path inside your `GOPATH` you'll need to set the environment variable `GO111MODULE=on` for [modules](https://github.com/golang/go/wiki/Modules) dependency management to function.
 
 ## Installing dependencies
 

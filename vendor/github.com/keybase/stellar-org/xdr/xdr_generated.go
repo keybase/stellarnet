@@ -18,7 +18,7 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/stellar/go-xdr/xdr3"
+	xdr "github.com/stellar/go-xdr/xdr3"
 )
 
 // Unmarshal reads an xdr element from `r` into `v`.
@@ -1716,17 +1716,22 @@ var (
 //   enum TrustLineFlags
 //    {
 //        // issuer has authorized account to perform transactions with its credit
-//        AUTHORIZED_FLAG = 1
+//        AUTHORIZED_FLAG = 1,
+//        // issuer has authorized account to maintain and reduce liabilities for its
+//        // credit
+//        AUTHORIZED_TO_MAINTAIN_LIABILITIES_FLAG = 2
 //    };
 //
 type TrustLineFlags int32
 
 const (
-	TrustLineFlagsAuthorizedFlag TrustLineFlags = 1
+	TrustLineFlagsAuthorizedFlag                      TrustLineFlags = 1
+	TrustLineFlagsAuthorizedToMaintainLiabilitiesFlag TrustLineFlags = 2
 )
 
 var trustLineFlagsMap = map[int32]string{
 	1: "TrustLineFlagsAuthorizedFlag",
+	2: "TrustLineFlagsAuthorizedToMaintainLiabilitiesFlag",
 }
 
 // ValidEnum validates a proposed value for this enum.  Implements
@@ -1765,6 +1770,12 @@ var (
 //   const MASK_TRUSTLINE_FLAGS = 1;
 //
 const MaskTrustlineFlags = 1
+
+// MaskTrustlineFlagsV13 is an XDR Const defines as:
+//
+//   const MASK_TRUSTLINE_FLAGS_V13 = 3;
+//
+const MaskTrustlineFlagsV13 = 3
 
 // TrustLineEntryV1Ext is an XDR NestedUnion defines as:
 //
@@ -2597,26 +2608,32 @@ var (
 //
 //   enum EnvelopeType
 //    {
+//        ENVELOPE_TYPE_TX_V0 = 0,
 //        ENVELOPE_TYPE_SCP = 1,
 //        ENVELOPE_TYPE_TX = 2,
 //        ENVELOPE_TYPE_AUTH = 3,
-//        ENVELOPE_TYPE_SCPVALUE = 4
+//        ENVELOPE_TYPE_SCPVALUE = 4,
+//        ENVELOPE_TYPE_TX_FEE_BUMP = 5
 //    };
 //
 type EnvelopeType int32
 
 const (
-	EnvelopeTypeEnvelopeTypeScp      EnvelopeType = 1
-	EnvelopeTypeEnvelopeTypeTx       EnvelopeType = 2
-	EnvelopeTypeEnvelopeTypeAuth     EnvelopeType = 3
-	EnvelopeTypeEnvelopeTypeScpvalue EnvelopeType = 4
+	EnvelopeTypeEnvelopeTypeTxV0      EnvelopeType = 0
+	EnvelopeTypeEnvelopeTypeScp       EnvelopeType = 1
+	EnvelopeTypeEnvelopeTypeTx        EnvelopeType = 2
+	EnvelopeTypeEnvelopeTypeAuth      EnvelopeType = 3
+	EnvelopeTypeEnvelopeTypeScpvalue  EnvelopeType = 4
+	EnvelopeTypeEnvelopeTypeTxFeeBump EnvelopeType = 5
 )
 
 var envelopeTypeMap = map[int32]string{
+	0: "EnvelopeTypeEnvelopeTypeTxV0",
 	1: "EnvelopeTypeEnvelopeTypeScp",
 	2: "EnvelopeTypeEnvelopeTypeTx",
 	3: "EnvelopeTypeEnvelopeTypeAuth",
 	4: "EnvelopeTypeEnvelopeTypeScpvalue",
+	5: "EnvelopeTypeEnvelopeTypeTxFeeBump",
 }
 
 // ValidEnum validates a proposed value for this enum.  Implements
@@ -4822,6 +4839,41 @@ var (
 	_ encoding.BinaryUnmarshaler = (*TransactionMetaV1)(nil)
 )
 
+// TransactionMetaV2 is an XDR Struct defines as:
+//
+//   struct TransactionMetaV2
+//    {
+//        LedgerEntryChanges txChangesBefore; // tx level changes before operations
+//                                            // are applied if any
+//        OperationMeta operations<>;         // meta for each operation
+//        LedgerEntryChanges txChangesAfter;  // tx level changes after operations are
+//                                            // applied if any
+//    };
+//
+type TransactionMetaV2 struct {
+	TxChangesBefore LedgerEntryChanges
+	Operations      []OperationMeta
+	TxChangesAfter  LedgerEntryChanges
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s TransactionMetaV2) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *TransactionMetaV2) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*TransactionMetaV2)(nil)
+	_ encoding.BinaryUnmarshaler = (*TransactionMetaV2)(nil)
+)
+
 // TransactionMeta is an XDR Union defines as:
 //
 //   union TransactionMeta switch (int v)
@@ -4830,12 +4882,15 @@ var (
 //        OperationMeta operations<>;
 //    case 1:
 //        TransactionMetaV1 v1;
+//    case 2:
+//        TransactionMetaV2 v2;
 //    };
 //
 type TransactionMeta struct {
 	V          int32
 	Operations *[]OperationMeta
 	V1         *TransactionMetaV1
+	V2         *TransactionMetaV2
 }
 
 // SwitchFieldName returns the field name in which this union's
@@ -4852,6 +4907,8 @@ func (u TransactionMeta) ArmForSwitch(sw int32) (string, bool) {
 		return "Operations", true
 	case 1:
 		return "V1", true
+	case 2:
+		return "V2", true
 	}
 	return "-", false
 }
@@ -4874,6 +4931,13 @@ func NewTransactionMeta(v int32, value interface{}) (result TransactionMeta, err
 			return
 		}
 		result.V1 = &tv
+	case 2:
+		tv, ok := value.(TransactionMetaV2)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be TransactionMetaV2")
+			return
+		}
+		result.V2 = &tv
 	}
 	return
 }
@@ -4928,6 +4992,31 @@ func (u TransactionMeta) GetV1() (result TransactionMetaV1, ok bool) {
 	return
 }
 
+// MustV2 retrieves the V2 value from the union,
+// panicing if the value is not set.
+func (u TransactionMeta) MustV2() TransactionMetaV2 {
+	val, ok := u.GetV2()
+
+	if !ok {
+		panic("arm V2 is not set")
+	}
+
+	return val
+}
+
+// GetV2 retrieves the V2 value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u TransactionMeta) GetV2() (result TransactionMetaV2, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.V))
+
+	if armName == "V2" {
+		result = *u.V2
+		ok = true
+	}
+
+	return
+}
+
 // MarshalBinary implements encoding.BinaryMarshaler.
 func (s TransactionMeta) MarshalBinary() ([]byte, error) {
 	b := new(bytes.Buffer)
@@ -4944,6 +5033,203 @@ func (s *TransactionMeta) UnmarshalBinary(inp []byte) error {
 var (
 	_ encoding.BinaryMarshaler   = (*TransactionMeta)(nil)
 	_ encoding.BinaryUnmarshaler = (*TransactionMeta)(nil)
+)
+
+// TransactionResultMeta is an XDR Struct defines as:
+//
+//   struct TransactionResultMeta
+//    {
+//        TransactionResultPair result;
+//        LedgerEntryChanges feeProcessing;
+//        TransactionMeta txApplyProcessing;
+//    };
+//
+type TransactionResultMeta struct {
+	Result            TransactionResultPair
+	FeeProcessing     LedgerEntryChanges
+	TxApplyProcessing TransactionMeta
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s TransactionResultMeta) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *TransactionResultMeta) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*TransactionResultMeta)(nil)
+	_ encoding.BinaryUnmarshaler = (*TransactionResultMeta)(nil)
+)
+
+// UpgradeEntryMeta is an XDR Struct defines as:
+//
+//   struct UpgradeEntryMeta
+//    {
+//        LedgerUpgrade upgrade;
+//        LedgerEntryChanges changes;
+//    };
+//
+type UpgradeEntryMeta struct {
+	Upgrade LedgerUpgrade
+	Changes LedgerEntryChanges
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s UpgradeEntryMeta) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *UpgradeEntryMeta) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*UpgradeEntryMeta)(nil)
+	_ encoding.BinaryUnmarshaler = (*UpgradeEntryMeta)(nil)
+)
+
+// LedgerCloseMetaV0 is an XDR Struct defines as:
+//
+//   struct LedgerCloseMetaV0
+//    {
+//        LedgerHeaderHistoryEntry ledgerHeader;
+//        // NB: txSet is sorted in "Hash order"
+//        TransactionSet txSet;
+//
+//        // NB: transactions are sorted in apply order here
+//        // fees for all transactions are processed first
+//        // followed by applying transactions
+//        TransactionResultMeta txProcessing<>;
+//
+//        // upgrades are applied last
+//        UpgradeEntryMeta upgradesProcessing<>;
+//
+//        // other misc information attached to the ledger close
+//        SCPHistoryEntry scpInfo<>;
+//    };
+//
+type LedgerCloseMetaV0 struct {
+	LedgerHeader       LedgerHeaderHistoryEntry
+	TxSet              TransactionSet
+	TxProcessing       []TransactionResultMeta
+	UpgradesProcessing []UpgradeEntryMeta
+	ScpInfo            []ScpHistoryEntry
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s LedgerCloseMetaV0) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *LedgerCloseMetaV0) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*LedgerCloseMetaV0)(nil)
+	_ encoding.BinaryUnmarshaler = (*LedgerCloseMetaV0)(nil)
+)
+
+// LedgerCloseMeta is an XDR Union defines as:
+//
+//   union LedgerCloseMeta switch (int v)
+//    {
+//    case 0:
+//        LedgerCloseMetaV0 v0;
+//    };
+//
+type LedgerCloseMeta struct {
+	V  int32
+	V0 *LedgerCloseMetaV0
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u LedgerCloseMeta) SwitchFieldName() string {
+	return "V"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of LedgerCloseMeta
+func (u LedgerCloseMeta) ArmForSwitch(sw int32) (string, bool) {
+	switch int32(sw) {
+	case 0:
+		return "V0", true
+	}
+	return "-", false
+}
+
+// NewLedgerCloseMeta creates a new  LedgerCloseMeta.
+func NewLedgerCloseMeta(v int32, value interface{}) (result LedgerCloseMeta, err error) {
+	result.V = v
+	switch int32(v) {
+	case 0:
+		tv, ok := value.(LedgerCloseMetaV0)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be LedgerCloseMetaV0")
+			return
+		}
+		result.V0 = &tv
+	}
+	return
+}
+
+// MustV0 retrieves the V0 value from the union,
+// panicing if the value is not set.
+func (u LedgerCloseMeta) MustV0() LedgerCloseMetaV0 {
+	val, ok := u.GetV0()
+
+	if !ok {
+		panic("arm V0 is not set")
+	}
+
+	return val
+}
+
+// GetV0 retrieves the V0 value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u LedgerCloseMeta) GetV0() (result LedgerCloseMetaV0, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.V))
+
+	if armName == "V0" {
+		result = *u.V0
+		ok = true
+	}
+
+	return
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s LedgerCloseMeta) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *LedgerCloseMeta) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*LedgerCloseMeta)(nil)
+	_ encoding.BinaryUnmarshaler = (*LedgerCloseMeta)(nil)
 )
 
 // ErrorCode is an XDR Enum defines as:
@@ -5384,7 +5670,10 @@ var (
 //        GET_SCP_STATE = 12,
 //
 //        // new messages
-//        HELLO = 13
+//        HELLO = 13,
+//
+//        SURVEY_REQUEST = 14,
+//        SURVEY_RESPONSE = 15
 //    };
 //
 type MessageType int32
@@ -5403,6 +5692,8 @@ const (
 	MessageTypeScpMessage      MessageType = 11
 	MessageTypeGetScpState     MessageType = 12
 	MessageTypeHello           MessageType = 13
+	MessageTypeSurveyRequest   MessageType = 14
+	MessageTypeSurveyResponse  MessageType = 15
 )
 
 var messageTypeMap = map[int32]string{
@@ -5419,6 +5710,8 @@ var messageTypeMap = map[int32]string{
 	11: "MessageTypeScpMessage",
 	12: "MessageTypeGetScpState",
 	13: "MessageTypeHello",
+	14: "MessageTypeSurveyRequest",
+	15: "MessageTypeSurveyResponse",
 }
 
 // ValidEnum validates a proposed value for this enum.  Implements
@@ -5483,6 +5776,430 @@ var (
 	_ encoding.BinaryUnmarshaler = (*DontHave)(nil)
 )
 
+// SurveyMessageCommandType is an XDR Enum defines as:
+//
+//   enum SurveyMessageCommandType
+//    {
+//        SURVEY_TOPOLOGY = 0
+//    };
+//
+type SurveyMessageCommandType int32
+
+const (
+	SurveyMessageCommandTypeSurveyTopology SurveyMessageCommandType = 0
+)
+
+var surveyMessageCommandTypeMap = map[int32]string{
+	0: "SurveyMessageCommandTypeSurveyTopology",
+}
+
+// ValidEnum validates a proposed value for this enum.  Implements
+// the Enum interface for SurveyMessageCommandType
+func (e SurveyMessageCommandType) ValidEnum(v int32) bool {
+	_, ok := surveyMessageCommandTypeMap[v]
+	return ok
+}
+
+// String returns the name of `e`
+func (e SurveyMessageCommandType) String() string {
+	name, _ := surveyMessageCommandTypeMap[int32(e)]
+	return name
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s SurveyMessageCommandType) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *SurveyMessageCommandType) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*SurveyMessageCommandType)(nil)
+	_ encoding.BinaryUnmarshaler = (*SurveyMessageCommandType)(nil)
+)
+
+// SurveyRequestMessage is an XDR Struct defines as:
+//
+//   struct SurveyRequestMessage
+//    {
+//        NodeID surveyorPeerID;
+//        NodeID surveyedPeerID;
+//        uint32 ledgerNum;
+//        Curve25519Public encryptionKey;
+//        SurveyMessageCommandType commandType;
+//    };
+//
+type SurveyRequestMessage struct {
+	SurveyorPeerId NodeId
+	SurveyedPeerId NodeId
+	LedgerNum      Uint32
+	EncryptionKey  Curve25519Public
+	CommandType    SurveyMessageCommandType
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s SurveyRequestMessage) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *SurveyRequestMessage) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*SurveyRequestMessage)(nil)
+	_ encoding.BinaryUnmarshaler = (*SurveyRequestMessage)(nil)
+)
+
+// SignedSurveyRequestMessage is an XDR Struct defines as:
+//
+//   struct SignedSurveyRequestMessage
+//    {
+//        Signature requestSignature;
+//        SurveyRequestMessage request;
+//    };
+//
+type SignedSurveyRequestMessage struct {
+	RequestSignature Signature
+	Request          SurveyRequestMessage
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s SignedSurveyRequestMessage) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *SignedSurveyRequestMessage) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*SignedSurveyRequestMessage)(nil)
+	_ encoding.BinaryUnmarshaler = (*SignedSurveyRequestMessage)(nil)
+)
+
+// EncryptedBody is an XDR Typedef defines as:
+//
+//   typedef opaque EncryptedBody<64000>;
+//
+type EncryptedBody []byte
+
+// XDRMaxSize implements the Sized interface for EncryptedBody
+func (e EncryptedBody) XDRMaxSize() int {
+	return 64000
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s EncryptedBody) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *EncryptedBody) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*EncryptedBody)(nil)
+	_ encoding.BinaryUnmarshaler = (*EncryptedBody)(nil)
+)
+
+// SurveyResponseMessage is an XDR Struct defines as:
+//
+//   struct SurveyResponseMessage
+//    {
+//        NodeID surveyorPeerID;
+//        NodeID surveyedPeerID;
+//        uint32 ledgerNum;
+//        SurveyMessageCommandType commandType;
+//        EncryptedBody encryptedBody;
+//    };
+//
+type SurveyResponseMessage struct {
+	SurveyorPeerId NodeId
+	SurveyedPeerId NodeId
+	LedgerNum      Uint32
+	CommandType    SurveyMessageCommandType
+	EncryptedBody  EncryptedBody
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s SurveyResponseMessage) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *SurveyResponseMessage) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*SurveyResponseMessage)(nil)
+	_ encoding.BinaryUnmarshaler = (*SurveyResponseMessage)(nil)
+)
+
+// SignedSurveyResponseMessage is an XDR Struct defines as:
+//
+//   struct SignedSurveyResponseMessage
+//    {
+//        Signature responseSignature;
+//        SurveyResponseMessage response;
+//    };
+//
+type SignedSurveyResponseMessage struct {
+	ResponseSignature Signature
+	Response          SurveyResponseMessage
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s SignedSurveyResponseMessage) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *SignedSurveyResponseMessage) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*SignedSurveyResponseMessage)(nil)
+	_ encoding.BinaryUnmarshaler = (*SignedSurveyResponseMessage)(nil)
+)
+
+// PeerStats is an XDR Struct defines as:
+//
+//   struct PeerStats
+//    {
+//        NodeID id;
+//        string versionStr<100>;
+//        uint64 messagesRead;
+//        uint64 messagesWritten;
+//        uint64 bytesRead;
+//        uint64 bytesWritten;
+//        uint64 secondsConnected;
+//
+//        uint64 uniqueFloodBytesRecv;
+//        uint64 duplicateFloodBytesRecv;
+//        uint64 uniqueFetchBytesRecv;
+//        uint64 duplicateFetchBytesRecv;
+//
+//        uint64 uniqueFloodMessageRecv;
+//        uint64 duplicateFloodMessageRecv;
+//        uint64 uniqueFetchMessageRecv;
+//        uint64 duplicateFetchMessageRecv;
+//    };
+//
+type PeerStats struct {
+	Id                        NodeId
+	VersionStr                string `xdrmaxsize:"100"`
+	MessagesRead              Uint64
+	MessagesWritten           Uint64
+	BytesRead                 Uint64
+	BytesWritten              Uint64
+	SecondsConnected          Uint64
+	UniqueFloodBytesRecv      Uint64
+	DuplicateFloodBytesRecv   Uint64
+	UniqueFetchBytesRecv      Uint64
+	DuplicateFetchBytesRecv   Uint64
+	UniqueFloodMessageRecv    Uint64
+	DuplicateFloodMessageRecv Uint64
+	UniqueFetchMessageRecv    Uint64
+	DuplicateFetchMessageRecv Uint64
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s PeerStats) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *PeerStats) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*PeerStats)(nil)
+	_ encoding.BinaryUnmarshaler = (*PeerStats)(nil)
+)
+
+// PeerStatList is an XDR Typedef defines as:
+//
+//   typedef PeerStats PeerStatList<25>;
+//
+type PeerStatList []PeerStats
+
+// XDRMaxSize implements the Sized interface for PeerStatList
+func (e PeerStatList) XDRMaxSize() int {
+	return 25
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s PeerStatList) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *PeerStatList) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*PeerStatList)(nil)
+	_ encoding.BinaryUnmarshaler = (*PeerStatList)(nil)
+)
+
+// TopologyResponseBody is an XDR Struct defines as:
+//
+//   struct TopologyResponseBody
+//    {
+//        PeerStatList inboundPeers;
+//        PeerStatList outboundPeers;
+//
+//        uint32 totalInboundPeerCount;
+//        uint32 totalOutboundPeerCount;
+//    };
+//
+type TopologyResponseBody struct {
+	InboundPeers           PeerStatList
+	OutboundPeers          PeerStatList
+	TotalInboundPeerCount  Uint32
+	TotalOutboundPeerCount Uint32
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s TopologyResponseBody) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *TopologyResponseBody) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*TopologyResponseBody)(nil)
+	_ encoding.BinaryUnmarshaler = (*TopologyResponseBody)(nil)
+)
+
+// SurveyResponseBody is an XDR Union defines as:
+//
+//   union SurveyResponseBody switch (SurveyMessageCommandType type)
+//    {
+//    case SURVEY_TOPOLOGY:
+//        TopologyResponseBody topologyResponseBody;
+//    };
+//
+type SurveyResponseBody struct {
+	Type                 SurveyMessageCommandType
+	TopologyResponseBody *TopologyResponseBody
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u SurveyResponseBody) SwitchFieldName() string {
+	return "Type"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of SurveyResponseBody
+func (u SurveyResponseBody) ArmForSwitch(sw int32) (string, bool) {
+	switch SurveyMessageCommandType(sw) {
+	case SurveyMessageCommandTypeSurveyTopology:
+		return "TopologyResponseBody", true
+	}
+	return "-", false
+}
+
+// NewSurveyResponseBody creates a new  SurveyResponseBody.
+func NewSurveyResponseBody(aType SurveyMessageCommandType, value interface{}) (result SurveyResponseBody, err error) {
+	result.Type = aType
+	switch SurveyMessageCommandType(aType) {
+	case SurveyMessageCommandTypeSurveyTopology:
+		tv, ok := value.(TopologyResponseBody)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be TopologyResponseBody")
+			return
+		}
+		result.TopologyResponseBody = &tv
+	}
+	return
+}
+
+// MustTopologyResponseBody retrieves the TopologyResponseBody value from the union,
+// panicing if the value is not set.
+func (u SurveyResponseBody) MustTopologyResponseBody() TopologyResponseBody {
+	val, ok := u.GetTopologyResponseBody()
+
+	if !ok {
+		panic("arm TopologyResponseBody is not set")
+	}
+
+	return val
+}
+
+// GetTopologyResponseBody retrieves the TopologyResponseBody value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u SurveyResponseBody) GetTopologyResponseBody() (result TopologyResponseBody, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "TopologyResponseBody" {
+		result = *u.TopologyResponseBody
+		ok = true
+	}
+
+	return
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s SurveyResponseBody) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *SurveyResponseBody) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*SurveyResponseBody)(nil)
+	_ encoding.BinaryUnmarshaler = (*SurveyResponseBody)(nil)
+)
+
 // StellarMessage is an XDR Union defines as:
 //
 //   union StellarMessage switch (MessageType type)
@@ -5508,6 +6225,12 @@ var (
 //    case TRANSACTION:
 //        TransactionEnvelope transaction;
 //
+//    case SURVEY_REQUEST:
+//        SignedSurveyRequestMessage signedSurveyRequestMessage;
+//
+//    case SURVEY_RESPONSE:
+//        SignedSurveyResponseMessage signedSurveyResponseMessage;
+//
 //    // SCP
 //    case GET_SCP_QUORUMSET:
 //        uint256 qSetHash;
@@ -5520,19 +6243,21 @@ var (
 //    };
 //
 type StellarMessage struct {
-	Type            MessageType
-	Error           *Error
-	Hello           *Hello
-	Auth            *Auth
-	DontHave        *DontHave
-	Peers           *[]PeerAddress `xdrmaxsize:"100"`
-	TxSetHash       *Uint256
-	TxSet           *TransactionSet
-	Transaction     *TransactionEnvelope
-	QSetHash        *Uint256
-	QSet            *ScpQuorumSet
-	Envelope        *ScpEnvelope
-	GetScpLedgerSeq *Uint32
+	Type                        MessageType
+	Error                       *Error
+	Hello                       *Hello
+	Auth                        *Auth
+	DontHave                    *DontHave
+	Peers                       *[]PeerAddress `xdrmaxsize:"100"`
+	TxSetHash                   *Uint256
+	TxSet                       *TransactionSet
+	Transaction                 *TransactionEnvelope
+	SignedSurveyRequestMessage  *SignedSurveyRequestMessage
+	SignedSurveyResponseMessage *SignedSurveyResponseMessage
+	QSetHash                    *Uint256
+	QSet                        *ScpQuorumSet
+	Envelope                    *ScpEnvelope
+	GetScpLedgerSeq             *Uint32
 }
 
 // SwitchFieldName returns the field name in which this union's
@@ -5563,6 +6288,10 @@ func (u StellarMessage) ArmForSwitch(sw int32) (string, bool) {
 		return "TxSet", true
 	case MessageTypeTransaction:
 		return "Transaction", true
+	case MessageTypeSurveyRequest:
+		return "SignedSurveyRequestMessage", true
+	case MessageTypeSurveyResponse:
+		return "SignedSurveyResponseMessage", true
 	case MessageTypeGetScpQuorumset:
 		return "QSetHash", true
 	case MessageTypeScpQuorumset:
@@ -5637,6 +6366,20 @@ func NewStellarMessage(aType MessageType, value interface{}) (result StellarMess
 			return
 		}
 		result.Transaction = &tv
+	case MessageTypeSurveyRequest:
+		tv, ok := value.(SignedSurveyRequestMessage)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be SignedSurveyRequestMessage")
+			return
+		}
+		result.SignedSurveyRequestMessage = &tv
+	case MessageTypeSurveyResponse:
+		tv, ok := value.(SignedSurveyResponseMessage)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be SignedSurveyResponseMessage")
+			return
+		}
+		result.SignedSurveyResponseMessage = &tv
 	case MessageTypeGetScpQuorumset:
 		tv, ok := value.(Uint256)
 		if !ok {
@@ -5869,6 +6612,56 @@ func (u StellarMessage) GetTransaction() (result TransactionEnvelope, ok bool) {
 	return
 }
 
+// MustSignedSurveyRequestMessage retrieves the SignedSurveyRequestMessage value from the union,
+// panicing if the value is not set.
+func (u StellarMessage) MustSignedSurveyRequestMessage() SignedSurveyRequestMessage {
+	val, ok := u.GetSignedSurveyRequestMessage()
+
+	if !ok {
+		panic("arm SignedSurveyRequestMessage is not set")
+	}
+
+	return val
+}
+
+// GetSignedSurveyRequestMessage retrieves the SignedSurveyRequestMessage value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u StellarMessage) GetSignedSurveyRequestMessage() (result SignedSurveyRequestMessage, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "SignedSurveyRequestMessage" {
+		result = *u.SignedSurveyRequestMessage
+		ok = true
+	}
+
+	return
+}
+
+// MustSignedSurveyResponseMessage retrieves the SignedSurveyResponseMessage value from the union,
+// panicing if the value is not set.
+func (u StellarMessage) MustSignedSurveyResponseMessage() SignedSurveyResponseMessage {
+	val, ok := u.GetSignedSurveyResponseMessage()
+
+	if !ok {
+		panic("arm SignedSurveyResponseMessage is not set")
+	}
+
+	return val
+}
+
+// GetSignedSurveyResponseMessage retrieves the SignedSurveyResponseMessage value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u StellarMessage) GetSignedSurveyResponseMessage() (result SignedSurveyResponseMessage, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "SignedSurveyResponseMessage" {
+		result = *u.SignedSurveyResponseMessage
+		ok = true
+	}
+
+	return
+}
+
 // MustQSetHash retrieves the QSetHash value from the union,
 // panicing if the value is not set.
 func (u StellarMessage) MustQSetHash() Uint256 {
@@ -5990,10 +6783,10 @@ var (
 // AuthenticatedMessageV0 is an XDR NestedStruct defines as:
 //
 //   struct
-//    {
-//       uint64 sequence;
-//       StellarMessage message;
-//       HmacSha256Mac mac;
+//        {
+//            uint64 sequence;
+//            StellarMessage message;
+//            HmacSha256Mac mac;
 //        }
 //
 type AuthenticatedMessageV0 struct {
@@ -6026,10 +6819,10 @@ var (
 //    {
 //    case 0:
 //        struct
-//    {
-//       uint64 sequence;
-//       StellarMessage message;
-//       HmacSha256Mac mac;
+//        {
+//            uint64 sequence;
+//            StellarMessage message;
+//            HmacSha256Mac mac;
 //        } v0;
 //    };
 //
@@ -6110,6 +6903,165 @@ func (s *AuthenticatedMessage) UnmarshalBinary(inp []byte) error {
 var (
 	_ encoding.BinaryMarshaler   = (*AuthenticatedMessage)(nil)
 	_ encoding.BinaryUnmarshaler = (*AuthenticatedMessage)(nil)
+)
+
+// MuxedAccountMed25519 is an XDR NestedStruct defines as:
+//
+//   struct
+//        {
+//            uint64 id;
+//            uint256 ed25519;
+//        }
+//
+type MuxedAccountMed25519 struct {
+	Id      Uint64
+	Ed25519 Uint256
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s MuxedAccountMed25519) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *MuxedAccountMed25519) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*MuxedAccountMed25519)(nil)
+	_ encoding.BinaryUnmarshaler = (*MuxedAccountMed25519)(nil)
+)
+
+// MuxedAccount is an XDR Union defines as:
+//
+//   union MuxedAccount switch (CryptoKeyType type)
+//    {
+//    case KEY_TYPE_ED25519:
+//        uint256 ed25519;
+//    case KEY_TYPE_MUXED_ED25519:
+//        struct
+//        {
+//            uint64 id;
+//            uint256 ed25519;
+//        } med25519;
+//    };
+//
+type MuxedAccount struct {
+	Type     CryptoKeyType
+	Ed25519  *Uint256
+	Med25519 *MuxedAccountMed25519
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u MuxedAccount) SwitchFieldName() string {
+	return "Type"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of MuxedAccount
+func (u MuxedAccount) ArmForSwitch(sw int32) (string, bool) {
+	switch CryptoKeyType(sw) {
+	case CryptoKeyTypeKeyTypeEd25519:
+		return "Ed25519", true
+	case CryptoKeyTypeKeyTypeMuxedEd25519:
+		return "Med25519", true
+	}
+	return "-", false
+}
+
+// NewMuxedAccount creates a new  MuxedAccount.
+func NewMuxedAccount(aType CryptoKeyType, value interface{}) (result MuxedAccount, err error) {
+	result.Type = aType
+	switch CryptoKeyType(aType) {
+	case CryptoKeyTypeKeyTypeEd25519:
+		tv, ok := value.(Uint256)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be Uint256")
+			return
+		}
+		result.Ed25519 = &tv
+	case CryptoKeyTypeKeyTypeMuxedEd25519:
+		tv, ok := value.(MuxedAccountMed25519)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be MuxedAccountMed25519")
+			return
+		}
+		result.Med25519 = &tv
+	}
+	return
+}
+
+// MustEd25519 retrieves the Ed25519 value from the union,
+// panicing if the value is not set.
+func (u MuxedAccount) MustEd25519() Uint256 {
+	val, ok := u.GetEd25519()
+
+	if !ok {
+		panic("arm Ed25519 is not set")
+	}
+
+	return val
+}
+
+// GetEd25519 retrieves the Ed25519 value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u MuxedAccount) GetEd25519() (result Uint256, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "Ed25519" {
+		result = *u.Ed25519
+		ok = true
+	}
+
+	return
+}
+
+// MustMed25519 retrieves the Med25519 value from the union,
+// panicing if the value is not set.
+func (u MuxedAccount) MustMed25519() MuxedAccountMed25519 {
+	val, ok := u.GetMed25519()
+
+	if !ok {
+		panic("arm Med25519 is not set")
+	}
+
+	return val
+}
+
+// GetMed25519 retrieves the Med25519 value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u MuxedAccount) GetMed25519() (result MuxedAccountMed25519, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "Med25519" {
+		result = *u.Med25519
+		ok = true
+	}
+
+	return
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s MuxedAccount) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *MuxedAccount) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*MuxedAccount)(nil)
+	_ encoding.BinaryUnmarshaler = (*MuxedAccount)(nil)
 )
 
 // DecoratedSignature is an XDR Struct defines as:
@@ -6265,13 +7217,13 @@ var (
 //
 //   struct PaymentOp
 //    {
-//        AccountID destination; // recipient of the payment
-//        Asset asset;           // what they end up with
-//        int64 amount;          // amount they end up with
+//        MuxedAccount destination; // recipient of the payment
+//        Asset asset;              // what they end up with
+//        int64 amount;             // amount they end up with
 //    };
 //
 type PaymentOp struct {
-	Destination AccountId
+	Destination MuxedAccount
 	Asset       Asset
 	Amount      Int64
 }
@@ -6303,9 +7255,9 @@ var (
 //                         // send (excluding fees).
 //                         // The operation will fail if can't be met
 //
-//        AccountID destination; // recipient of the payment
-//        Asset destAsset;       // what they end up with
-//        int64 destAmount;      // amount they end up with
+//        MuxedAccount destination; // recipient of the payment
+//        Asset destAsset;          // what they end up with
+//        int64 destAmount;         // amount they end up with
 //
 //        Asset path<5>; // additional hops it must go through to get there
 //    };
@@ -6313,7 +7265,7 @@ var (
 type PathPaymentStrictReceiveOp struct {
 	SendAsset   Asset
 	SendMax     Int64
-	Destination AccountId
+	Destination MuxedAccount
 	DestAsset   Asset
 	DestAmount  Int64
 	Path        []Asset `xdrmaxsize:"5"`
@@ -6344,11 +7296,11 @@ var (
 //        Asset sendAsset;  // asset we pay with
 //        int64 sendAmount; // amount of sendAsset to send (excluding fees)
 //
-//        AccountID destination; // recipient of the payment
-//        Asset destAsset;       // what they end up with
-//        int64 destMin;         // the minimum amount of dest asset to
-//                               // be received
-//                               // The operation will fail if it can't be met
+//        MuxedAccount destination; // recipient of the payment
+//        Asset destAsset;          // what they end up with
+//        int64 destMin;            // the minimum amount of dest asset to
+//                                  // be received
+//                                  // The operation will fail if it can't be met
 //
 //        Asset path<5>; // additional hops it must go through to get there
 //    };
@@ -6356,7 +7308,7 @@ var (
 type PathPaymentStrictSendOp struct {
 	SendAsset   Asset
 	SendAmount  Int64
-	Destination AccountId
+	Destination MuxedAccount
 	DestAsset   Asset
 	DestMin     Int64
 	Path        []Asset `xdrmaxsize:"5"`
@@ -6725,13 +7677,14 @@ var (
 //        }
 //        asset;
 //
-//        bool authorize;
+//        // 0, or any bitwise combination of TrustLineFlags
+//        uint32 authorize;
 //    };
 //
 type AllowTrustOp struct {
 	Trustor   AccountId
 	Asset     AllowTrustOpAsset
-	Authorize bool
+	Authorize Uint32
 }
 
 // MarshalBinary implements encoding.BinaryMarshaler.
@@ -6833,7 +7786,7 @@ var (
 //        case ALLOW_TRUST:
 //            AllowTrustOp allowTrustOp;
 //        case ACCOUNT_MERGE:
-//            AccountID destination;
+//            MuxedAccount destination;
 //        case INFLATION:
 //            void;
 //        case MANAGE_DATA:
@@ -6856,7 +7809,7 @@ type OperationBody struct {
 	SetOptionsOp               *SetOptionsOp
 	ChangeTrustOp              *ChangeTrustOp
 	AllowTrustOp               *AllowTrustOp
-	Destination                *AccountId
+	Destination                *MuxedAccount
 	ManageDataOp               *ManageDataOp
 	BumpSequenceOp             *BumpSequenceOp
 	ManageBuyOfferOp           *ManageBuyOfferOp
@@ -6966,9 +7919,9 @@ func NewOperationBody(aType OperationType, value interface{}) (result OperationB
 		}
 		result.AllowTrustOp = &tv
 	case OperationTypeAccountMerge:
-		tv, ok := value.(AccountId)
+		tv, ok := value.(MuxedAccount)
 		if !ok {
-			err = fmt.Errorf("invalid value, must be AccountId")
+			err = fmt.Errorf("invalid value, must be MuxedAccount")
 			return
 		}
 		result.Destination = &tv
@@ -7208,7 +8161,7 @@ func (u OperationBody) GetAllowTrustOp() (result AllowTrustOp, ok bool) {
 
 // MustDestination retrieves the Destination value from the union,
 // panicing if the value is not set.
-func (u OperationBody) MustDestination() AccountId {
+func (u OperationBody) MustDestination() MuxedAccount {
 	val, ok := u.GetDestination()
 
 	if !ok {
@@ -7220,7 +8173,7 @@ func (u OperationBody) MustDestination() AccountId {
 
 // GetDestination retrieves the Destination value from the union,
 // returning ok if the union's switch indicated the value is valid.
-func (u OperationBody) GetDestination() (result AccountId, ok bool) {
+func (u OperationBody) GetDestination() (result MuxedAccount, ok bool) {
 	armName, _ := u.ArmForSwitch(int32(u.Type))
 
 	if armName == "Destination" {
@@ -7356,7 +8309,7 @@ var (
 //        // sourceAccount is the account used to run the operation
 //        // if not set, the runtime defaults to "sourceAccount" specified at
 //        // the transaction level
-//        AccountID* sourceAccount;
+//        MuxedAccount* sourceAccount;
 //
 //        union switch (OperationType type)
 //        {
@@ -7377,7 +8330,7 @@ var (
 //        case ALLOW_TRUST:
 //            AllowTrustOp allowTrustOp;
 //        case ACCOUNT_MERGE:
-//            AccountID destination;
+//            MuxedAccount destination;
 //        case INFLATION:
 //            void;
 //        case MANAGE_DATA:
@@ -7393,7 +8346,7 @@ var (
 //    };
 //
 type Operation struct {
-	SourceAccount *AccountId
+	SourceAccount *MuxedAccount
 	Body          OperationBody
 }
 
@@ -7716,6 +8669,141 @@ var (
 //
 const MaxOpsPerTx = 100
 
+// TransactionV0Ext is an XDR NestedUnion defines as:
+//
+//   union switch (int v)
+//        {
+//        case 0:
+//            void;
+//        }
+//
+type TransactionV0Ext struct {
+	V int32
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u TransactionV0Ext) SwitchFieldName() string {
+	return "V"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of TransactionV0Ext
+func (u TransactionV0Ext) ArmForSwitch(sw int32) (string, bool) {
+	switch int32(sw) {
+	case 0:
+		return "", true
+	}
+	return "-", false
+}
+
+// NewTransactionV0Ext creates a new  TransactionV0Ext.
+func NewTransactionV0Ext(v int32, value interface{}) (result TransactionV0Ext, err error) {
+	result.V = v
+	switch int32(v) {
+	case 0:
+		// void
+	}
+	return
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s TransactionV0Ext) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *TransactionV0Ext) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*TransactionV0Ext)(nil)
+	_ encoding.BinaryUnmarshaler = (*TransactionV0Ext)(nil)
+)
+
+// TransactionV0 is an XDR Struct defines as:
+//
+//   struct TransactionV0
+//    {
+//        uint256 sourceAccountEd25519;
+//        uint32 fee;
+//        SequenceNumber seqNum;
+//        TimeBounds* timeBounds;
+//        Memo memo;
+//        Operation operations<MAX_OPS_PER_TX>;
+//        union switch (int v)
+//        {
+//        case 0:
+//            void;
+//        }
+//        ext;
+//    };
+//
+type TransactionV0 struct {
+	SourceAccountEd25519 Uint256
+	Fee                  Uint32
+	SeqNum               SequenceNumber
+	TimeBounds           *TimeBounds
+	Memo                 Memo
+	Operations           []Operation `xdrmaxsize:"100"`
+	Ext                  TransactionV0Ext
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s TransactionV0) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *TransactionV0) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*TransactionV0)(nil)
+	_ encoding.BinaryUnmarshaler = (*TransactionV0)(nil)
+)
+
+// TransactionV0Envelope is an XDR Struct defines as:
+//
+//   struct TransactionV0Envelope
+//    {
+//        TransactionV0 tx;
+//        /* Each decorated signature is a signature over the SHA256 hash of
+//         * a TransactionSignaturePayload */
+//        DecoratedSignature signatures<20>;
+//    };
+//
+type TransactionV0Envelope struct {
+	Tx         TransactionV0
+	Signatures []DecoratedSignature `xdrmaxsize:"20"`
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s TransactionV0Envelope) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *TransactionV0Envelope) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*TransactionV0Envelope)(nil)
+	_ encoding.BinaryUnmarshaler = (*TransactionV0Envelope)(nil)
+)
+
 // TransactionExt is an XDR NestedUnion defines as:
 //
 //   union switch (int v)
@@ -7777,7 +8865,7 @@ var (
 //   struct Transaction
 //    {
 //        // account used to run the transaction
-//        AccountID sourceAccount;
+//        MuxedAccount sourceAccount;
 //
 //        // the fee the sourceAccount will pay
 //        uint32 fee;
@@ -7802,7 +8890,7 @@ var (
 //    };
 //
 type Transaction struct {
-	SourceAccount AccountId
+	SourceAccount MuxedAccount
 	Fee           Uint32
 	SeqNum        SequenceNumber
 	TimeBounds    *TimeBounds
@@ -7829,18 +8917,436 @@ var (
 	_ encoding.BinaryUnmarshaler = (*Transaction)(nil)
 )
 
-// TransactionSignaturePayloadTaggedTransaction is an XDR NestedUnion defines as:
+// TransactionV1Envelope is an XDR Struct defines as:
+//
+//   struct TransactionV1Envelope
+//    {
+//        Transaction tx;
+//        /* Each decorated signature is a signature over the SHA256 hash of
+//         * a TransactionSignaturePayload */
+//        DecoratedSignature signatures<20>;
+//    };
+//
+type TransactionV1Envelope struct {
+	Tx         Transaction
+	Signatures []DecoratedSignature `xdrmaxsize:"20"`
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s TransactionV1Envelope) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *TransactionV1Envelope) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*TransactionV1Envelope)(nil)
+	_ encoding.BinaryUnmarshaler = (*TransactionV1Envelope)(nil)
+)
+
+// FeeBumpTransactionInnerTx is an XDR NestedUnion defines as:
 //
 //   union switch (EnvelopeType type)
 //        {
 //        case ENVELOPE_TYPE_TX:
+//            TransactionV1Envelope v1;
+//        }
+//
+type FeeBumpTransactionInnerTx struct {
+	Type EnvelopeType
+	V1   *TransactionV1Envelope
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u FeeBumpTransactionInnerTx) SwitchFieldName() string {
+	return "Type"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of FeeBumpTransactionInnerTx
+func (u FeeBumpTransactionInnerTx) ArmForSwitch(sw int32) (string, bool) {
+	switch EnvelopeType(sw) {
+	case EnvelopeTypeEnvelopeTypeTx:
+		return "V1", true
+	}
+	return "-", false
+}
+
+// NewFeeBumpTransactionInnerTx creates a new  FeeBumpTransactionInnerTx.
+func NewFeeBumpTransactionInnerTx(aType EnvelopeType, value interface{}) (result FeeBumpTransactionInnerTx, err error) {
+	result.Type = aType
+	switch EnvelopeType(aType) {
+	case EnvelopeTypeEnvelopeTypeTx:
+		tv, ok := value.(TransactionV1Envelope)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be TransactionV1Envelope")
+			return
+		}
+		result.V1 = &tv
+	}
+	return
+}
+
+// MustV1 retrieves the V1 value from the union,
+// panicing if the value is not set.
+func (u FeeBumpTransactionInnerTx) MustV1() TransactionV1Envelope {
+	val, ok := u.GetV1()
+
+	if !ok {
+		panic("arm V1 is not set")
+	}
+
+	return val
+}
+
+// GetV1 retrieves the V1 value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u FeeBumpTransactionInnerTx) GetV1() (result TransactionV1Envelope, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "V1" {
+		result = *u.V1
+		ok = true
+	}
+
+	return
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s FeeBumpTransactionInnerTx) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *FeeBumpTransactionInnerTx) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*FeeBumpTransactionInnerTx)(nil)
+	_ encoding.BinaryUnmarshaler = (*FeeBumpTransactionInnerTx)(nil)
+)
+
+// FeeBumpTransactionExt is an XDR NestedUnion defines as:
+//
+//   union switch (int v)
+//        {
+//        case 0:
+//            void;
+//        }
+//
+type FeeBumpTransactionExt struct {
+	V int32
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u FeeBumpTransactionExt) SwitchFieldName() string {
+	return "V"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of FeeBumpTransactionExt
+func (u FeeBumpTransactionExt) ArmForSwitch(sw int32) (string, bool) {
+	switch int32(sw) {
+	case 0:
+		return "", true
+	}
+	return "-", false
+}
+
+// NewFeeBumpTransactionExt creates a new  FeeBumpTransactionExt.
+func NewFeeBumpTransactionExt(v int32, value interface{}) (result FeeBumpTransactionExt, err error) {
+	result.V = v
+	switch int32(v) {
+	case 0:
+		// void
+	}
+	return
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s FeeBumpTransactionExt) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *FeeBumpTransactionExt) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*FeeBumpTransactionExt)(nil)
+	_ encoding.BinaryUnmarshaler = (*FeeBumpTransactionExt)(nil)
+)
+
+// FeeBumpTransaction is an XDR Struct defines as:
+//
+//   struct FeeBumpTransaction
+//    {
+//        MuxedAccount feeSource;
+//        int64 fee;
+//        union switch (EnvelopeType type)
+//        {
+//        case ENVELOPE_TYPE_TX:
+//            TransactionV1Envelope v1;
+//        }
+//        innerTx;
+//        union switch (int v)
+//        {
+//        case 0:
+//            void;
+//        }
+//        ext;
+//    };
+//
+type FeeBumpTransaction struct {
+	FeeSource MuxedAccount
+	Fee       Int64
+	InnerTx   FeeBumpTransactionInnerTx
+	Ext       FeeBumpTransactionExt
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s FeeBumpTransaction) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *FeeBumpTransaction) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*FeeBumpTransaction)(nil)
+	_ encoding.BinaryUnmarshaler = (*FeeBumpTransaction)(nil)
+)
+
+// FeeBumpTransactionEnvelope is an XDR Struct defines as:
+//
+//   struct FeeBumpTransactionEnvelope
+//    {
+//        FeeBumpTransaction tx;
+//        /* Each decorated signature is a signature over the SHA256 hash of
+//         * a TransactionSignaturePayload */
+//        DecoratedSignature signatures<20>;
+//    };
+//
+type FeeBumpTransactionEnvelope struct {
+	Tx         FeeBumpTransaction
+	Signatures []DecoratedSignature `xdrmaxsize:"20"`
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s FeeBumpTransactionEnvelope) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *FeeBumpTransactionEnvelope) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*FeeBumpTransactionEnvelope)(nil)
+	_ encoding.BinaryUnmarshaler = (*FeeBumpTransactionEnvelope)(nil)
+)
+
+// TransactionEnvelope is an XDR Union defines as:
+//
+//   union TransactionEnvelope switch (EnvelopeType type)
+//    {
+//    case ENVELOPE_TYPE_TX_V0:
+//        TransactionV0Envelope v0;
+//    case ENVELOPE_TYPE_TX:
+//        TransactionV1Envelope v1;
+//    case ENVELOPE_TYPE_TX_FEE_BUMP:
+//        FeeBumpTransactionEnvelope feeBump;
+//    };
+//
+type TransactionEnvelope struct {
+	Type    EnvelopeType
+	V0      *TransactionV0Envelope
+	V1      *TransactionV1Envelope
+	FeeBump *FeeBumpTransactionEnvelope
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u TransactionEnvelope) SwitchFieldName() string {
+	return "Type"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of TransactionEnvelope
+func (u TransactionEnvelope) ArmForSwitch(sw int32) (string, bool) {
+	switch EnvelopeType(sw) {
+	case EnvelopeTypeEnvelopeTypeTxV0:
+		return "V0", true
+	case EnvelopeTypeEnvelopeTypeTx:
+		return "V1", true
+	case EnvelopeTypeEnvelopeTypeTxFeeBump:
+		return "FeeBump", true
+	}
+	return "-", false
+}
+
+// NewTransactionEnvelope creates a new  TransactionEnvelope.
+func NewTransactionEnvelope(aType EnvelopeType, value interface{}) (result TransactionEnvelope, err error) {
+	result.Type = aType
+	switch EnvelopeType(aType) {
+	case EnvelopeTypeEnvelopeTypeTxV0:
+		tv, ok := value.(TransactionV0Envelope)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be TransactionV0Envelope")
+			return
+		}
+		result.V0 = &tv
+	case EnvelopeTypeEnvelopeTypeTx:
+		tv, ok := value.(TransactionV1Envelope)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be TransactionV1Envelope")
+			return
+		}
+		result.V1 = &tv
+	case EnvelopeTypeEnvelopeTypeTxFeeBump:
+		tv, ok := value.(FeeBumpTransactionEnvelope)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be FeeBumpTransactionEnvelope")
+			return
+		}
+		result.FeeBump = &tv
+	}
+	return
+}
+
+// MustV0 retrieves the V0 value from the union,
+// panicing if the value is not set.
+func (u TransactionEnvelope) MustV0() TransactionV0Envelope {
+	val, ok := u.GetV0()
+
+	if !ok {
+		panic("arm V0 is not set")
+	}
+
+	return val
+}
+
+// GetV0 retrieves the V0 value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u TransactionEnvelope) GetV0() (result TransactionV0Envelope, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "V0" {
+		result = *u.V0
+		ok = true
+	}
+
+	return
+}
+
+// MustV1 retrieves the V1 value from the union,
+// panicing if the value is not set.
+func (u TransactionEnvelope) MustV1() TransactionV1Envelope {
+	val, ok := u.GetV1()
+
+	if !ok {
+		panic("arm V1 is not set")
+	}
+
+	return val
+}
+
+// GetV1 retrieves the V1 value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u TransactionEnvelope) GetV1() (result TransactionV1Envelope, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "V1" {
+		result = *u.V1
+		ok = true
+	}
+
+	return
+}
+
+// MustFeeBump retrieves the FeeBump value from the union,
+// panicing if the value is not set.
+func (u TransactionEnvelope) MustFeeBump() FeeBumpTransactionEnvelope {
+	val, ok := u.GetFeeBump()
+
+	if !ok {
+		panic("arm FeeBump is not set")
+	}
+
+	return val
+}
+
+// GetFeeBump retrieves the FeeBump value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u TransactionEnvelope) GetFeeBump() (result FeeBumpTransactionEnvelope, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "FeeBump" {
+		result = *u.FeeBump
+		ok = true
+	}
+
+	return
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s TransactionEnvelope) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *TransactionEnvelope) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*TransactionEnvelope)(nil)
+	_ encoding.BinaryUnmarshaler = (*TransactionEnvelope)(nil)
+)
+
+// TransactionSignaturePayloadTaggedTransaction is an XDR NestedUnion defines as:
+//
+//   union switch (EnvelopeType type)
+//        {
+//        // Backwards Compatibility: Use ENVELOPE_TYPE_TX to sign ENVELOPE_TYPE_TX_V0
+//        case ENVELOPE_TYPE_TX:
 //            Transaction tx;
-//            /* All other values of type are invalid */
+//        case ENVELOPE_TYPE_TX_FEE_BUMP:
+//            FeeBumpTransaction feeBump;
 //        }
 //
 type TransactionSignaturePayloadTaggedTransaction struct {
-	Type EnvelopeType
-	Tx   *Transaction
+	Type    EnvelopeType
+	Tx      *Transaction
+	FeeBump *FeeBumpTransaction
 }
 
 // SwitchFieldName returns the field name in which this union's
@@ -7855,6 +9361,8 @@ func (u TransactionSignaturePayloadTaggedTransaction) ArmForSwitch(sw int32) (st
 	switch EnvelopeType(sw) {
 	case EnvelopeTypeEnvelopeTypeTx:
 		return "Tx", true
+	case EnvelopeTypeEnvelopeTypeTxFeeBump:
+		return "FeeBump", true
 	}
 	return "-", false
 }
@@ -7870,6 +9378,13 @@ func NewTransactionSignaturePayloadTaggedTransaction(aType EnvelopeType, value i
 			return
 		}
 		result.Tx = &tv
+	case EnvelopeTypeEnvelopeTypeTxFeeBump:
+		tv, ok := value.(FeeBumpTransaction)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be FeeBumpTransaction")
+			return
+		}
+		result.FeeBump = &tv
 	}
 	return
 }
@@ -7893,6 +9408,31 @@ func (u TransactionSignaturePayloadTaggedTransaction) GetTx() (result Transactio
 
 	if armName == "Tx" {
 		result = *u.Tx
+		ok = true
+	}
+
+	return
+}
+
+// MustFeeBump retrieves the FeeBump value from the union,
+// panicing if the value is not set.
+func (u TransactionSignaturePayloadTaggedTransaction) MustFeeBump() FeeBumpTransaction {
+	val, ok := u.GetFeeBump()
+
+	if !ok {
+		panic("arm FeeBump is not set")
+	}
+
+	return val
+}
+
+// GetFeeBump retrieves the FeeBump value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u TransactionSignaturePayloadTaggedTransaction) GetFeeBump() (result FeeBumpTransaction, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Type))
+
+	if armName == "FeeBump" {
+		result = *u.FeeBump
 		ok = true
 	}
 
@@ -7924,9 +9464,11 @@ var (
 //        Hash networkId;
 //        union switch (EnvelopeType type)
 //        {
+//        // Backwards Compatibility: Use ENVELOPE_TYPE_TX to sign ENVELOPE_TYPE_TX_V0
 //        case ENVELOPE_TYPE_TX:
 //            Transaction tx;
-//            /* All other values of type are invalid */
+//        case ENVELOPE_TYPE_TX_FEE_BUMP:
+//            FeeBumpTransaction feeBump;
 //        }
 //        taggedTransaction;
 //    };
@@ -7952,39 +9494,6 @@ func (s *TransactionSignaturePayload) UnmarshalBinary(inp []byte) error {
 var (
 	_ encoding.BinaryMarshaler   = (*TransactionSignaturePayload)(nil)
 	_ encoding.BinaryUnmarshaler = (*TransactionSignaturePayload)(nil)
-)
-
-// TransactionEnvelope is an XDR Struct defines as:
-//
-//   struct TransactionEnvelope
-//    {
-//        Transaction tx;
-//        /* Each decorated signature is a signature over the SHA256 hash of
-//         * a TransactionSignaturePayload */
-//        DecoratedSignature signatures<20>;
-//    };
-//
-type TransactionEnvelope struct {
-	Tx         Transaction
-	Signatures []DecoratedSignature `xdrmaxsize:"20"`
-}
-
-// MarshalBinary implements encoding.BinaryMarshaler.
-func (s TransactionEnvelope) MarshalBinary() ([]byte, error) {
-	b := new(bytes.Buffer)
-	_, err := Marshal(b, s)
-	return b.Bytes(), err
-}
-
-// UnmarshalBinary implements encoding.BinaryUnmarshaler.
-func (s *TransactionEnvelope) UnmarshalBinary(inp []byte) error {
-	_, err := Unmarshal(bytes.NewReader(inp), s)
-	return err
-}
-
-var (
-	_ encoding.BinaryMarshaler   = (*TransactionEnvelope)(nil)
-	_ encoding.BinaryUnmarshaler = (*TransactionEnvelope)(nil)
 )
 
 // ClaimOfferAtom is an XDR Struct defines as:
@@ -8303,18 +9812,27 @@ var (
 //        PATH_PAYMENT_STRICT_RECEIVE_SUCCESS = 0, // success
 //
 //        // codes considered as "failure" for the operation
-//        PATH_PAYMENT_STRICT_RECEIVE_MALFORMED = -1,          // bad input
-//        PATH_PAYMENT_STRICT_RECEIVE_UNDERFUNDED = -2,        // not enough funds in source account
-//        PATH_PAYMENT_STRICT_RECEIVE_SRC_NO_TRUST = -3,       // no trust line on source account
-//        PATH_PAYMENT_STRICT_RECEIVE_SRC_NOT_AUTHORIZED = -4, // source not authorized to transfer
-//        PATH_PAYMENT_STRICT_RECEIVE_NO_DESTINATION = -5,     // destination account does not exist
-//        PATH_PAYMENT_STRICT_RECEIVE_NO_TRUST = -6,           // dest missing a trust line for asset
-//        PATH_PAYMENT_STRICT_RECEIVE_NOT_AUTHORIZED = -7,     // dest not authorized to hold asset
-//        PATH_PAYMENT_STRICT_RECEIVE_LINE_FULL = -8,          // dest would go above their limit
-//        PATH_PAYMENT_STRICT_RECEIVE_NO_ISSUER = -9,          // missing issuer on one asset
-//        PATH_PAYMENT_STRICT_RECEIVE_TOO_FEW_OFFERS = -10,    // not enough offers to satisfy path
-//        PATH_PAYMENT_STRICT_RECEIVE_OFFER_CROSS_SELF = -11,  // would cross one of its own offers
-//        PATH_PAYMENT_STRICT_RECEIVE_OVER_SENDMAX = -12       // could not satisfy sendmax
+//        PATH_PAYMENT_STRICT_RECEIVE_MALFORMED = -1, // bad input
+//        PATH_PAYMENT_STRICT_RECEIVE_UNDERFUNDED =
+//            -2, // not enough funds in source account
+//        PATH_PAYMENT_STRICT_RECEIVE_SRC_NO_TRUST =
+//            -3, // no trust line on source account
+//        PATH_PAYMENT_STRICT_RECEIVE_SRC_NOT_AUTHORIZED =
+//            -4, // source not authorized to transfer
+//        PATH_PAYMENT_STRICT_RECEIVE_NO_DESTINATION =
+//            -5, // destination account does not exist
+//        PATH_PAYMENT_STRICT_RECEIVE_NO_TRUST =
+//            -6, // dest missing a trust line for asset
+//        PATH_PAYMENT_STRICT_RECEIVE_NOT_AUTHORIZED =
+//            -7, // dest not authorized to hold asset
+//        PATH_PAYMENT_STRICT_RECEIVE_LINE_FULL =
+//            -8, // dest would go above their limit
+//        PATH_PAYMENT_STRICT_RECEIVE_NO_ISSUER = -9, // missing issuer on one asset
+//        PATH_PAYMENT_STRICT_RECEIVE_TOO_FEW_OFFERS =
+//            -10, // not enough offers to satisfy path
+//        PATH_PAYMENT_STRICT_RECEIVE_OFFER_CROSS_SELF =
+//            -11, // would cross one of its own offers
+//        PATH_PAYMENT_STRICT_RECEIVE_OVER_SENDMAX = -12 // could not satisfy sendmax
 //    };
 //
 type PathPaymentStrictReceiveResultCode int32
@@ -8587,18 +10105,26 @@ var (
 //        PATH_PAYMENT_STRICT_SEND_SUCCESS = 0, // success
 //
 //        // codes considered as "failure" for the operation
-//        PATH_PAYMENT_STRICT_SEND_MALFORMED = -1,          // bad input
-//        PATH_PAYMENT_STRICT_SEND_UNDERFUNDED = -2,        // not enough funds in source account
-//        PATH_PAYMENT_STRICT_SEND_SRC_NO_TRUST = -3,       // no trust line on source account
-//        PATH_PAYMENT_STRICT_SEND_SRC_NOT_AUTHORIZED = -4, // source not authorized to transfer
-//        PATH_PAYMENT_STRICT_SEND_NO_DESTINATION = -5,     // destination account does not exist
-//        PATH_PAYMENT_STRICT_SEND_NO_TRUST = -6,           // dest missing a trust line for asset
-//        PATH_PAYMENT_STRICT_SEND_NOT_AUTHORIZED = -7,     // dest not authorized to hold asset
-//        PATH_PAYMENT_STRICT_SEND_LINE_FULL = -8,          // dest would go above their limit
-//        PATH_PAYMENT_STRICT_SEND_NO_ISSUER = -9,          // missing issuer on one asset
-//        PATH_PAYMENT_STRICT_SEND_TOO_FEW_OFFERS = -10,    // not enough offers to satisfy path
-//        PATH_PAYMENT_STRICT_SEND_OFFER_CROSS_SELF = -11,  // would cross one of its own offers
-//        PATH_PAYMENT_STRICT_SEND_UNDER_DESTMIN = -12      // could not satisfy destMin
+//        PATH_PAYMENT_STRICT_SEND_MALFORMED = -1, // bad input
+//        PATH_PAYMENT_STRICT_SEND_UNDERFUNDED =
+//            -2, // not enough funds in source account
+//        PATH_PAYMENT_STRICT_SEND_SRC_NO_TRUST =
+//            -3, // no trust line on source account
+//        PATH_PAYMENT_STRICT_SEND_SRC_NOT_AUTHORIZED =
+//            -4, // source not authorized to transfer
+//        PATH_PAYMENT_STRICT_SEND_NO_DESTINATION =
+//            -5, // destination account does not exist
+//        PATH_PAYMENT_STRICT_SEND_NO_TRUST =
+//            -6, // dest missing a trust line for asset
+//        PATH_PAYMENT_STRICT_SEND_NOT_AUTHORIZED =
+//            -7, // dest not authorized to hold asset
+//        PATH_PAYMENT_STRICT_SEND_LINE_FULL = -8, // dest would go above their limit
+//        PATH_PAYMENT_STRICT_SEND_NO_ISSUER = -9, // missing issuer on one asset
+//        PATH_PAYMENT_STRICT_SEND_TOO_FEW_OFFERS =
+//            -10, // not enough offers to satisfy path
+//        PATH_PAYMENT_STRICT_SEND_OFFER_CROSS_SELF =
+//            -11, // would cross one of its own offers
+//        PATH_PAYMENT_STRICT_SEND_UNDER_DESTMIN = -12 // could not satisfy destMin
 //    };
 //
 type PathPaymentStrictSendResultCode int32
@@ -8838,21 +10364,25 @@ var (
 //        MANAGE_SELL_OFFER_SUCCESS = 0,
 //
 //        // codes considered as "failure" for the operation
-//        MANAGE_SELL_OFFER_MALFORMED = -1,     // generated offer would be invalid
-//        MANAGE_SELL_OFFER_SELL_NO_TRUST = -2, // no trust line for what we're selling
-//        MANAGE_SELL_OFFER_BUY_NO_TRUST = -3,  // no trust line for what we're buying
+//        MANAGE_SELL_OFFER_MALFORMED = -1, // generated offer would be invalid
+//        MANAGE_SELL_OFFER_SELL_NO_TRUST =
+//            -2,                              // no trust line for what we're selling
+//        MANAGE_SELL_OFFER_BUY_NO_TRUST = -3, // no trust line for what we're buying
 //        MANAGE_SELL_OFFER_SELL_NOT_AUTHORIZED = -4, // not authorized to sell
 //        MANAGE_SELL_OFFER_BUY_NOT_AUTHORIZED = -5,  // not authorized to buy
-//        MANAGE_SELL_OFFER_LINE_FULL = -6,      // can't receive more of what it's buying
-//        MANAGE_SELL_OFFER_UNDERFUNDED = -7,    // doesn't hold what it's trying to sell
-//        MANAGE_SELL_OFFER_CROSS_SELF = -8,     // would cross an offer from the same user
+//        MANAGE_SELL_OFFER_LINE_FULL = -6, // can't receive more of what it's buying
+//        MANAGE_SELL_OFFER_UNDERFUNDED = -7, // doesn't hold what it's trying to sell
+//        MANAGE_SELL_OFFER_CROSS_SELF =
+//            -8, // would cross an offer from the same user
 //        MANAGE_SELL_OFFER_SELL_NO_ISSUER = -9, // no issuer for what we're selling
 //        MANAGE_SELL_OFFER_BUY_NO_ISSUER = -10, // no issuer for what we're buying
 //
 //        // update errors
-//        MANAGE_SELL_OFFER_NOT_FOUND = -11, // offerID does not match an existing offer
+//        MANAGE_SELL_OFFER_NOT_FOUND =
+//            -11, // offerID does not match an existing offer
 //
-//        MANAGE_SELL_OFFER_LOW_RESERVE = -12 // not enough funds to create a new Offer
+//        MANAGE_SELL_OFFER_LOW_RESERVE =
+//            -12 // not enough funds to create a new Offer
 //    };
 //
 type ManageSellOfferResultCode int32
@@ -9222,14 +10752,15 @@ var (
 //        MANAGE_BUY_OFFER_BUY_NO_TRUST = -3,  // no trust line for what we're buying
 //        MANAGE_BUY_OFFER_SELL_NOT_AUTHORIZED = -4, // not authorized to sell
 //        MANAGE_BUY_OFFER_BUY_NOT_AUTHORIZED = -5,  // not authorized to buy
-//        MANAGE_BUY_OFFER_LINE_FULL = -6,      // can't receive more of what it's buying
-//        MANAGE_BUY_OFFER_UNDERFUNDED = -7,    // doesn't hold what it's trying to sell
-//        MANAGE_BUY_OFFER_CROSS_SELF = -8,     // would cross an offer from the same user
+//        MANAGE_BUY_OFFER_LINE_FULL = -6,   // can't receive more of what it's buying
+//        MANAGE_BUY_OFFER_UNDERFUNDED = -7, // doesn't hold what it's trying to sell
+//        MANAGE_BUY_OFFER_CROSS_SELF = -8, // would cross an offer from the same user
 //        MANAGE_BUY_OFFER_SELL_NO_ISSUER = -9, // no issuer for what we're selling
 //        MANAGE_BUY_OFFER_BUY_NO_ISSUER = -10, // no issuer for what we're buying
 //
 //        // update errors
-//        MANAGE_BUY_OFFER_NOT_FOUND = -11, // offerID does not match an existing offer
+//        MANAGE_BUY_OFFER_NOT_FOUND =
+//            -11, // offerID does not match an existing offer
 //
 //        MANAGE_BUY_OFFER_LOW_RESERVE = -12 // not enough funds to create a new Offer
 //    };
@@ -9542,7 +11073,7 @@ var (
 //                                         // cannot create with a limit of 0
 //        CHANGE_TRUST_LOW_RESERVE =
 //            -4, // not enough funds to create a new trust line,
-//        CHANGE_TRUST_SELF_NOT_ALLOWED = -5  // trusting self is not allowed
+//        CHANGE_TRUST_SELF_NOT_ALLOWED = -5 // trusting self is not allowed
 //    };
 //
 type ChangeTrustResultCode int32
@@ -10366,9 +11897,9 @@ var (
 //    {
 //        opINNER = 0, // inner object result is valid
 //
-//        opBAD_AUTH = -1,     // too few valid signatures / wrong network
-//        opNO_ACCOUNT = -2,   // source account was not found
-//        opNOT_SUPPORTED = -3, // operation not supported at this time
+//        opBAD_AUTH = -1,            // too few valid signatures / wrong network
+//        opNO_ACCOUNT = -2,          // source account was not found
+//        opNOT_SUPPORTED = -3,       // operation not supported at this time
 //        opTOO_MANY_SUBENTRIES = -4, // max number of subentries already reached
 //        opEXCEEDED_WORK_LIMIT = -5  // operation did too much work
 //    };
@@ -10453,7 +11984,7 @@ var (
 //        case BUMP_SEQUENCE:
 //            BumpSequenceResult bumpSeqResult;
 //        case MANAGE_BUY_OFFER:
-//    	ManageBuyOfferResult manageBuyOfferResult;
+//            ManageBuyOfferResult manageBuyOfferResult;
 //        case PATH_PAYMENT_STRICT_SEND:
 //            PathPaymentStrictSendResult pathPaymentStrictSendResult;
 //        }
@@ -11024,7 +12555,7 @@ var (
 //        case BUMP_SEQUENCE:
 //            BumpSequenceResult bumpSeqResult;
 //        case MANAGE_BUY_OFFER:
-//    	ManageBuyOfferResult manageBuyOfferResult;
+//            ManageBuyOfferResult manageBuyOfferResult;
 //        case PATH_PAYMENT_STRICT_SEND:
 //            PathPaymentStrictSendResult pathPaymentStrictSendResult;
 //        }
@@ -11119,7 +12650,8 @@ var (
 //
 //   enum TransactionResultCode
 //    {
-//        txSUCCESS = 0, // all operations succeeded
+//        txFEE_BUMP_INNER_SUCCESS = 1, // fee bump inner transaction succeeded
+//        txSUCCESS = 0,                // all operations succeeded
 //
 //        txFAILED = -1, // one of the operations failed (none were applied)
 //
@@ -11133,12 +12665,16 @@ var (
 //        txNO_ACCOUNT = -8,           // source account not found
 //        txINSUFFICIENT_FEE = -9,     // fee is too small
 //        txBAD_AUTH_EXTRA = -10,      // unused signatures attached to transaction
-//        txINTERNAL_ERROR = -11       // an unknown error occured
+//        txINTERNAL_ERROR = -11,      // an unknown error occured
+//
+//        txNOT_SUPPORTED = -12,        // transaction type not supported
+//        txFEE_BUMP_INNER_FAILED = -13 // fee bump inner transaction failed
 //    };
 //
 type TransactionResultCode int32
 
 const (
+	TransactionResultCodeTxFeeBumpInnerSuccess TransactionResultCode = 1
 	TransactionResultCodeTxSuccess             TransactionResultCode = 0
 	TransactionResultCodeTxFailed              TransactionResultCode = -1
 	TransactionResultCodeTxTooEarly            TransactionResultCode = -2
@@ -11151,9 +12687,12 @@ const (
 	TransactionResultCodeTxInsufficientFee     TransactionResultCode = -9
 	TransactionResultCodeTxBadAuthExtra        TransactionResultCode = -10
 	TransactionResultCodeTxInternalError       TransactionResultCode = -11
+	TransactionResultCodeTxNotSupported        TransactionResultCode = -12
+	TransactionResultCodeTxFeeBumpInnerFailed  TransactionResultCode = -13
 )
 
 var transactionResultCodeMap = map[int32]string{
+	1:   "TransactionResultCodeTxFeeBumpInnerSuccess",
 	0:   "TransactionResultCodeTxSuccess",
 	-1:  "TransactionResultCodeTxFailed",
 	-2:  "TransactionResultCodeTxTooEarly",
@@ -11166,6 +12705,8 @@ var transactionResultCodeMap = map[int32]string{
 	-9:  "TransactionResultCodeTxInsufficientFee",
 	-10: "TransactionResultCodeTxBadAuthExtra",
 	-11: "TransactionResultCodeTxInternalError",
+	-12: "TransactionResultCodeTxNotSupported",
+	-13: "TransactionResultCodeTxFeeBumpInnerFailed",
 }
 
 // ValidEnum validates a proposed value for this enum.  Implements
@@ -11199,10 +12740,317 @@ var (
 	_ encoding.BinaryUnmarshaler = (*TransactionResultCode)(nil)
 )
 
+// InnerTransactionResultResult is an XDR NestedUnion defines as:
+//
+//   union switch (TransactionResultCode code)
+//        {
+//        // txFEE_BUMP_INNER_SUCCESS is not included
+//        case txSUCCESS:
+//        case txFAILED:
+//            OperationResult results<>;
+//        case txTOO_EARLY:
+//        case txTOO_LATE:
+//        case txMISSING_OPERATION:
+//        case txBAD_SEQ:
+//        case txBAD_AUTH:
+//        case txINSUFFICIENT_BALANCE:
+//        case txNO_ACCOUNT:
+//        case txINSUFFICIENT_FEE:
+//        case txBAD_AUTH_EXTRA:
+//        case txINTERNAL_ERROR:
+//        case txNOT_SUPPORTED:
+//            // txFEE_BUMP_INNER_FAILED is not included
+//            void;
+//        }
+//
+type InnerTransactionResultResult struct {
+	Code    TransactionResultCode
+	Results *[]OperationResult
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u InnerTransactionResultResult) SwitchFieldName() string {
+	return "Code"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of InnerTransactionResultResult
+func (u InnerTransactionResultResult) ArmForSwitch(sw int32) (string, bool) {
+	switch TransactionResultCode(sw) {
+	case TransactionResultCodeTxSuccess:
+		return "Results", true
+	case TransactionResultCodeTxFailed:
+		return "Results", true
+	case TransactionResultCodeTxTooEarly:
+		return "", true
+	case TransactionResultCodeTxTooLate:
+		return "", true
+	case TransactionResultCodeTxMissingOperation:
+		return "", true
+	case TransactionResultCodeTxBadSeq:
+		return "", true
+	case TransactionResultCodeTxBadAuth:
+		return "", true
+	case TransactionResultCodeTxInsufficientBalance:
+		return "", true
+	case TransactionResultCodeTxNoAccount:
+		return "", true
+	case TransactionResultCodeTxInsufficientFee:
+		return "", true
+	case TransactionResultCodeTxBadAuthExtra:
+		return "", true
+	case TransactionResultCodeTxInternalError:
+		return "", true
+	case TransactionResultCodeTxNotSupported:
+		return "", true
+	}
+	return "-", false
+}
+
+// NewInnerTransactionResultResult creates a new  InnerTransactionResultResult.
+func NewInnerTransactionResultResult(code TransactionResultCode, value interface{}) (result InnerTransactionResultResult, err error) {
+	result.Code = code
+	switch TransactionResultCode(code) {
+	case TransactionResultCodeTxSuccess:
+		tv, ok := value.([]OperationResult)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be []OperationResult")
+			return
+		}
+		result.Results = &tv
+	case TransactionResultCodeTxFailed:
+		tv, ok := value.([]OperationResult)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be []OperationResult")
+			return
+		}
+		result.Results = &tv
+	case TransactionResultCodeTxTooEarly:
+		// void
+	case TransactionResultCodeTxTooLate:
+		// void
+	case TransactionResultCodeTxMissingOperation:
+		// void
+	case TransactionResultCodeTxBadSeq:
+		// void
+	case TransactionResultCodeTxBadAuth:
+		// void
+	case TransactionResultCodeTxInsufficientBalance:
+		// void
+	case TransactionResultCodeTxNoAccount:
+		// void
+	case TransactionResultCodeTxInsufficientFee:
+		// void
+	case TransactionResultCodeTxBadAuthExtra:
+		// void
+	case TransactionResultCodeTxInternalError:
+		// void
+	case TransactionResultCodeTxNotSupported:
+		// void
+	}
+	return
+}
+
+// MustResults retrieves the Results value from the union,
+// panicing if the value is not set.
+func (u InnerTransactionResultResult) MustResults() []OperationResult {
+	val, ok := u.GetResults()
+
+	if !ok {
+		panic("arm Results is not set")
+	}
+
+	return val
+}
+
+// GetResults retrieves the Results value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u InnerTransactionResultResult) GetResults() (result []OperationResult, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Code))
+
+	if armName == "Results" {
+		result = *u.Results
+		ok = true
+	}
+
+	return
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s InnerTransactionResultResult) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *InnerTransactionResultResult) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*InnerTransactionResultResult)(nil)
+	_ encoding.BinaryUnmarshaler = (*InnerTransactionResultResult)(nil)
+)
+
+// InnerTransactionResultExt is an XDR NestedUnion defines as:
+//
+//   union switch (int v)
+//        {
+//        case 0:
+//            void;
+//        }
+//
+type InnerTransactionResultExt struct {
+	V int32
+}
+
+// SwitchFieldName returns the field name in which this union's
+// discriminant is stored
+func (u InnerTransactionResultExt) SwitchFieldName() string {
+	return "V"
+}
+
+// ArmForSwitch returns which field name should be used for storing
+// the value for an instance of InnerTransactionResultExt
+func (u InnerTransactionResultExt) ArmForSwitch(sw int32) (string, bool) {
+	switch int32(sw) {
+	case 0:
+		return "", true
+	}
+	return "-", false
+}
+
+// NewInnerTransactionResultExt creates a new  InnerTransactionResultExt.
+func NewInnerTransactionResultExt(v int32, value interface{}) (result InnerTransactionResultExt, err error) {
+	result.V = v
+	switch int32(v) {
+	case 0:
+		// void
+	}
+	return
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s InnerTransactionResultExt) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *InnerTransactionResultExt) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*InnerTransactionResultExt)(nil)
+	_ encoding.BinaryUnmarshaler = (*InnerTransactionResultExt)(nil)
+)
+
+// InnerTransactionResult is an XDR Struct defines as:
+//
+//   struct InnerTransactionResult
+//    {
+//        // Always 0. Here for binary compatibility.
+//        int64 feeCharged;
+//
+//        union switch (TransactionResultCode code)
+//        {
+//        // txFEE_BUMP_INNER_SUCCESS is not included
+//        case txSUCCESS:
+//        case txFAILED:
+//            OperationResult results<>;
+//        case txTOO_EARLY:
+//        case txTOO_LATE:
+//        case txMISSING_OPERATION:
+//        case txBAD_SEQ:
+//        case txBAD_AUTH:
+//        case txINSUFFICIENT_BALANCE:
+//        case txNO_ACCOUNT:
+//        case txINSUFFICIENT_FEE:
+//        case txBAD_AUTH_EXTRA:
+//        case txINTERNAL_ERROR:
+//        case txNOT_SUPPORTED:
+//            // txFEE_BUMP_INNER_FAILED is not included
+//            void;
+//        }
+//        result;
+//
+//        // reserved for future use
+//        union switch (int v)
+//        {
+//        case 0:
+//            void;
+//        }
+//        ext;
+//    };
+//
+type InnerTransactionResult struct {
+	FeeCharged Int64
+	Result     InnerTransactionResultResult
+	Ext        InnerTransactionResultExt
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s InnerTransactionResult) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *InnerTransactionResult) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*InnerTransactionResult)(nil)
+	_ encoding.BinaryUnmarshaler = (*InnerTransactionResult)(nil)
+)
+
+// InnerTransactionResultPair is an XDR Struct defines as:
+//
+//   struct InnerTransactionResultPair
+//    {
+//        Hash transactionHash;          // hash of the inner transaction
+//        InnerTransactionResult result; // result for the inner transaction
+//    };
+//
+type InnerTransactionResultPair struct {
+	TransactionHash Hash
+	Result          InnerTransactionResult
+}
+
+// MarshalBinary implements encoding.BinaryMarshaler.
+func (s InnerTransactionResultPair) MarshalBinary() ([]byte, error) {
+	b := new(bytes.Buffer)
+	_, err := Marshal(b, s)
+	return b.Bytes(), err
+}
+
+// UnmarshalBinary implements encoding.BinaryUnmarshaler.
+func (s *InnerTransactionResultPair) UnmarshalBinary(inp []byte) error {
+	_, err := Unmarshal(bytes.NewReader(inp), s)
+	return err
+}
+
+var (
+	_ encoding.BinaryMarshaler   = (*InnerTransactionResultPair)(nil)
+	_ encoding.BinaryUnmarshaler = (*InnerTransactionResultPair)(nil)
+)
+
 // TransactionResultResult is an XDR NestedUnion defines as:
 //
 //   union switch (TransactionResultCode code)
 //        {
+//        case txFEE_BUMP_INNER_SUCCESS:
+//        case txFEE_BUMP_INNER_FAILED:
+//            InnerTransactionResultPair innerResultPair;
 //        case txSUCCESS:
 //        case txFAILED:
 //            OperationResult results<>;
@@ -11211,8 +13059,9 @@ var (
 //        }
 //
 type TransactionResultResult struct {
-	Code    TransactionResultCode
-	Results *[]OperationResult
+	Code            TransactionResultCode
+	InnerResultPair *InnerTransactionResultPair
+	Results         *[]OperationResult
 }
 
 // SwitchFieldName returns the field name in which this union's
@@ -11225,6 +13074,10 @@ func (u TransactionResultResult) SwitchFieldName() string {
 // the value for an instance of TransactionResultResult
 func (u TransactionResultResult) ArmForSwitch(sw int32) (string, bool) {
 	switch TransactionResultCode(sw) {
+	case TransactionResultCodeTxFeeBumpInnerSuccess:
+		return "InnerResultPair", true
+	case TransactionResultCodeTxFeeBumpInnerFailed:
+		return "InnerResultPair", true
 	case TransactionResultCodeTxSuccess:
 		return "Results", true
 	case TransactionResultCodeTxFailed:
@@ -11238,6 +13091,20 @@ func (u TransactionResultResult) ArmForSwitch(sw int32) (string, bool) {
 func NewTransactionResultResult(code TransactionResultCode, value interface{}) (result TransactionResultResult, err error) {
 	result.Code = code
 	switch TransactionResultCode(code) {
+	case TransactionResultCodeTxFeeBumpInnerSuccess:
+		tv, ok := value.(InnerTransactionResultPair)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be InnerTransactionResultPair")
+			return
+		}
+		result.InnerResultPair = &tv
+	case TransactionResultCodeTxFeeBumpInnerFailed:
+		tv, ok := value.(InnerTransactionResultPair)
+		if !ok {
+			err = fmt.Errorf("invalid value, must be InnerTransactionResultPair")
+			return
+		}
+		result.InnerResultPair = &tv
 	case TransactionResultCodeTxSuccess:
 		tv, ok := value.([]OperationResult)
 		if !ok {
@@ -11255,6 +13122,31 @@ func NewTransactionResultResult(code TransactionResultCode, value interface{}) (
 	default:
 		// void
 	}
+	return
+}
+
+// MustInnerResultPair retrieves the InnerResultPair value from the union,
+// panicing if the value is not set.
+func (u TransactionResultResult) MustInnerResultPair() InnerTransactionResultPair {
+	val, ok := u.GetInnerResultPair()
+
+	if !ok {
+		panic("arm InnerResultPair is not set")
+	}
+
+	return val
+}
+
+// GetInnerResultPair retrieves the InnerResultPair value from the union,
+// returning ok if the union's switch indicated the value is valid.
+func (u TransactionResultResult) GetInnerResultPair() (result InnerTransactionResultPair, ok bool) {
+	armName, _ := u.ArmForSwitch(int32(u.Code))
+
+	if armName == "InnerResultPair" {
+		result = *u.InnerResultPair
+		ok = true
+	}
+
 	return
 }
 
@@ -11365,6 +13257,9 @@ var (
 //
 //        union switch (TransactionResultCode code)
 //        {
+//        case txFEE_BUMP_INNER_SUCCESS:
+//        case txFEE_BUMP_INNER_FAILED:
+//            InnerTransactionResultPair innerResultPair;
 //        case txSUCCESS:
 //        case txFAILED:
 //            OperationResult results<>;
@@ -11566,21 +13461,26 @@ var (
 //    {
 //        KEY_TYPE_ED25519 = 0,
 //        KEY_TYPE_PRE_AUTH_TX = 1,
-//        KEY_TYPE_HASH_X = 2
+//        KEY_TYPE_HASH_X = 2,
+//        // MUXED enum values for supported type are derived from the enum values
+//        // above by ORing them with 0x100
+//        KEY_TYPE_MUXED_ED25519 = 0x100
 //    };
 //
 type CryptoKeyType int32
 
 const (
-	CryptoKeyTypeKeyTypeEd25519   CryptoKeyType = 0
-	CryptoKeyTypeKeyTypePreAuthTx CryptoKeyType = 1
-	CryptoKeyTypeKeyTypeHashX     CryptoKeyType = 2
+	CryptoKeyTypeKeyTypeEd25519      CryptoKeyType = 0
+	CryptoKeyTypeKeyTypePreAuthTx    CryptoKeyType = 1
+	CryptoKeyTypeKeyTypeHashX        CryptoKeyType = 2
+	CryptoKeyTypeKeyTypeMuxedEd25519 CryptoKeyType = 256
 )
 
 var cryptoKeyTypeMap = map[int32]string{
-	0: "CryptoKeyTypeKeyTypeEd25519",
-	1: "CryptoKeyTypeKeyTypePreAuthTx",
-	2: "CryptoKeyTypeKeyTypeHashX",
+	0:   "CryptoKeyTypeKeyTypeEd25519",
+	1:   "CryptoKeyTypeKeyTypePreAuthTx",
+	2:   "CryptoKeyTypeKeyTypeHashX",
+	256: "CryptoKeyTypeKeyTypeMuxedEd25519",
 }
 
 // ValidEnum validates a proposed value for this enum.  Implements
@@ -12083,7 +13983,7 @@ var (
 //
 //   struct Curve25519Secret
 //    {
-//            opaque key[32];
+//        opaque key[32];
 //    };
 //
 type Curve25519Secret struct {
@@ -12112,7 +14012,7 @@ var (
 //
 //   struct Curve25519Public
 //    {
-//            opaque key[32];
+//        opaque key[32];
 //    };
 //
 type Curve25519Public struct {
@@ -12141,7 +14041,7 @@ var (
 //
 //   struct HmacSha256Key
 //    {
-//            opaque key[32];
+//        opaque key[32];
 //    };
 //
 type HmacSha256Key struct {
@@ -12170,7 +14070,7 @@ var (
 //
 //   struct HmacSha256Mac
 //    {
-//            opaque mac[32];
+//        opaque mac[32];
 //    };
 //
 type HmacSha256Mac struct {

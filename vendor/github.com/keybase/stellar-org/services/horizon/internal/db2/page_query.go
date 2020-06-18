@@ -76,13 +76,23 @@ func (p PageQuery) ApplyToUsingCursor(
 
 	switch p.Order {
 	case "asc":
-		sql = sql.
-			Where(fmt.Sprintf("%s > ?", col), cursor).
-			OrderBy(fmt.Sprintf("%s asc", col))
+		if cursor == "" {
+			sql = sql.
+				OrderBy(fmt.Sprintf("%s asc", col))
+		} else {
+			sql = sql.
+				Where(fmt.Sprintf("%s > ?", col), cursor).
+				OrderBy(fmt.Sprintf("%s asc", col))
+		}
 	case "desc":
-		sql = sql.
-			Where(fmt.Sprintf("%s < ?", col), cursor).
-			OrderBy(fmt.Sprintf("%s desc", col))
+		if cursor == "" {
+			sql = sql.
+				OrderBy(fmt.Sprintf("%s desc", col))
+		} else {
+			sql = sql.
+				Where(fmt.Sprintf("%s < ?", col), cursor).
+				OrderBy(fmt.Sprintf("%s desc", col))
+		}
 	default:
 		return sql, errors.Errorf("invalid order: %s", p.Order)
 	}

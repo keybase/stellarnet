@@ -267,16 +267,16 @@ func consumeOffersForSellingAsset(
 		return totalConsumed, errAssetAmountIsZero
 	}
 
-	for _, offer := range offers {
-		if ignoreOffersFrom != nil && ignoreOffersFrom.Equals(offer.SellerId) {
+	for i := 0; i < len(offers); i++ {
+		if ignoreOffersFrom != nil && ignoreOffersFrom.Equals(offers[i].SellerId) {
 			continue
 		}
 
 		buyingUnitsFromOffer, sellingUnitsFromOffer, err := price.ConvertToBuyingUnits(
-			int64(offer.Amount),
+			int64(offers[i].Amount),
 			int64(currentAssetAmount),
-			int64(offer.Price.N),
-			int64(offer.Price.D),
+			int64(offers[i].Price.N),
+			int64(offers[i].Price.D),
 		)
 		if err == price.ErrOverflow {
 			// skip paths which would result in overflow errors
@@ -289,8 +289,11 @@ func consumeOffersForSellingAsset(
 		totalConsumed += xdr.Int64(buyingUnitsFromOffer)
 		currentAssetAmount -= xdr.Int64(sellingUnitsFromOffer)
 
-		if currentAssetAmount <= 0 {
+		if currentAssetAmount == 0 {
 			return totalConsumed, nil
+		}
+		if currentAssetAmount < 0 {
+			return -1, errSoldTooMuch
 		}
 	}
 
@@ -311,15 +314,23 @@ func consumeOffersForBuyingAsset(
 		return totalConsumed, errAssetAmountIsZero
 	}
 
-	for _, offer := range offers {
-		n := int64(offer.Price.N)
-		d := int64(offer.Price.D)
+	for i := 0; i < len(offers); i++ {
+		n := int64(offers[i].Price.N)
+		d := int64(offers[i].Price.D)
 
 		// check if we can spend all of currentAssetAmount on the current offer
 		// otherwise consume entire offer and move on to the next one
 		amountSold, err := price.MulFractionRoundDown(int64(currentAssetAmount), d, n)
 		if err == nil {
-			if amountSoldXDR := xdr.Int64(amountSold); amountSoldXDR > 0 && amountSoldXDR <= offer.Amount {
+			amountSoldXDR := xdr.Int64(amountSold)
+			if amountSoldXDR == 0 {
+				// we do not have enough of the buying asset to consume the offer
+				return -1, nil
+			}
+			if amountSoldXDR < 0 {
+				return -1, errSoldTooMuch
+			}
+			if amountSoldXDR <= offers[i].Amount {
 				totalConsumed += amountSoldXDR
 				return totalConsumed, nil
 			}
@@ -328,8 +339,8 @@ func consumeOffersForBuyingAsset(
 		}
 
 		buyingUnitsFromOffer, sellingUnitsFromOffer, err := price.ConvertToBuyingUnits(
-			int64(offer.Amount),
-			int64(offer.Amount),
+			int64(offers[i].Amount),
+			int64(offers[i].Amount),
 			n,
 			d,
 		)
@@ -344,8 +355,11 @@ func consumeOffersForBuyingAsset(
 		totalConsumed += xdr.Int64(sellingUnitsFromOffer)
 		currentAssetAmount -= xdr.Int64(buyingUnitsFromOffer)
 
-		if currentAssetAmount <= 0 {
+		if currentAssetAmount == 0 {
 			return totalConsumed, nil
+		}
+		if currentAssetAmount < 0 {
+			return -1, errSoldTooMuch
 		}
 	}
 

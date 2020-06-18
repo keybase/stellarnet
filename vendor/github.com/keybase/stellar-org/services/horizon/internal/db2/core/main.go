@@ -80,35 +80,10 @@ type internalOffer struct {
 	BuyingIssuer    null.String   `db:"buyingissuer"`
 }
 
-// OrderBookSummaryPriceLevel is a collapsed view of multiple offers at the same price that
-// contains the summed amount from all the member offers. Used by OrderBookSummary
-type OrderBookSummaryPriceLevel struct {
-	Type string `db:"type"`
-	PriceLevel
-}
-
-// OrderBookSummary is a summary of a set of offers for a given base and
-// counter currency
-type OrderBookSummary []OrderBookSummaryPriceLevel
-
 // Q is a helper struct on which to hang common queries against a stellar
 // core database.
 type Q struct {
 	*db.Session
-}
-
-// PriceLevel represents an aggregation of offers to trade at a certain
-// price.
-type PriceLevel struct {
-	Pricen int32   `db:"pricen"`
-	Priced int32   `db:"priced"`
-	Pricef float64 `db:"pricef"`
-	Amount string  `db:"amount"`
-}
-
-// SequenceProvider implements `txsub.SequenceProvider`
-type SequenceProvider struct {
-	Q *Q
 }
 
 // Signer is a row of data from the `signers` table from stellar-core

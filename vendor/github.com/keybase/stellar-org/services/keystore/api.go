@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rs/cors"
 	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/support/log"
 	"github.com/stellar/go/support/render/httpjson"
@@ -182,8 +183,10 @@ func recoverHandler(next http.Handler) http.Handler {
 }
 
 func corsHandler(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		rw.Header().Set("Access-Control-Allow-Origin", "*")
-		next.ServeHTTP(rw, req)
+	cors := cors.New(cors.Options{
+		AllowedOrigins: []string{"*"},
+		AllowedHeaders: []string{"*"},
+		AllowedMethods: []string{"GET", "PUT", "POST", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 	})
+	return cors.Handler(next)
 }

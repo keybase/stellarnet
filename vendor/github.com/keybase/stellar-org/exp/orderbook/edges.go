@@ -22,14 +22,7 @@ func (e edgeSet) add(key string, offer xdr.OfferEntry) {
 
 	// find the smallest i such that Price of offers[i] >  Price of offer
 	insertIndex := sort.Search(len(offers), func(i int) bool {
-		// Price of offers[i] >  Price of offer
-		//  <==>
-		// (offers[i].Price.N / offers[i].Price.D) > (offer.Price.N / offer.Price.D)
-		//  <==>
-		// (offers[i].Price.N / offers[i].Price.D) * (offers[i].Price.D * offer.Price.D) > (offer.Price.N / offer.Price.D) * (offers[i].Price.D * offer.Price.D)
-		//  <==>
-		// offers[i].Price.N  * offer.Price.D > offer.Price.N * offers[i].Price.D
-		return uint64(offers[i].Price.N)*uint64(offer.Price.D) > uint64(offer.Price.N)*uint64(offers[i].Price.D)
+		return offer.Price.Cheaper(offers[i].Price)
 	})
 
 	offers = append(offers, offer)

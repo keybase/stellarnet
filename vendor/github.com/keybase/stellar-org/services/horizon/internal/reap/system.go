@@ -66,30 +66,12 @@ func (r *System) runOnce() {
 func (r *System) clearBefore(seq int32) error {
 	log.WithField("new_elder", seq).Info("reaper: clearing")
 
-	clear := r.HorizonDB.DeleteRange
-	end := toid.New(seq, 0, 0).ToInt64()
+	start, end, err := toid.LedgerRangeInclusive(1, seq-1)
+	if err != nil {
+		return err
+	}
 
-	err := clear(0, end, "history_effects", "history_operation_id")
-	if err != nil {
-		return err
-	}
-	err = clear(0, end, "history_operation_participants", "history_operation_id")
-	if err != nil {
-		return err
-	}
-	err = clear(0, end, "history_operations", "id")
-	if err != nil {
-		return err
-	}
-	err = clear(0, end, "history_transaction_participants", "history_transaction_id")
-	if err != nil {
-		return err
-	}
-	err = clear(0, end, "history_transactions", "id")
-	if err != nil {
-		return err
-	}
-	err = clear(0, end, "history_ledgers", "id")
+	err = r.HistoryQ.DeleteRangeAll(start, end)
 	if err != nil {
 		return err
 	}

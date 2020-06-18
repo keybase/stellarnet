@@ -5,13 +5,12 @@ import (
 
 	"github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/support/errors"
-	"github.com/stellar/go/xdr"
 )
 
 // Account implements the `txnbuild.Account` interface.
 type Account struct {
 	AccountID string
-	Sequence  xdr.SequenceNumber
+	Sequence  int64
 }
 
 // GetAccountID returns the Account ID.
@@ -21,8 +20,12 @@ func (a Account) GetAccountID() string {
 
 // IncrementSequenceNumber increments the internal record of the
 // account's sequence number by 1.
-func (a Account) IncrementSequenceNumber() (xdr.SequenceNumber, error) {
+func (a Account) IncrementSequenceNumber() (int64, error) {
 	a.Sequence++
+	return a.Sequence, nil
+}
+
+func (a Account) GetSequenceNumber() (int64, error) {
 	return a.Sequence, nil
 }
 
@@ -37,6 +40,6 @@ func (a *Account) RefreshSequenceNumber(hclient *horizonclient.Client) error {
 	if err != nil {
 		return errors.Wrap(err, "parsing account seqnum")
 	}
-	a.Sequence = xdr.SequenceNumber(seq)
+	a.Sequence = seq
 	return nil
 }

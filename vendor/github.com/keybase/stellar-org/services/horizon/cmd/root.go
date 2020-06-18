@@ -95,17 +95,19 @@ func checkMigrations() {
 	}
 }
 
+var dbURLConfigOption = &support.ConfigOption{
+	Name:      "db-url",
+	EnvVar:    "DATABASE_URL",
+	ConfigKey: &config.DatabaseURL,
+	OptType:   types.String,
+	Required:  true,
+	Usage:     "horizon postgres database to connect with",
+}
+
 // configOpts defines the complete flag configuration for horizon.
 // Add a new entry here to connect a new field in the horizon.Config struct
-var configOpts = []*support.ConfigOption{
-	&support.ConfigOption{
-		Name:      "db-url",
-		EnvVar:    "DATABASE_URL",
-		ConfigKey: &config.DatabaseURL,
-		OptType:   types.String,
-		Required:  true,
-		Usage:     "horizon postgres database to connect with",
-	},
+var configOpts = support.ConfigOptions{
+	dbURLConfigOption,
 	&support.ConfigOption{
 		Name:      "stellar-core-db-url",
 		EnvVar:    "STELLAR_CORE_DATABASE_URL",
@@ -141,6 +143,13 @@ var configOpts = []*support.ConfigOption{
 		OptType:     types.Uint,
 		FlagDefault: uint(8000),
 		Usage:       "tcp port to listen on for http requests",
+	},
+	&support.ConfigOption{
+		Name:        "admin-port",
+		ConfigKey:   &config.AdminPort,
+		OptType:     types.Uint,
+		FlagDefault: uint(0),
+		Usage:       "WARNING: this should not be accessible from the Internet and does not use TLS, tcp port to listen on for admin http requests, 0 (default) disables the admin server",
 	},
 	&support.ConfigOption{
 		Name:        "max-db-connections",
@@ -211,17 +220,17 @@ var configOpts = []*support.ConfigOption{
 		},
 		Usage: "max count of requests allowed in a one hour period, by remote ip address",
 	},
-	&support.ConfigOption{
-		Name:      "rate-limit-redis-key",
-		ConfigKey: &config.RateLimitRedisKey,
-		OptType:   types.String,
-		Usage:     "redis key for storing rate limit data, useful when deploying a cluster of Horizons, ignored when redis-url is empty",
+	&support.ConfigOption{ // Action needed in release: horizon-v2.0.0
+		// remove deprecated flag
+		Name:    "rate-limit-redis-key",
+		OptType: types.String,
+		Usage:   "deprecated, do not use",
 	},
-	&support.ConfigOption{
-		Name:      "redis-url",
-		ConfigKey: &config.RedisURL,
-		OptType:   types.String,
-		Usage:     "redis to connect with, for rate limiting",
+	&support.ConfigOption{ // Action needed in release: horizon-v2.0.0
+		// remove deprecated flag
+		Name:    "redis-url",
+		OptType: types.String,
+		Usage:   "deprecated, do not use",
 	},
 	&support.ConfigOption{
 		Name:           "friendbot-url",
@@ -254,8 +263,8 @@ var configOpts = []*support.ConfigOption{
 		Name:        "max-path-length",
 		ConfigKey:   &config.MaxPathLength,
 		OptType:     types.Uint,
-		FlagDefault: uint(4),
-		Usage:       "the maximum number of assets on the path in `/paths` endpoint",
+		FlagDefault: uint(3),
+		Usage:       "the maximum number of assets on the path in `/paths` endpoint, warning: increasing this value will increase /paths response time",
 	},
 	&support.ConfigOption{
 		Name:      "network-passphrase",
@@ -339,32 +348,11 @@ var configOpts = []*support.ConfigOption{
 		Usage:       "causes the ingester to skip reporting the last imported ledger state to stellar-core",
 	},
 	&support.ConfigOption{
-		Name:        "enable-asset-stats",
-		ConfigKey:   &config.EnableAssetStats,
-		OptType:     types.Bool,
-		FlagDefault: false,
-		Usage:       "enables asset stats during the ingestion and expose `/assets` endpoint, Enabling it has a negative impact on CPU",
-	},
-	&support.ConfigOption{
-		Name:        "enable-experimental-ingestion",
-		ConfigKey:   &config.EnableExperimentalIngestion,
-		OptType:     types.Bool,
-		FlagDefault: false,
-		Usage:       "[EXPERIMENTAL] enables experimental ingestion system",
-	},
-	&support.ConfigOption{
-		Name:        "ingest-state-reader-temp-set",
-		ConfigKey:   &config.IngestStateReaderTempSet,
-		OptType:     types.String,
-		FlagDefault: "memory",
-		Usage:       "defines where to store temporary objects during state ingestion: `memory` (default, more RAM usage, faster) or `postgres` (less RAM usage, slower)",
-	},
-	&support.ConfigOption{
 		Name:        "ingest-disable-state-verification",
 		ConfigKey:   &config.IngestDisableStateVerification,
 		OptType:     types.Bool,
 		FlagDefault: false,
-		Usage:       "experimental ingestion system runs a verification routing to compare state in local database with history buckets, this can be disabled however it's not recommended",
+		Usage:       "ingestion system runs a verification routing to compare state in local database with history buckets, this can be disabled however it's not recommended",
 	},
 	&support.ConfigOption{
 		Name:        "apply-migrations",
@@ -377,27 +365,21 @@ var configOpts = []*support.ConfigOption{
 }
 
 func init() {
-	for _, co := range configOpts {
-		err := co.Init(rootCmd)
-		if err != nil {
-			stdLog.Fatal(err.Error())
-		}
+	err := configOpts.Init(rootCmd)
+	if err != nil {
+		stdLog.Fatal(err.Error())
 	}
-
-	viper.BindPFlags(rootCmd.PersistentFlags())
 }
 
 func initApp() *horizon.App {
-	initConfig()
+	initRootConfig()
 	return horizon.NewApp(config)
 }
 
-func initConfig() {
+func initRootConfig() {
 	// Verify required options and load the config struct
-	for _, co := range configOpts {
-		co.Require()
-		co.SetValue()
-	}
+	configOpts.Require()
+	configOpts.SetValues()
 
 	if config.ApplyMigrations {
 		applyMigrations()
@@ -408,7 +390,12 @@ func initConfig() {
 
 	// Validate options that should be provided together
 	validateBothOrNeither("tls-cert", "tls-key")
-	validateBothOrNeither("rate-limit-redis-key", "redis-url")
+
+	// config.HistoryArchiveURLs contains a single empty value when empty so using
+	// viper.GetString is easier.
+	if config.Ingest && viper.GetString("history-archive-urls") == "" {
+		stdLog.Fatalf("--history-archive-urls must be set when --ingest is set")
+	}
 
 	// Configure log file
 	if config.LogFile != "" {
@@ -422,10 +409,6 @@ func initConfig() {
 
 	// Configure log level
 	log.DefaultLogger.Logger.SetLevel(config.LogLevel)
-
-	if config.IngestStateReaderTempSet != "memory" && config.IngestStateReaderTempSet != "postgres" {
-		log.Fatal("Invalid `ingest-state-reader-temp-set` value: " + config.IngestStateReaderTempSet)
-	}
 
 	// Configure DB params. When config.MaxDBConnections is set, set other
 	// DB params to that value for backward compatibility.

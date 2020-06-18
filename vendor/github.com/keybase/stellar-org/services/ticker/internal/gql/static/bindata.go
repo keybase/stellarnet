@@ -21,7 +21,7 @@ import (
 func bindataRead(data []byte, name string) ([]byte, error) {
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))
 	if err != nil {
-		return nil, fmt.Errorf("read %q: %v", name, err)
+		return nil, fmt.Errorf("read %q: %w", name, err)
 	}
 
 	var buf bytes.Buffer
@@ -29,7 +29,7 @@ func bindataRead(data []byte, name string) ([]byte, error) {
 	clErr := gz.Close()
 
 	if err != nil {
-		return nil, fmt.Errorf("read %q: %v", name, err)
+		return nil, fmt.Errorf("read %q: %w", name, err)
 	}
 	if clErr != nil {
 		return nil, err
@@ -85,7 +85,7 @@ func graphiqlHtml() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "graphiql.html", size: 1182, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "graphiql.html", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x76, 0x8, 0xb4, 0x3a, 0xe7, 0xdb, 0xc8, 0x3d, 0x2d, 0x1f, 0x1c, 0x2d, 0xd3, 0x9b, 0xf2, 0xd8, 0xe5, 0xd6, 0x5f, 0x3a, 0x7c, 0x6d, 0x80, 0xf7, 0x40, 0xdc, 0x58, 0xf1, 0x75, 0xbd, 0xf0, 0xa1}}
 	return a, nil
 }
@@ -105,7 +105,7 @@ func schemaGql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "schema.gql", size: 2400, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "schema.gql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xfd, 0x3d, 0xe4, 0xa2, 0xd5, 0x7, 0x41, 0x33, 0x61, 0xf8, 0x67, 0x0, 0xc5, 0x7a, 0xc, 0xa7, 0x4f, 0x6a, 0xed, 0x86, 0x2c, 0x82, 0xcf, 0x5d, 0x9e, 0xd, 0xa3, 0x1a, 0x5e, 0xd, 0xc2, 0x2f}}
 	return a, nil
 }
@@ -202,8 +202,7 @@ func AssetNames() []string {
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
 	"graphiql.html": graphiqlHtml,
-
-	"schema.gql": schemaGql,
+	"schema.gql":    schemaGql,
 }
 
 // AssetDir returns the file names below a certain

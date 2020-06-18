@@ -2,6 +2,7 @@ package horizon
 
 import (
 	"context"
+	"database/sql"
 	"net/http"
 	"strings"
 	"time"
@@ -9,11 +10,18 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 
+	"github.com/stellar/go/services/horizon/internal/actions"
+	horizonContext "github.com/stellar/go/services/horizon/internal/context"
+	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/errors"
+	"github.com/stellar/go/services/horizon/internal/expingest"
 	"github.com/stellar/go/services/horizon/internal/hchi"
 	"github.com/stellar/go/services/horizon/internal/httpx"
+	"github.com/stellar/go/services/horizon/internal/ledger"
 	"github.com/stellar/go/services/horizon/internal/render"
 	hProblem "github.com/stellar/go/services/horizon/internal/render/problem"
+	"github.com/stellar/go/support/db"
+	supportErrors "github.com/stellar/go/support/errors"
 	"github.com/stellar/go/support/log"
 	"github.com/stellar/go/support/render/problem"
 )
@@ -44,8 +52,7 @@ func contextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 		ctx = hchi.WithChiRequestID(ctx)
-		ctx, cancel := httpx.RequestContext(ctx, w, r)
-		defer cancel()
+		ctx = httpx.RequestContext(ctx, w, r)
 
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -58,11 +65,20 @@ const (
 	appVersionHeader    = "X-App-Version"
 )
 
+func newWrapResponseWriter(w http.ResponseWriter, r *http.Request) middleware.WrapResponseWriter {
+	mw, ok := w.(middleware.WrapResponseWriter)
+	if !ok {
+		mw = middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+	}
+
+	return mw
+}
+
 // loggerMiddleware logs http requests and resposnes to the logging subsytem of horizon.
 func loggerMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
-		mw := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+		mw := newWrapResponseWriter(w, r)
 
 		logger := log.WithField("req", middleware.GetReqID(ctx))
 		ctx = log.Set(ctx, logger)
@@ -82,6 +98,29 @@ func loggerMiddleware(h http.Handler) http.Handler {
 	})
 }
 
+// timeoutMiddleware ensures the request is terminated after the given timeout
+func timeoutMiddleware(timeout time.Duration) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		fn := func(w http.ResponseWriter, r *http.Request) {
+			mw := newWrapResponseWriter(w, r)
+			ctx, cancel := context.WithTimeout(r.Context(), timeout)
+			defer func() {
+				cancel()
+				if ctx.Err() == context.DeadlineExceeded {
+					if mw.Status() == 0 {
+						// only write the header if it hasn't been written yet
+						mw.WriteHeader(http.StatusGatewayTimeout)
+					}
+				}
+			}()
+
+			r = r.WithContext(ctx)
+			next.ServeHTTP(mw, r)
+		}
+		return http.HandlerFunc(fn)
+	}
+}
+
 // getClientData gets client data (name or version) from header or GET parameter
 // (useful when not possible to set headers, like in EventStream).
 func getClientData(r *http.Request, headerName string) string {
@@ -99,6 +138,11 @@ func getClientData(r *http.Request, headerName string) string {
 }
 
 func logStartOfRequest(ctx context.Context, r *http.Request, streaming bool) {
+	referer := r.Referer()
+	if referer == "" {
+		referer = "undefined"
+	}
+
 	log.Ctx(ctx).WithFields(log.F{
 		"client_name":    getClientData(r, clientNameHeader),
 		"client_version": getClientData(r, clientVersionHeader),
@@ -111,7 +155,7 @@ func logStartOfRequest(ctx context.Context, r *http.Request, streaming bool) {
 		"method":         r.Method,
 		"path":           r.URL.String(),
 		"streaming":      streaming,
-		"referer":        r.Referer(),
+		"referer":        referer,
 	}).Info("Starting request")
 }
 
@@ -121,6 +165,11 @@ func logEndOfRequest(ctx context.Context, r *http.Request, duration time.Duratio
 	// a middleware). More info: https://github.com/go-chi/chi/issues/270
 	if routePattern == "" {
 		routePattern = "undefined"
+	}
+
+	referer := r.Referer()
+	if referer == "" {
+		referer = "undefined"
 	}
 
 	log.Ctx(ctx).WithFields(log.F{
@@ -139,7 +188,7 @@ func logEndOfRequest(ctx context.Context, r *http.Request, duration time.Duratio
 		"route":          routePattern,
 		"status":         mw.Status(),
 		"streaming":      streaming,
-		"referer":        r.Referer(),
+		"referer":        referer,
 	}).Info("Finished request")
 }
 
@@ -176,7 +225,7 @@ func recoverMiddleware(h http.Handler) http.Handler {
 func requestMetricsMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		app := AppFromContext(r.Context())
-		mw := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+		mw := newWrapResponseWriter(w, r)
 
 		app.web.requestTimer.Time(func() {
 			h.ServeHTTP(mw.(http.ResponseWriter), r)
@@ -192,61 +241,155 @@ func requestMetricsMiddleware(h http.Handler) http.Handler {
 	})
 }
 
-// acceptOnlyJSON inspects the accept header of the request and responds with
-// an error if the content type is not JSON
-func acceptOnlyJSON(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		contentType := render.Negotiate(r)
-		if contentType != render.MimeHal && contentType != render.MimeJSON {
-			problem.Render(r.Context(), w, hProblem.NotAcceptable)
-			return
-		}
+// NewHistoryMiddleware adds session to the request context and ensures Horizon
+// is not in a stale state, which is when the difference between latest core
+// ledger and latest history ledger is higher than the given threshold
+func NewHistoryMiddleware(staleThreshold int32, session *db.Session) func(http.Handler) http.Handler {
+	return func(h http.Handler) http.Handler {
 
-		h.ServeHTTP(w, r)
-	})
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if staleThreshold > 0 {
+				ls := ledger.CurrentState()
+				isStale := (ls.CoreLatest - ls.HistoryLatest) > int32(staleThreshold)
+				if isStale {
+					err := hProblem.StaleHistory
+					err.Extras = map[string]interface{}{
+						"history_latest_ledger": ls.HistoryLatest,
+						"core_latest_ledger":    ls.CoreLatest,
+					}
+					problem.Render(r.Context(), w, err)
+					return
+				}
+			}
+
+			requestSession := session.Clone()
+			requestSession.Ctx = r.Context()
+			h.ServeHTTP(w, r.WithContext(
+				context.WithValue(
+					r.Context(),
+					&horizonContext.SessionContextKey,
+					requestSession,
+				),
+			))
+		})
+	}
 }
 
-// requiresExperimentalIngestion is a middleware which enables a handler
-// if the experimental ingestion system is enabled and initialized.
-// It also ensures that state (ledger entries) has been verified and are
-// correct. Otherwise returns `500 Internal Server Error` to prevent
-// returning invalid data to the user.
-func requiresExperimentalIngestion(h http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		ctx := r.Context()
-		app := AppFromContext(ctx)
-		if !app.config.EnableExperimentalIngestion {
-			problem.Render(r.Context(), w, problem.NotFound)
-			return
-		}
+// StateMiddleware is a middleware which enables a state handler if the state
+// has been initialized.
+// Unless NoStateVerification is set, it ensures that the state (ledger entries)
+// has been verified and is correct (Otherwise returns `500 Internal Server Error` to prevent
+// returning invalid data to the user)
+type StateMiddleware struct {
+	HorizonSession      *db.Session
+	NoStateVerification bool
+}
 
-		localLog := log.Ctx(ctx)
+func ingestionStatus(q *history.Q) (uint32, bool, error) {
+	version, err := q.GetExpIngestVersion()
+	if err != nil {
+		return 0, false, supportErrors.Wrap(
+			err, "Error running GetExpIngestVersion",
+		)
+	}
 
-		lastIngestedLedger, err := app.HistoryQ().GetLastLedgerExpIngestNonBlocking()
+	lastIngestedLedger, err := q.GetLastLedgerExpIngestNonBlocking()
+	if err != nil {
+		return 0, false, supportErrors.Wrap(
+			err, "Error running GetLastLedgerExpIngestNonBlocking",
+		)
+	}
+
+	var lastHistoryLedger uint32
+	err = q.LatestLedger(&lastHistoryLedger)
+	if err != nil {
+		return 0, false, supportErrors.Wrap(err, "Error running LatestLedger")
+	}
+
+	ready := version == expingest.CurrentVersion &&
+		lastIngestedLedger > 0 &&
+		lastIngestedLedger == lastHistoryLedger
+
+	return lastIngestedLedger, ready, nil
+}
+
+// WrapFunc executes the middleware on a given HTTP handler function
+func (m *StateMiddleware) WrapFunc(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		session := m.HorizonSession.Clone()
+		q := &history.Q{session}
+		sseRequest := render.Negotiate(r) == render.MimeEventStream
+
+		// We want to start a repeatable read session to ensure that the data we
+		// fetch from the db belong to the same ledger.
+		// Otherwise, because the ingestion system is running concurrently with this request,
+		// it is possible to have one read fetch data from ledger N and another read
+		// fetch data from ledger N+1 .
+		session.Ctx = r.Context()
+		err := session.BeginTx(&sql.TxOptions{
+			Isolation: sql.LevelRepeatableRead,
+			ReadOnly:  true,
+		})
 		if err != nil {
-			localLog.WithField("err", err).Error("Error running GetLastLedgerExpIngestNonBlocking")
+			err = supportErrors.Wrap(err, "Error starting exp ingestion read transaction")
 			problem.Render(r.Context(), w, err)
 			return
 		}
+		defer session.Rollback()
 
-		// expingest has not finished processing any ledger so no data.
-		if lastIngestedLedger == 0 {
+		if !m.NoStateVerification {
+			stateInvalid, invalidErr := q.GetExpStateInvalid()
+			if invalidErr != nil {
+				invalidErr = supportErrors.Wrap(invalidErr, "Error running GetExpStateInvalid")
+				problem.Render(r.Context(), w, invalidErr)
+				return
+			}
+			if stateInvalid {
+				problem.Render(r.Context(), w, problem.ServerError)
+				return
+			}
+		}
+
+		lastIngestedLedger, ready, err := ingestionStatus(q)
+		if err != nil {
+			problem.Render(r.Context(), w, err)
+			return
+		}
+		if !m.NoStateVerification && !ready {
 			problem.Render(r.Context(), w, hProblem.StillIngesting)
 			return
 		}
 
-		stateInvalid, err := app.HistoryQ().GetExpStateInvalid()
-		if err != nil {
-			localLog.WithField("err", err).Error("Error running GetExpStateInvalid")
-			problem.Render(r.Context(), w, err)
-			return
+		// for SSE requests we need to discard the repeatable read transaction
+		// otherwise, the stream will not pick up updates occurring in future
+		// ledgers
+		if sseRequest {
+			if err = session.Rollback(); err != nil {
+				problem.Render(
+					r.Context(),
+					w,
+					supportErrors.Wrap(
+						err,
+						"Could not roll back repeatable read session for SSE request",
+					),
+				)
+				return
+			}
+		} else {
+			actions.SetLastLedgerHeader(w, lastIngestedLedger)
 		}
 
-		if stateInvalid {
-			problem.Render(r.Context(), w, problem.ServerError)
-			return
-		}
+		h.ServeHTTP(w, r.WithContext(
+			context.WithValue(
+				r.Context(),
+				&horizonContext.SessionContextKey,
+				session,
+			),
+		))
+	}
+}
 
-		h.ServeHTTP(w, r)
-	})
+// WrapFunc executes the middleware on a given HTTP handler function
+func (m *StateMiddleware) Wrap(h http.Handler) http.Handler {
+	return m.WrapFunc(h.ServeHTTP)
 }

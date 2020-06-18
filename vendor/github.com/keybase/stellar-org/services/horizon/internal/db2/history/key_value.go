@@ -13,8 +13,9 @@ const (
 	// Distributed ingestion in Horizon relies on this key and it is part
 	// of migration files. If you need to update the key name remember
 	// to upgrade it in migration files too!
-	lastLedgerKey = "exp_ingest_last_ledger"
-	stateInvalid  = "exp_state_invalid"
+	lastLedgerKey           = "exp_ingest_last_ledger"
+	stateInvalid            = "exp_state_invalid"
+	offerCompactionSequence = "offer_compaction_sequence"
 )
 
 // GetLastLedgerExpIngestNonBlocking works like GetLastLedgerExpIngest but
@@ -65,7 +66,7 @@ func (q *Q) GetLastLedgerExpIngest() (uint32, error) {
 	}
 }
 
-// UpdateLastLedgerExpIngest upsets the last ledger ingested by expingest system.
+// UpdateLastLedgerExpIngest updates the last ledger ingested by expingest system.
 // Can be read using GetLastLedgerExpIngest.
 func (q *Q) UpdateLastLedgerExpIngest(ledgerSequence uint32) error {
 	return q.updateValueInStore(
@@ -94,7 +95,7 @@ func (q *Q) GetExpIngestVersion() (int, error) {
 	}
 }
 
-// UpdateExpIngestVersion upsets the exp ingest version.
+// UpdateExpIngestVersion updates the exp ingest version.
 func (q *Q) UpdateExpIngestVersion(ledgerSequence int) error {
 	return q.updateValueInStore(
 		ingestVersion,
@@ -122,11 +123,39 @@ func (q *Q) GetExpStateInvalid() (bool, error) {
 	}
 }
 
-// UpdateExpIngestVersion upsets the state invalid value.
+// UpdateExpStateInvalid updates the state invalid value.
 func (q *Q) UpdateExpStateInvalid(val bool) error {
 	return q.updateValueInStore(
 		stateInvalid,
 		strconv.FormatBool(val),
+	)
+}
+
+// GetOfferCompactionSequence returns the sequence number corresponding to the
+// last time the offers table was compacted.
+func (q *Q) GetOfferCompactionSequence() (uint32, error) {
+	sequence, err := q.getValueFromStore(offerCompactionSequence, false)
+	if err != nil {
+		return 0, err
+	}
+
+	if sequence == "" {
+		return 0, nil
+	}
+	parsed, err := strconv.ParseInt(sequence, 10, 32)
+	if err != nil {
+		return 0, errors.Wrap(err, "Error converting sequence value")
+	}
+
+	return uint32(parsed), nil
+}
+
+// UpdateOfferCompactionSequence sets the sequence number corresponding to the
+// last time the offers table was compacted.
+func (q *Q) UpdateOfferCompactionSequence(sequence uint32) error {
+	return q.updateValueInStore(
+		offerCompactionSequence,
+		strconv.FormatUint(uint64(sequence), 10),
 	)
 }
 

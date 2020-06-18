@@ -116,8 +116,9 @@ func main() {
 		}
 
 		server := &http.Server{
-			Addr:    addr,
-			Handler: keystore.ServeMux(keystore.NewService(ctx, db, authenticator)),
+			Addr:        addr,
+			Handler:     keystore.ServeMux(keystore.NewService(ctx, db, authenticator)),
+			ReadTimeout: 5 * time.Second,
 		}
 
 		listener, err := net.Listen("tcp", addr)
@@ -162,13 +163,13 @@ func main() {
 			fmt.Fprintf(os.Stdout, "Applied %d up migrations!\n", n)
 
 		case "down":
-			n, err := migrate.Exec(db, dbDriverName, keystoreMigrations, migrate.Down)
+			n, err := migrate.ExecMax(db, dbDriverName, keystoreMigrations, migrate.Down, 1)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "error applying down migrations: %v\n", err)
 				os.Exit(1)
 			}
 
-			fmt.Fprintf(os.Stdout, "Applied %d down migrations!\n", n)
+			fmt.Fprintf(os.Stdout, "Applied %d down migration!\n", n)
 
 		case "redo":
 			migrations, _, err := migrate.PlanMigration(db, dbDriverName, keystoreMigrations, migrate.Down, 1)

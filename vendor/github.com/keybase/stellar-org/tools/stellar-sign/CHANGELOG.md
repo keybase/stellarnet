@@ -8,7 +8,7 @@ bumps.  A breaking change will get clearly notified in this log.
 
 ## Unreleased
 
-- Dropped support for Go 1.10, 1.11.
+- Dropped support for Go 1.10, 1.11, 1.12.
 
 ## [v0.2.0] - 2016-08-19
 

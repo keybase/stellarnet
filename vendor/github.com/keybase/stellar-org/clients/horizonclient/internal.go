@@ -124,8 +124,7 @@ func setCurrentServerTime(host string, serverDate []string, hc *Client) {
 		return
 	}
 	serverTimeMapMutex.Lock()
-	hc.setDefaultCurrentUniversalTime()
-	ServerTimeMap[host] = ServerTimeRecord{ServerTime: st.UTC().Unix(), LocalTimeRecorded: hc.currentUniversalTime()}
+	ServerTimeMap[host] = ServerTimeRecord{ServerTime: st.UTC().Unix(), LocalTimeRecorded: hc.clock.Now().UTC().Unix()}
 	serverTimeMapMutex.Unlock()
 }
 
@@ -144,9 +143,4 @@ func currentServerTime(host string, currentTimeUTC int64) int64 {
 		return 0
 	}
 	return currentTimeUTC - st.LocalTimeRecorded + st.ServerTime
-}
-
-// universalTimeFunc returns the current UTC unix time in seconds.
-var universalTimeFunc = func() int64 {
-	return time.Now().UTC().Unix()
 }

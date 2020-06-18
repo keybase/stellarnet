@@ -441,7 +441,11 @@ CREATE TABLE history_transactions (
     memo character varying,
     time_bounds int8range,
     successful boolean,
-    fee_charged integer
+    fee_charged bigint,
+    inner_transaction_hash character varying(64),
+    fee_account character varying(64),
+    inner_signatures character varying(96)[],
+    new_max_fee bigint
 );
 
 
@@ -496,6 +500,7 @@ INSERT INTO gorp_migrations VALUES ('14_fix_asset_toml_field.sql', '2019-06-03 1
 INSERT INTO gorp_migrations VALUES ('15_ledger_failed_txs.sql', '2019-06-03 18:28:47.116796+02');
 INSERT INTO gorp_migrations VALUES ('16_ingest_failed_transactions.sql', '2019-06-03 18:28:47.117989+02');
 INSERT INTO gorp_migrations VALUES ('17_transaction_fee_paid.sql', '2019-06-03 18:28:47.120034+02');
+INSERT INTO gorp_migrations VALUES ('18_account_for_signers.sql', '2019-10-31 14:19:49.123835+01');
 
 
 --
@@ -776,11 +781,23 @@ CREATE INDEX by_account ON history_transactions USING btree (account, account_se
 
 
 --
--- Name: by_hash; Type: INDEX; Schema: public; Owner: -
+-- Name: by_fee_account; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX by_fee_account ON history_transactions USING btree (fee_account) WHERE fee_account IS NOT NULL;
+
+--
+-- Name: by_hash; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX by_hash ON history_transactions USING btree (transaction_hash);
 
+
+--
+-- Name: by_inner_hash; Type: INDEX; Schema: public; Owner: postgres
+--
+
+CREATE INDEX by_inner_hash ON history_transactions USING btree (inner_transaction_hash) WHERE inner_transaction_hash IS NOT NULL;
 
 --
 -- Name: by_ledger; Type: INDEX; Schema: public; Owner: -
@@ -1045,6 +1062,25 @@ ALTER TABLE ONLY history_trades
 ALTER TABLE ONLY history_trades
     ADD CONSTRAINT history_trades_counter_asset_id_fkey FOREIGN KEY (counter_asset_id) REFERENCES history_assets(id);
 
+
+-- added manually
+ALTER TABLE IF EXISTS ONLY public.key_value_store DROP CONSTRAINT IF EXISTS key_value_store_pkey;
+DROP TABLE IF EXISTS public.key_value_store;
+CREATE TABLE key_value_store (
+                                 key character varying(255) NOT NULL,
+                                 value character varying(255) NOT NULL
+);
+INSERT INTO key_value_store VALUES ('exp_ingest_last_ledger', '0');
+ALTER TABLE ONLY key_value_store
+    ADD CONSTRAINT key_value_store_pkey PRIMARY KEY (key);
+
+CREATE TABLE accounts_signers (
+                                  account character varying(64),
+                                  signer character varying(64),
+                                  weight integer NOT NULL,
+    -- we will query by signer so that is why signer is the first item in the composite key
+                                  PRIMARY KEY (signer, account)
+);
 
 --
 -- PostgreSQL database dump complete

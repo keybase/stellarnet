@@ -29,7 +29,7 @@ import (
 func bindataRead(data []byte, name string) ([]byte, error) {
 	gz, err := gzip.NewReader(bytes.NewBuffer(data))
 	if err != nil {
-		return nil, fmt.Errorf("read %q: %v", name, err)
+		return nil, fmt.Errorf("read %q: %w", name, err)
 	}
 
 	var buf bytes.Buffer
@@ -37,7 +37,7 @@ func bindataRead(data []byte, name string) ([]byte, error) {
 	clErr := gz.Close()
 
 	if err != nil {
-		return nil, fmt.Errorf("read %q: %v", name, err)
+		return nil, fmt.Errorf("read %q: %w", name, err)
 	}
 	if clErr != nil {
 		return nil, err
@@ -93,7 +93,7 @@ func migrations20190404184050InitialSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/20190404184050-initial.sql", size: 821, mode: os.FileMode(0644), modTime: time.Unix(1566474118, 0)}
+	info := bindataFileInfo{name: "migrations/20190404184050-initial.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x48, 0xaa, 0xc8, 0x33, 0x90, 0xe0, 0xbb, 0xf3, 0xa8, 0x5c, 0xb6, 0x9b, 0x50, 0xfb, 0xcb, 0x43, 0x16, 0x5d, 0x4d, 0xbd, 0x24, 0xec, 0xda, 0x11, 0x2d, 0x5c, 0x5f, 0xe, 0x7c, 0xaf, 0xd9, 0xb3}}
 	return a, nil
 }
@@ -113,7 +113,7 @@ func migrations20190405112544Increase_asset_code_sizeSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/20190405112544-increase_asset_code_size.sql", size: 366, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "migrations/20190405112544-increase_asset_code_size.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa1, 0x95, 0x4e, 0xf5, 0x5, 0xec, 0xe3, 0x22, 0x80, 0x7a, 0x8e, 0xdc, 0xda, 0x65, 0x26, 0x33, 0xea, 0x37, 0xb7, 0xd0, 0x59, 0x70, 0xe, 0x61, 0x6a, 0xe8, 0x44, 0x7e, 0x9, 0x1, 0x43, 0x46}}
 	return a, nil
 }
@@ -133,7 +133,7 @@ func migrations20190408115724Add_new_asset_fieldsSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/20190408115724-add_new_asset_fields.sql", size: 1371, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "migrations/20190408115724-add_new_asset_fields.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xc1, 0xe2, 0x30, 0xe, 0x77, 0x54, 0xdb, 0xeb, 0xc5, 0xb0, 0x0, 0xac, 0x7b, 0xf2, 0xc8, 0xc8, 0x77, 0xb8, 0xa3, 0x8f, 0x56, 0xf2, 0x7a, 0xa, 0x7f, 0x11, 0xa6, 0x76, 0x54, 0x87, 0x5, 0x80}}
 	return a, nil
 }
@@ -153,7 +153,7 @@ func migrations20190408155841Add_issuers_tableSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/20190408155841-add_issuers_table.sql", size: 950, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "migrations/20190408155841-add_issuers_table.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x7b, 0xc6, 0x44, 0x9b, 0x7f, 0x20, 0x98, 0x1, 0xc2, 0x25, 0x17, 0x73, 0x3b, 0x41, 0xb1, 0xc4, 0xbe, 0xe4, 0x94, 0xd8, 0x54, 0x9c, 0x6e, 0x6e, 0xd0, 0x38, 0x7a, 0xbf, 0x24, 0xd9, 0x26, 0x6e}}
 	return a, nil
 }
@@ -173,7 +173,7 @@ func migrations20190409152216Add_trades_tableSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/20190409152216-add_trades_table.sql", size: 628, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "migrations/20190409152216-add_trades_table.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x47, 0xc1, 0xda, 0x1d, 0x61, 0x7c, 0xb6, 0x5d, 0x7d, 0xed, 0x2a, 0xd0, 0x8e, 0x4e, 0x24, 0x3d, 0x94, 0xd8, 0x88, 0x47, 0x2d, 0x5b, 0x65, 0xc1, 0x57, 0xf, 0xc6, 0x22, 0x39, 0xf7, 0xe9, 0x81}}
 	return a, nil
 }
@@ -193,7 +193,7 @@ func migrations20190409172610Rename_assets_desc_descriptionSql() (*asset, error)
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/20190409172610-rename_assets_desc_description.sql", size: 168, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "migrations/20190409172610-rename_assets_desc_description.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa7, 0x71, 0xc8, 0x2f, 0x71, 0x22, 0xa8, 0x42, 0x2b, 0xa, 0x0, 0x5, 0x51, 0x15, 0x9, 0x8b, 0xd6, 0x45, 0x72, 0x29, 0x8e, 0x38, 0x9d, 0x9f, 0x16, 0x84, 0x7b, 0xf, 0x29, 0x48, 0x3c, 0x3f}}
 	return a, nil
 }
@@ -213,7 +213,7 @@ func migrations20190410094830Add_assets_issuer_account_fieldSql() (*asset, error
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/20190410094830-add_assets_issuer_account_field.sql", size: 344, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "migrations/20190410094830-add_assets_issuer_account_field.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x2, 0xed, 0xce, 0xda, 0x59, 0x78, 0xcb, 0xa0, 0x4c, 0xd2, 0x4a, 0x45, 0x42, 0x10, 0x70, 0xc0, 0xbe, 0x2b, 0x11, 0x6c, 0x85, 0x92, 0x0, 0xdd, 0xd9, 0xb1, 0x74, 0x79, 0x30, 0x78, 0xfc, 0x4}}
 	return a, nil
 }
@@ -233,7 +233,7 @@ func migrations20190411165735Data_seed_and_indicesSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/20190411165735-data_seed_and_indices.sql", size: 1522, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "migrations/20190411165735-data_seed_and_indices.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xa1, 0x54, 0x4a, 0x71, 0x6e, 0x9c, 0xc8, 0x5f, 0xd, 0xd6, 0xfc, 0x34, 0x65, 0x24, 0x53, 0xa1, 0x90, 0xf9, 0x33, 0x66, 0x76, 0x3a, 0x62, 0x69, 0xc6, 0x47, 0xea, 0x4f, 0xfd, 0x4c, 0xe, 0x96}}
 	return a, nil
 }
@@ -253,7 +253,7 @@ func migrations20190425110313Add_orderbook_statsSql() (*asset, error) {
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/20190425110313-add_orderbook_stats.sql", size: 749, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "migrations/20190425110313-add_orderbook_stats.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0x87, 0xb0, 0x88, 0x90, 0x9, 0x84, 0x2b, 0xf7, 0x33, 0xa4, 0x8c, 0x91, 0xc8, 0x6a, 0x90, 0x7b, 0x6b, 0x28, 0x70, 0x69, 0xf7, 0x1, 0x8c, 0x89, 0xa1, 0xe3, 0x11, 0xc0, 0x5e, 0x8f, 0x47, 0x0}}
 	return a, nil
 }
@@ -273,7 +273,7 @@ func migrations20190426092321Add_aggregated_orderbook_viewSql() (*asset, error) 
 		return nil, err
 	}
 
-	info := bindataFileInfo{name: "migrations/20190426092321-add_aggregated_orderbook_view.sql", size: 831, mode: os.FileMode(0644), modTime: time.Unix(1559692126, 0)}
+	info := bindataFileInfo{name: "migrations/20190426092321-add_aggregated_orderbook_view.sql", size: 0, mode: os.FileMode(0), modTime: time.Unix(0, 0)}
 	a := &asset{bytes: bytes, info: info, digest: [32]uint8{0xca, 0xb7, 0xc5, 0x31, 0xb1, 0x11, 0xad, 0xf1, 0x3e, 0x39, 0x2, 0x77, 0x17, 0xb8, 0xb7, 0x6b, 0xb2, 0x37, 0x56, 0x71, 0x49, 0xc9, 0x56, 0x43, 0xc5, 0x18, 0x54, 0xae, 0xd1, 0xbb, 0xa4, 0x5e}}
 	return a, nil
 }
@@ -369,25 +369,16 @@ func AssetNames() []string {
 
 // _bindata is a table, holding each asset generator, mapped to its name.
 var _bindata = map[string]func() (*asset, error){
-	"migrations/20190404184050-initial.sql": migrations20190404184050InitialSql,
-
-	"migrations/20190405112544-increase_asset_code_size.sql": migrations20190405112544Increase_asset_code_sizeSql,
-
-	"migrations/20190408115724-add_new_asset_fields.sql": migrations20190408115724Add_new_asset_fieldsSql,
-
-	"migrations/20190408155841-add_issuers_table.sql": migrations20190408155841Add_issuers_tableSql,
-
-	"migrations/20190409152216-add_trades_table.sql": migrations20190409152216Add_trades_tableSql,
-
-	"migrations/20190409172610-rename_assets_desc_description.sql": migrations20190409172610Rename_assets_desc_descriptionSql,
-
+	"migrations/20190404184050-initial.sql":                         migrations20190404184050InitialSql,
+	"migrations/20190405112544-increase_asset_code_size.sql":        migrations20190405112544Increase_asset_code_sizeSql,
+	"migrations/20190408115724-add_new_asset_fields.sql":            migrations20190408115724Add_new_asset_fieldsSql,
+	"migrations/20190408155841-add_issuers_table.sql":               migrations20190408155841Add_issuers_tableSql,
+	"migrations/20190409152216-add_trades_table.sql":                migrations20190409152216Add_trades_tableSql,
+	"migrations/20190409172610-rename_assets_desc_description.sql":  migrations20190409172610Rename_assets_desc_descriptionSql,
 	"migrations/20190410094830-add_assets_issuer_account_field.sql": migrations20190410094830Add_assets_issuer_account_fieldSql,
-
-	"migrations/20190411165735-data_seed_and_indices.sql": migrations20190411165735Data_seed_and_indicesSql,
-
-	"migrations/20190425110313-add_orderbook_stats.sql": migrations20190425110313Add_orderbook_statsSql,
-
-	"migrations/20190426092321-add_aggregated_orderbook_view.sql": migrations20190426092321Add_aggregated_orderbook_viewSql,
+	"migrations/20190411165735-data_seed_and_indices.sql":           migrations20190411165735Data_seed_and_indicesSql,
+	"migrations/20190425110313-add_orderbook_stats.sql":             migrations20190425110313Add_orderbook_statsSql,
+	"migrations/20190426092321-add_aggregated_orderbook_view.sql":   migrations20190426092321Add_aggregated_orderbook_viewSql,
 }
 
 // AssetDir returns the file names below a certain

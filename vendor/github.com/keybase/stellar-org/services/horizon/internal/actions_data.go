@@ -2,7 +2,7 @@ package horizon
 
 import (
 	"github.com/stellar/go/services/horizon/internal/actions"
-	"github.com/stellar/go/services/horizon/internal/db2/core"
+	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/render/sse"
 	"github.com/stellar/go/support/render/hal"
 )
@@ -17,7 +17,7 @@ type DataShowAction struct {
 	Action
 	Address string
 	Key     string
-	Data    core.AccountData
+	Data    history.Data
 }
 
 // JSON is a method for actions.JSON
@@ -25,7 +25,9 @@ func (action *DataShowAction) JSON() error {
 	action.Do(
 		action.loadParams,
 		action.loadRecord,
-		func() { hal.Render(action.W, map[string]string{"value": action.Data.Value}) },
+		func() {
+			hal.Render(action.W, map[string]string{"value": action.Data.Value.Base64()})
+		},
 	)
 	return action.Err
 }
@@ -36,13 +38,7 @@ func (action *DataShowAction) Raw() error {
 		action.loadParams,
 		action.loadRecord,
 		func() {
-			var raw []byte
-			raw, action.Err = action.Data.Raw()
-			if action.Err != nil {
-				return
-			}
-
-			action.W.Write(raw)
+			action.W.Write(action.Data.Value)
 		},
 	)
 	return action.Err
@@ -54,7 +50,7 @@ func (action *DataShowAction) SSE(stream *sse.Stream) error {
 		action.loadParams,
 		action.loadRecord,
 		func() {
-			stream.Send(sse.Event{Data: action.Data.Value})
+			stream.Send(sse.Event{Data: action.Data.Value.Base64()})
 		},
 	)
 	return action.Err
@@ -66,5 +62,7 @@ func (action *DataShowAction) loadParams() {
 }
 
 func (action *DataShowAction) loadRecord() {
-	action.Err = action.CoreQ().AccountDataByKey(&action.Data, action.Address, action.Key)
+	data, err := action.HistoryQ().GetAccountDataByName(action.Address, action.Key)
+	action.Err = err
+	action.Data = data
 }

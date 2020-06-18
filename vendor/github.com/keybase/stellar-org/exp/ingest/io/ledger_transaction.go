@@ -1,88 +1,128 @@
 package io
 
 import (
+	"github.com/stellar/go/support/errors"
 	"github.com/stellar/go/xdr"
 )
 
-// Change is a developer friendly representation of LedgerEntryChanges.
-// It also provides some helper functions to quickly check if a given
-// change has occured in an entry.
-//
-// If an entry is created: Pre is nil and Post is not nil.
-// If an entry is updated: Pre is not nil and Post is not nil.
-// If an entry is removed: Pre is not nil and Post is nil.
-type Change struct {
-	Type xdr.LedgerEntryType
-	Pre  *xdr.LedgerEntryData
-	Post *xdr.LedgerEntryData
+// LedgerTransaction represents the data for a single transaction within a ledger.
+type LedgerTransaction struct {
+	Index    uint32
+	Envelope xdr.TransactionEnvelope
+	Result   xdr.TransactionResultPair
+	// FeeChanges and Meta are low level values.
+	// Use LedgerTransaction.GetChanges() for higher level access to ledger
+	// entry changes.
+	FeeChanges xdr.LedgerEntryChanges
+	Meta       xdr.TransactionMeta
 }
 
-// AccountSignersChanged returns true if account signers have changed.
-// Notice: this will return true on master key changes too!
-func (c *Change) AccountSignersChanged() bool {
-	if c.Type != xdr.LedgerEntryTypeAccount {
-		panic("This should not be called on changes other than Account changes")
-	}
+func (t *LedgerTransaction) txInternalError() bool {
+	return t.Result.Result.Result.Code == xdr.TransactionResultCodeTxInternalError
+}
 
-	// New account so new master key (which is also a signer)
-	if c.Pre == nil {
-		return true
-	}
-
-	// Account merged. Account being merge can still have signers.
-	// c.Pre != nil at this point.
-	if c.Post == nil {
-		return true
-	}
-
-	// c.Pre != nil && c.Post != nil at this point.
-	preAccountEntry := c.Pre.MustAccount()
-	postAccountEntry := c.Post.MustAccount()
-
-	preSigners := preAccountEntry.SignerSummary()
-	postSigners := postAccountEntry.SignerSummary()
-
-	if len(preSigners) != len(postSigners) {
-		return true
-	}
-
-	for postSigner, postWeight := range postSigners {
-		preWeight, exist := preSigners[postSigner]
-		if !exist {
-			return true
-		}
-
-		if preWeight != postWeight {
-			return true
-		}
-	}
-
-	return false
+// GetFeeChanges returns a developer friendly representation of LedgerEntryChanges
+// connected to fees.
+func (t *LedgerTransaction) GetFeeChanges() []Change {
+	return getChangesFromLedgerEntryChanges(t.FeeChanges)
 }
 
 // GetChanges returns a developer friendly representation of LedgerEntryChanges.
-// It contains fee changes, transaction changes and operation changes in that
-// order.
-func (t *LedgerTransaction) GetChanges() []Change {
-	// Fee meta
-	changes := getChangesFromLedgerEntryChanges(t.FeeChanges)
+// It contains transaction changes and operation changes in that order. If the
+// transaction failed with TxInternalError, operations and txChangesAfter are
+// omitted. It doesn't support legacy TransactionMeta.V=0.
+func (t *LedgerTransaction) GetChanges() ([]Change, error) {
+	var changes []Change
 
 	// Transaction meta
-	v1Meta, ok := t.Meta.GetV1()
-	if ok {
+	switch t.Meta.V {
+	case 0:
+		return changes, errors.New("TransactionMeta.V=0 not supported")
+	case 1:
+		v1Meta := t.Meta.MustV1()
 		txChanges := getChangesFromLedgerEntryChanges(v1Meta.TxChanges)
 		changes = append(changes, txChanges...)
+
+		// Ignore operations meta if txInternalError https://github.com/stellar/go/issues/2111
+		if t.txInternalError() {
+			return changes, nil
+		}
+
+		for _, operationMeta := range v1Meta.Operations {
+			opChanges := getChangesFromLedgerEntryChanges(
+				operationMeta.Changes,
+			)
+			changes = append(changes, opChanges...)
+		}
+
+	case 2:
+		v2Meta := t.Meta.MustV2()
+		txChangesBefore := getChangesFromLedgerEntryChanges(v2Meta.TxChangesBefore)
+		changes = append(changes, txChangesBefore...)
+
+		// Ignore operations meta and txChangesAfter if txInternalError
+		// https://github.com/stellar/go/issues/2111
+		if t.txInternalError() {
+			return changes, nil
+		}
+
+		for _, operationMeta := range v2Meta.Operations {
+			opChanges := getChangesFromLedgerEntryChanges(
+				operationMeta.Changes,
+			)
+			changes = append(changes, opChanges...)
+		}
+
+		txChangesAfter := getChangesFromLedgerEntryChanges(v2Meta.TxChangesAfter)
+		changes = append(changes, txChangesAfter...)
+	default:
+		return changes, errors.New("Unsupported TransactionMeta version")
 	}
 
-	// Operation meta
-	for _, operationMeta := range t.Meta.OperationsMeta() {
-		ledgerEntryChanges := operationMeta.Changes
-		opChanges := getChangesFromLedgerEntryChanges(ledgerEntryChanges)
+	return changes, nil
+}
 
-		changes = append(changes, opChanges...)
+// GetOperationChanges returns a developer friendly representation of LedgerEntryChanges.
+// It contains only operation changes.
+func (t *LedgerTransaction) GetOperationChanges(operationIndex uint32) ([]Change, error) {
+	changes := []Change{}
+
+	// Transaction meta
+	switch t.Meta.V {
+	case 0:
+		return changes, errors.New("TransactionMeta.V=0 not supported")
+	case 1:
+		// Ignore operations meta if txInternalError https://github.com/stellar/go/issues/2111
+		if t.txInternalError() {
+			return changes, nil
+		}
+
+		v1Meta := t.Meta.MustV1()
+		changes = operationChanges(v1Meta.Operations, operationIndex)
+	case 2:
+		// Ignore operations meta if txInternalError https://github.com/stellar/go/issues/2111
+		if t.txInternalError() {
+			return changes, nil
+		}
+
+		v2Meta := t.Meta.MustV2()
+		changes = operationChanges(v2Meta.Operations, operationIndex)
+	default:
+		return changes, errors.New("Unsupported TransactionMeta version")
 	}
 
-	return changes
+	return changes, nil
+}
+
+func operationChanges(ops []xdr.OperationMeta, index uint32) []Change {
+	if len(ops) == 0 || int(index) >= len(ops) {
+		return []Change{}
+	}
+
+	operationMeta := ops[index]
+	return getChangesFromLedgerEntryChanges(
+		operationMeta.Changes,
+	)
 }
 
 // getChangesFromLedgerEntryChanges transforms LedgerEntryChanges to []Change.
@@ -106,21 +146,21 @@ func getChangesFromLedgerEntryChanges(ledgerEntryChanges xdr.LedgerEntryChanges)
 			changes = append(changes, Change{
 				Type: created.Data.Type,
 				Pre:  nil,
-				Post: &created.Data,
+				Post: &created,
 			})
 		case xdr.LedgerEntryChangeTypeLedgerEntryUpdated:
 			state := ledgerEntryChanges[i-1].MustState()
 			updated := entryChange.MustUpdated()
 			changes = append(changes, Change{
 				Type: state.Data.Type,
-				Pre:  &state.Data,
-				Post: &updated.Data,
+				Pre:  &state,
+				Post: &updated,
 			})
 		case xdr.LedgerEntryChangeTypeLedgerEntryRemoved:
 			state := ledgerEntryChanges[i-1].MustState()
 			changes = append(changes, Change{
 				Type: state.Data.Type,
-				Pre:  &state.Data,
+				Pre:  &state,
 				Post: nil,
 			})
 		case xdr.LedgerEntryChangeTypeLedgerEntryState:

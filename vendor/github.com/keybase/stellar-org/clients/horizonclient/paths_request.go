@@ -20,6 +20,7 @@ func (pr PathsRequest) BuildURL() (endpoint string, err error) {
 	paramMap["destination_asset_issuer"] = pr.DestinationAssetIssuer
 	paramMap["destination_amount"] = pr.DestinationAmount
 	paramMap["source_account"] = pr.SourceAccount
+	paramMap["source_assets"] = pr.SourceAssets
 
 	queryParams := addQueryParams(paramMap)
 	if queryParams != "" {

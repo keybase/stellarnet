@@ -50,7 +50,7 @@ func (tx *orderBookBatchedUpdates) removeOffer(offerID xdr.Int64) *orderBookBatc
 }
 
 // apply will attempt to apply all the updates in the batch to the order book
-func (tx *orderBookBatchedUpdates) apply() error {
+func (tx *orderBookBatchedUpdates) apply(ledger uint32) error {
 	tx.orderbook.lock.Lock()
 	defer tx.orderbook.lock.Unlock()
 
@@ -60,6 +60,10 @@ func (tx *orderBookBatchedUpdates) apply() error {
 	}
 	tx.committed = true
 
+	if tx.orderbook.lastLedger > 0 && ledger <= tx.orderbook.lastLedger {
+		return errUnexpectedLedger
+	}
+
 	for _, operation := range tx.operations {
 		switch operation.operationType {
 		case addOfferOperationType:
@@ -67,6 +71,9 @@ func (tx *orderBookBatchedUpdates) apply() error {
 				panic(errors.Wrap(err, "could not apply update in batch"))
 			}
 		case removeOfferOperationType:
+			if _, ok := tx.orderbook.tradingPairForOffer[operation.offerID]; !ok {
+				continue
+			}
 			if err := tx.orderbook.remove(operation.offerID); err != nil {
 				panic(errors.Wrap(err, "could not apply update in batch"))
 			}
@@ -74,6 +81,8 @@ func (tx *orderBookBatchedUpdates) apply() error {
 			panic(errors.New("invalid operation type"))
 		}
 	}
+
+	tx.orderbook.lastLedger = ledger
 
 	return nil
 }

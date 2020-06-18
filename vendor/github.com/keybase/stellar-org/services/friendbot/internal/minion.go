@@ -23,8 +23,8 @@ type Minion struct {
 	Horizon           *horizonclient.Client
 	Network           string
 	StartingBalance   string
-	SubmitTransaction func(minion *Minion, hclient *horizonclient.Client, tx string) (*hProtocol.TransactionSuccess, error)
-	BaseFee           uint32
+	SubmitTransaction func(minion *Minion, hclient *horizonclient.Client, tx string) (*hProtocol.Transaction, error)
+	BaseFee           int64
 
 	// Uninitialized.
 	forceRefreshSequence bool
@@ -55,7 +55,7 @@ func (minion *Minion) Run(destAddress string, resultChan chan SubmitResult) {
 }
 
 // SubmitTransaction should be passed to the Minion.
-func SubmitTransaction(minion *Minion, hclient *horizonclient.Client, tx string) (*hProtocol.TransactionSuccess, error) {
+func SubmitTransaction(minion *Minion, hclient *horizonclient.Client, tx string) (*hProtocol.Transaction, error) {
 	result, err := hclient.SubmitTransactionXDR(tx)
 	if err != nil {
 		errStr := "submitting tx to horizon"
@@ -105,18 +105,29 @@ func (minion *Minion) makeTx(destAddress string) (string, error) {
 		SourceAccount: minion.BotAccount,
 		Amount:        minion.StartingBalance,
 	}
-	txn := txnbuild.Transaction{
-		SourceAccount: minion.Account,
-		Operations:    []txnbuild.Operation{&createAccountOp},
-		Network:       minion.Network,
-		Timebounds:    txnbuild.NewInfiniteTimeout(),
-		BaseFee:       minion.BaseFee,
+	tx, err := txnbuild.NewTransaction(
+		txnbuild.TransactionParams{
+			SourceAccount:        minion.Account,
+			IncrementSequenceNum: true,
+			Operations:           []txnbuild.Operation{&createAccountOp},
+			BaseFee:              minion.BaseFee,
+			Timebounds:           txnbuild.NewInfiniteTimeout(),
+		},
+	)
+	if err != nil {
+		return "", errors.Wrap(err, "unable to build tx")
 	}
 
-	txe, err := txn.BuildSignEncode(minion.Keypair, minion.BotKeypair)
+	tx, err = tx.Sign(minion.Network, minion.Keypair, minion.BotKeypair)
 	if err != nil {
-		return "", errors.Wrap(err, "making account payment tx")
+		return "", errors.Wrap(err, "unable to sign tx")
 	}
+
+	txe, err := tx.Base64()
+	if err != nil {
+		return "", errors.Wrap(err, "unable to serialize")
+	}
+
 	// Increment the in-memory sequence number, since the tx will be submitted.
 	_, err = minion.Account.IncrementSequenceNumber()
 	if err != nil {

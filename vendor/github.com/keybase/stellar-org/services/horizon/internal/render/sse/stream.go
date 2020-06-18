@@ -2,7 +2,6 @@ package sse
 
 import (
 	"context"
-	"database/sql"
 	"net/http"
 	"sync"
 
@@ -16,14 +15,8 @@ var (
 	errBadStream = errors.New("Unexpected stream error")
 
 	// known errors
-	errNoObject    = errors.New("Object not found")
 	ErrRateLimited = errors.New("Rate limit exceeded")
 )
-
-var knownErrors = map[error]struct{}{
-	sql.ErrNoRows:  struct{}{},
-	ErrRateLimited: struct{}{},
-}
 
 type Stream struct {
 	ctx      context.Context
@@ -111,15 +104,10 @@ func (s *Stream) Err(err error) {
 		return
 	}
 
-	rootErr := errors.Cause(err)
-	if rootErr == sql.ErrNoRows {
-		//TODO: return errNoObject directly in SSE() methods.
-		err = errNoObject
-	}
-
-	_, ok := knownErrors[rootErr]
-	if !ok {
-		log.Ctx(s.ctx).Error(err)
+	if knownErr := problem.IsKnownError(err); knownErr != nil {
+		err = knownErr
+	} else {
+		log.Ctx(s.ctx).WithStack(err).Error(err)
 		err = errBadStream
 	}
 

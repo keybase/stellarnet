@@ -16,7 +16,7 @@ func (m *MockDatabaseBackend) GetLatestLedgerSequence() (uint32, error) {
 }
 
 func (m *MockDatabaseBackend) GetLedger(sequence uint32) (bool, LedgerCloseMeta, error) {
-	args := m.Called()
+	args := m.Called(sequence)
 	return args.Bool(0), args.Get(1).(LedgerCloseMeta), args.Error(2)
 }
 

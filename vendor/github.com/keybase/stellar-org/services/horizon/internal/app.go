@@ -10,15 +10,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gomodule/redigo/redis"
 	metrics "github.com/rcrowley/go-metrics"
 	"github.com/stellar/go/clients/stellarcore"
-	"github.com/stellar/go/exp/orderbook"
 	horizonContext "github.com/stellar/go/services/horizon/internal/context"
 	"github.com/stellar/go/services/horizon/internal/db2/core"
 	"github.com/stellar/go/services/horizon/internal/db2/history"
 	"github.com/stellar/go/services/horizon/internal/expingest"
-	"github.com/stellar/go/services/horizon/internal/ingest"
 	"github.com/stellar/go/services/horizon/internal/ledger"
 	"github.com/stellar/go/services/horizon/internal/logmetrics"
 	"github.com/stellar/go/services/horizon/internal/operationfeestats"
@@ -41,14 +38,13 @@ type App struct {
 	coreQ                        *core.Q
 	ctx                          context.Context
 	cancel                       func()
-	redis                        *redis.Pool
 	coreVersion                  string
 	horizonVersion               string
 	currentProtocolVersion       int32
 	coreSupportedProtocolVersion int32
+	orderBookStream              *expingest.OrderBookStream
 	submitter                    *txsub.System
 	paths                        paths.Finder
-	ingester                     *ingest.System
 	expingester                  *expingest.System
 	reaper                       *reap.System
 	ticks                        *time.Ticker
@@ -78,17 +74,15 @@ func NewApp(config Config) *App {
 // Serve starts the horizon web server, binding it to a socket, setting up
 // the shutdown signals.
 func (a *App) Serve() {
-	http.Handle("/", a.web.router)
-
 	addr := fmt.Sprintf(":%d", a.config.Port)
 
 	srv := &graceful.Server{
 		Timeout: 10 * time.Second,
 
 		Server: &http.Server{
-			Addr:              addr,
-			Handler:           http.DefaultServeMux,
-			ReadHeaderTimeout: 5 * time.Second,
+			Addr:        addr,
+			Handler:     a.web.router,
+			ReadTimeout: 5 * time.Second,
 		},
 
 		ShutdownInitiated: func() {
@@ -99,10 +93,37 @@ func (a *App) Serve() {
 
 	log.Infof("Starting horizon on %s (ingest: %v)", addr, a.config.Ingest)
 
+	if a.config.AdminPort != 0 {
+		go func() {
+			adminAddr := fmt.Sprintf(":%d", a.config.AdminPort)
+			log.Infof("Starting internal server on %s", adminAddr)
+
+			internalSrv := &http.Server{
+				Addr:        adminAddr,
+				Handler:     a.web.internalRouter,
+				ReadTimeout: 5 * time.Second,
+			}
+
+			err := internalSrv.ListenAndServe()
+			if err != nil {
+				log.Warn(errors.Wrap(err, "error in internalSrv.ListenAndServe()"))
+			}
+		}()
+	}
+
 	go a.run()
+	go a.orderBookStream.Run(a.ctx)
+
+	// WaitGroup for all go routines. Makes sure that DB is closed when
+	// all services gracefully shutdown.
+	var wg sync.WaitGroup
 
 	if a.expingester != nil {
-		go a.expingester.Run()
+		wg.Add(1)
+		go func() {
+			a.expingester.Run()
+			wg.Done()
+		}()
 	}
 
 	var err error
@@ -116,6 +137,7 @@ func (a *App) Serve() {
 		log.Fatal(err)
 	}
 
+	wg.Wait()
 	a.CloseDB()
 
 	log.Info("stopped")
@@ -213,8 +235,8 @@ func (a *App) UpdateLedgerState() {
 	ledger.SetState(next)
 }
 
-// UpdateOperationFeeStatsState triggers a refresh of several operation fee metrics.
-func (a *App) UpdateOperationFeeStatsState() {
+// UpdateFeeStatsState triggers a refresh of several operation fee metrics.
+func (a *App) UpdateFeeStatsState() {
 	var (
 		next          operationfeestats.State
 		latest        history.LatestLedger
@@ -231,7 +253,7 @@ func (a *App) UpdateOperationFeeStatsState() {
 		log.WithStack(err).WithField("err", err.Error()).Error(msg)
 	}
 
-	cur := operationfeestats.CurrentState()
+	cur, ok := operationfeestats.CurrentState()
 
 	err := a.HistoryQ().LatestLedgerBaseFeeAndSequence(&latest)
 	if err != nil {
@@ -240,14 +262,14 @@ func (a *App) UpdateOperationFeeStatsState() {
 	}
 
 	// finish early if no new ledgers
-	if cur.LastLedger == int64(latest.Sequence) {
+	if ok && cur.LastLedger == uint32(latest.Sequence) {
 		return
 	}
 
 	next.LastBaseFee = int64(latest.BaseFee)
-	next.LastLedger = int64(latest.Sequence)
+	next.LastLedger = uint32(latest.Sequence)
 
-	err = a.HistoryQ().OperationFeeStats(latest.Sequence, &feeStats)
+	err = a.HistoryQ().FeeStats(latest.Sequence, &feeStats)
 	if err != nil {
 		logErr(err, "failed to load operation fee stats")
 		return
@@ -263,34 +285,71 @@ func (a *App) UpdateOperationFeeStatsState() {
 
 	// if no transactions in last 5 ledgers, return
 	// latest ledger's base fee for all
-	if !feeStats.Mode.Valid && !feeStats.Min.Valid {
-		next.FeeMin = next.LastBaseFee
-		next.FeeMode = next.LastBaseFee
-		next.FeeP10 = next.LastBaseFee
-		next.FeeP20 = next.LastBaseFee
-		next.FeeP30 = next.LastBaseFee
-		next.FeeP40 = next.LastBaseFee
-		next.FeeP50 = next.LastBaseFee
-		next.FeeP60 = next.LastBaseFee
-		next.FeeP70 = next.LastBaseFee
-		next.FeeP80 = next.LastBaseFee
-		next.FeeP90 = next.LastBaseFee
-		next.FeeP95 = next.LastBaseFee
-		next.FeeP99 = next.LastBaseFee
+	if !feeStats.MaxFeeMode.Valid && !feeStats.MaxFeeMin.Valid {
+		// MaxFee
+		next.MaxFeeMax = next.LastBaseFee
+		next.MaxFeeMin = next.LastBaseFee
+		next.MaxFeeMode = next.LastBaseFee
+		next.MaxFeeP10 = next.LastBaseFee
+		next.MaxFeeP20 = next.LastBaseFee
+		next.MaxFeeP30 = next.LastBaseFee
+		next.MaxFeeP40 = next.LastBaseFee
+		next.MaxFeeP50 = next.LastBaseFee
+		next.MaxFeeP60 = next.LastBaseFee
+		next.MaxFeeP70 = next.LastBaseFee
+		next.MaxFeeP80 = next.LastBaseFee
+		next.MaxFeeP90 = next.LastBaseFee
+		next.MaxFeeP95 = next.LastBaseFee
+		next.MaxFeeP99 = next.LastBaseFee
+
+		// FeeCharged
+		next.FeeChargedMax = next.LastBaseFee
+		next.FeeChargedMin = next.LastBaseFee
+		next.FeeChargedMode = next.LastBaseFee
+		next.FeeChargedP10 = next.LastBaseFee
+		next.FeeChargedP20 = next.LastBaseFee
+		next.FeeChargedP30 = next.LastBaseFee
+		next.FeeChargedP40 = next.LastBaseFee
+		next.FeeChargedP50 = next.LastBaseFee
+		next.FeeChargedP60 = next.LastBaseFee
+		next.FeeChargedP70 = next.LastBaseFee
+		next.FeeChargedP80 = next.LastBaseFee
+		next.FeeChargedP90 = next.LastBaseFee
+		next.FeeChargedP95 = next.LastBaseFee
+		next.FeeChargedP99 = next.LastBaseFee
+
 	} else {
-		next.FeeMin = feeStats.Min.Int64
-		next.FeeMode = feeStats.Mode.Int64
-		next.FeeP10 = feeStats.P10.Int64
-		next.FeeP20 = feeStats.P20.Int64
-		next.FeeP30 = feeStats.P30.Int64
-		next.FeeP40 = feeStats.P40.Int64
-		next.FeeP50 = feeStats.P50.Int64
-		next.FeeP60 = feeStats.P60.Int64
-		next.FeeP70 = feeStats.P70.Int64
-		next.FeeP80 = feeStats.P80.Int64
-		next.FeeP90 = feeStats.P90.Int64
-		next.FeeP95 = feeStats.P95.Int64
-		next.FeeP99 = feeStats.P99.Int64
+		// MaxFee
+		next.MaxFeeMax = feeStats.MaxFeeMax.Int64
+		next.MaxFeeMin = feeStats.MaxFeeMin.Int64
+		next.MaxFeeMode = feeStats.MaxFeeMode.Int64
+		next.MaxFeeP10 = feeStats.MaxFeeP10.Int64
+		next.MaxFeeP20 = feeStats.MaxFeeP20.Int64
+		next.MaxFeeP30 = feeStats.MaxFeeP30.Int64
+		next.MaxFeeP40 = feeStats.MaxFeeP40.Int64
+		next.MaxFeeP50 = feeStats.MaxFeeP50.Int64
+		next.MaxFeeP60 = feeStats.MaxFeeP60.Int64
+		next.MaxFeeP70 = feeStats.MaxFeeP70.Int64
+		next.MaxFeeP80 = feeStats.MaxFeeP80.Int64
+		next.MaxFeeP90 = feeStats.MaxFeeP90.Int64
+		next.MaxFeeP95 = feeStats.MaxFeeP95.Int64
+		next.MaxFeeP99 = feeStats.MaxFeeP99.Int64
+
+		// FeeCharged
+		next.FeeChargedMax = feeStats.FeeChargedMax.Int64
+		next.FeeChargedMin = feeStats.FeeChargedMin.Int64
+		next.FeeChargedMode = feeStats.FeeChargedMode.Int64
+		next.FeeChargedP10 = feeStats.FeeChargedP10.Int64
+		next.FeeChargedP20 = feeStats.FeeChargedP20.Int64
+		next.FeeChargedP30 = feeStats.FeeChargedP30.Int64
+		next.FeeChargedP40 = feeStats.FeeChargedP40.Int64
+		next.FeeChargedP50 = feeStats.FeeChargedP50.Int64
+		next.FeeChargedP60 = feeStats.FeeChargedP60.Int64
+		next.FeeChargedP70 = feeStats.FeeChargedP70.Int64
+		next.FeeChargedP80 = feeStats.FeeChargedP80.Int64
+		next.FeeChargedP90 = feeStats.FeeChargedP90.Int64
+		next.FeeChargedP95 = feeStats.FeeChargedP95.Int64
+		next.FeeChargedP99 = feeStats.FeeChargedP99.Int64
 	}
 
 	operationfeestats.SetState(next)
@@ -357,13 +416,9 @@ func (a *App) Tick() {
 	// update ledger state, operation fee state, and stellar-core info in parallel
 	wg.Add(3)
 	go func() { a.UpdateLedgerState(); wg.Done() }()
-	go func() { a.UpdateOperationFeeStatsState(); wg.Done() }()
+	go func() { a.UpdateFeeStatsState(); wg.Done() }()
 	go func() { a.UpdateStellarCoreInfo(); wg.Done() }()
 	wg.Wait()
-
-	if a.ingester != nil {
-		go a.ingester.Tick()
-	}
 
 	wg.Add(2)
 	go func() { a.reaper.Tick(); wg.Done() }()
@@ -398,27 +453,20 @@ func (a *App) init() {
 	mustInitHorizonDB(a)
 	mustInitCoreDB(a)
 
-	// ingester
-	initIngester(a)
-
-	var orderBookGraph *orderbook.OrderBookGraph
-	if a.config.EnableExperimentalIngestion {
-		orderBookGraph = orderbook.NewOrderBookGraph()
+	if a.config.Ingest {
 		// expingester
-		initExpIngester(a, orderBookGraph)
+		initExpIngester(a)
 	}
+	initPathFinder(a)
 
 	// txsub
 	initSubmissionSystem(a)
-
-	// path-finder
-	initPathFinder(a, orderBookGraph)
 
 	// reaper
 	a.reaper = reap.New(a.config.HistoryRetentionCount, a.HorizonSession(context.Background()))
 
 	// web.init
-	a.web = mustInitWeb(a.ctx, a.historyQ, a.coreQ, a.config.SSEUpdateFrequency, a.config.StaleThreshold, a.config.IngestFailedTransactions)
+	a.web = mustInitWeb(a.ctx, a.historyQ, a.config.SSEUpdateFrequency, a.config.StaleThreshold, a.config.IngestFailedTransactions)
 
 	// web.rate-limiter
 	a.web.rateLimiter = maybeInitWebRateLimiter(a.config.RateQuota)
@@ -429,7 +477,7 @@ func (a *App) init() {
 	a.web.mustInstallMiddlewares(a, a.config.ConnectionTimeout)
 
 	// web.actions
-	a.web.mustInstallActions(a.config, a.paths)
+	a.web.mustInstallActions(a.config, a.paths, a.historyQ.Session, a.metrics)
 
 	// metrics and log.metrics
 	a.metrics = metrics.NewRegistry()
@@ -440,17 +488,14 @@ func (a *App) init() {
 	// db-metrics
 	initDbMetrics(a)
 
+	// ingest.metrics
+	initIngestMetrics(a)
+
 	// web.metrics
 	initWebMetrics(a)
 
 	// txsub.metrics
 	initTxSubMetrics(a)
-
-	// ingester.metrics
-	initIngesterMetrics(a)
-
-	// redis
-	initRedis(a)
 }
 
 // run is the function that runs in the background that triggers Tick each

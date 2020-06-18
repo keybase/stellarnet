@@ -164,4 +164,4 @@ This endpoint responds with a [page](../resources/page.md) of [payment operation
 
 ## Possible Errors
 
-- The [standard errors](../errors.md#Standard_Errors).
+- The [standard errors](../errors.md#standard-errors).

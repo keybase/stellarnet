@@ -8,13 +8,15 @@ import (
 	"bufio"
 	"flag"
 	"fmt"
+	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/network"
 	"io/ioutil"
 	"log"
 	"os"
 	"strings"
 
 	"github.com/howeyc/gopass"
-	"github.com/stellar/go/build"
+	"github.com/stellar/go/txnbuild"
 	"github.com/stellar/go/xdr"
 )
 
@@ -63,9 +65,14 @@ func main() {
 
 	fmt.Println("")
 	fmt.Println("Transaction Summary:")
-	fmt.Printf("  source: %s\n", txe.Tx.SourceAccount.Address())
-	fmt.Printf("  ops: %d\n", len(txe.Tx.Operations))
-	fmt.Printf("  sigs: %d\n", len(txe.Signatures))
+	sourceAccount := txe.SourceAccount().ToAccountId()
+	fmt.Printf("  type: %s\n", txe.Type.String())
+	fmt.Printf("  source: %s\n", sourceAccount.Address())
+	fmt.Printf("  ops: %d\n", len(txe.Operations()))
+	fmt.Printf("  sigs: %d\n", len(txe.Signatures()))
+	if txe.IsFeeBump() {
+		fmt.Printf("  fee bump sigs: %d\n", len(txe.FeeBumpSignatures()))
+	}
 	fmt.Println("")
 
 	// TODO: add operation details
@@ -77,20 +84,36 @@ func main() {
 	}
 
 	// sign the transaction
-	b := &build.TransactionEnvelopeBuilder{E: &txe}
-	b.Init()
-	err = b.MutateTX(build.PublicNetwork)
-	if err != nil {
-		log.Fatal(err)
-	}
-	err = b.Mutate(build.Sign{seed})
+	kp, err := keypair.ParseFull(seed)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	newEnv, err := xdr.MarshalBase64(b.E)
+	parsed, err := txnbuild.TransactionFromXDR(env)
 	if err != nil {
 		log.Fatal(err)
+	}
+
+	var newEnv string
+	if tx, ok := parsed.Transaction(); ok {
+		tx, err = tx.Sign(network.PublicNetworkPassphrase, kp)
+		if err != nil {
+			log.Fatal(err)
+		}
+		newEnv, err = tx.Base64()
+		if err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		tx, _ := parsed.FeeBump()
+		tx, err = tx.Sign(network.PublicNetworkPassphrase, kp)
+		if err != nil {
+			log.Fatal(err)
+		}
+		newEnv, err = tx.Base64()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	fmt.Print("\n==== Result ====\n\n")

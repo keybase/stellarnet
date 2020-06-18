@@ -12,7 +12,9 @@ var (
 	errOfferNotPresent     = errors.New("offer is not present in the order book graph")
 	errEmptyOffers         = errors.New("offers is empty")
 	errAssetAmountIsZero   = errors.New("current asset amount is 0")
+	errSoldTooMuch         = errors.New("sold more than current balance")
 	errBatchAlreadyApplied = errors.New("cannot apply batched updates more than once")
+	errUnexpectedLedger    = errors.New("cannot apply unexpected ledger")
 )
 
 type sortByType string
@@ -28,6 +30,18 @@ type tradingPair struct {
 	buyingAsset string
 	// sellingAsset is obtained by calling offer.Selling.String() where offer is an xdr.OfferEntry
 	sellingAsset string
+}
+
+// OBGraph is an interface for orderbook graphs
+type OBGraph interface {
+	AddOffer(offer xdr.OfferEntry)
+	Apply(ledger uint32) error
+	Discard()
+	Offers() []xdr.OfferEntry
+	OffersMap() map[xdr.Int64]xdr.OfferEntry
+	RemoveOffer(xdr.Int64) OBGraph
+	Pending() ([]xdr.OfferEntry, []xdr.Int64)
+	Clear()
 }
 
 // OrderBookGraph is an in memory graph representation of all the offers in the stellar ledger
@@ -46,9 +60,13 @@ type OrderBookGraph struct {
 	// batchedUpdates is internal batch of updates to this graph. Users can
 	// create multiple batches using `Batch()` method but sometimes only one
 	// batch is enough.
+	// the orderbook graph is accurate up to lastLedger
+	lastLedger     uint32
 	batchedUpdates *orderBookBatchedUpdates
 	lock           sync.RWMutex
 }
+
+var _ OBGraph = (*OrderBookGraph)(nil)
 
 // NewOrderBookGraph constructs a new OrderBookGraph
 func NewOrderBookGraph() *OrderBookGraph {
@@ -65,17 +83,31 @@ func NewOrderBookGraph() *OrderBookGraph {
 // AddOffer will queue an operation to add the given offer to the order book in
 // the internal batch.
 // You need to run Apply() to apply all enqueued operations.
-func (graph *OrderBookGraph) AddOffer(offer xdr.OfferEntry) *OrderBookGraph {
+func (graph *OrderBookGraph) AddOffer(offer xdr.OfferEntry) {
 	graph.batchedUpdates.addOffer(offer)
-	return graph
 }
 
 // RemoveOffer will queue an operation to remove the given offer from the order book in
 // the internal batch.
 // You need to run Apply() to apply all enqueued operations.
-func (graph *OrderBookGraph) RemoveOffer(offerID xdr.Int64) *OrderBookGraph {
+func (graph *OrderBookGraph) RemoveOffer(offerID xdr.Int64) OBGraph {
 	graph.batchedUpdates.removeOffer(offerID)
 	return graph
+}
+
+// Pending returns a list of queued offers which will be added to the order book and
+// a list of queued offers which will be removed from the order book.
+func (graph *OrderBookGraph) Pending() ([]xdr.OfferEntry, []xdr.Int64) {
+	var toUpdate []xdr.OfferEntry
+	var toRemove []xdr.Int64
+	for _, update := range graph.batchedUpdates.operations {
+		if update.operationType == addOfferOperationType {
+			toUpdate = append(toUpdate, *update.offer)
+		} else if update.operationType == removeOfferOperationType {
+			toRemove = append(toRemove, update.offerID)
+		}
+	}
+	return toUpdate, toRemove
 }
 
 // Discard removes all operations which have been queued but not yet applied to the OrderBookGraph
@@ -85,8 +117,8 @@ func (graph *OrderBookGraph) Discard() {
 
 // Apply will attempt to apply all the updates in the internal batch to the order book.
 // When Apply is successful, a new empty, instance of internal batch will be created.
-func (graph *OrderBookGraph) Apply() error {
-	err := graph.batchedUpdates.apply()
+func (graph *OrderBookGraph) Apply(ledger uint32) error {
+	err := graph.batchedUpdates.apply(ledger)
 	if err != nil {
 		return err
 	}
@@ -109,6 +141,31 @@ func (graph *OrderBookGraph) Offers() []xdr.OfferEntry {
 	return offers
 }
 
+// Clear removes all offers from the graph.
+func (graph *OrderBookGraph) Clear() {
+	graph.lock.Lock()
+	defer graph.lock.Unlock()
+
+	graph.edgesForSellingAsset = map[string]edgeSet{}
+	graph.edgesForBuyingAsset = map[string]edgeSet{}
+	graph.tradingPairForOffer = map[xdr.Int64]tradingPair{}
+	graph.batchedUpdates = graph.batch()
+	graph.lastLedger = 0
+}
+
+// OffersMap returns a ID => OfferEntry map of offers contained in the order
+// book.
+func (graph *OrderBookGraph) OffersMap() map[xdr.Int64]xdr.OfferEntry {
+	offers := graph.Offers()
+	m := make(map[xdr.Int64]xdr.OfferEntry, len(offers))
+
+	for _, entry := range offers {
+		m[entry.OfferId] = entry
+	}
+
+	return m
+}
+
 // Batch creates a new batch of order book updates which can be applied
 // on this graph
 func (graph *OrderBookGraph) batch() *orderBookBatchedUpdates {
@@ -117,6 +174,56 @@ func (graph *OrderBookGraph) batch() *orderBookBatchedUpdates {
 		committed:  false,
 		orderbook:  graph,
 	}
+}
+
+// findOffers returns all offers for a given trading pair
+// The offers will be sorted by price from cheapest to most expensive
+// The returned offers will span at most `maxPriceLevels` price levels
+func (graph *OrderBookGraph) findOffers(
+	selling, buying string, maxPriceLevels int,
+) []xdr.OfferEntry {
+	results := []xdr.OfferEntry{}
+	edges, ok := graph.edgesForSellingAsset[selling]
+	if !ok {
+		return results
+	}
+	offers, ok := edges[buying]
+	if !ok {
+		return results
+	}
+
+	for _, offer := range offers {
+		// Offers are sorted by price, so, equal prices will always be contiguous.
+		if len(results) == 0 || !results[len(results)-1].Price.Equal(offer.Price) {
+			maxPriceLevels--
+		}
+		if maxPriceLevels < 0 {
+			return results
+		}
+
+		results = append(results, offer)
+	}
+	return results
+}
+
+// FindAsksAndBids returns all asks and bids for a given trading pair
+// Asks consists of all offers which sell `selling` in exchange for `buying` sorted by
+// price (in terms of `buying`) from cheapest to most expensive
+// Bids consists of all offers which sell `buying` in exchange for `selling` sorted by
+// price (in terms of `selling`) from cheapest to most expensive
+// Both Asks and Bids will span at most `maxPriceLevels` price levels
+func (graph *OrderBookGraph) FindAsksAndBids(
+	selling, buying xdr.Asset, maxPriceLevels int,
+) ([]xdr.OfferEntry, []xdr.OfferEntry, uint32) {
+	buyingString := buying.String()
+	sellingString := selling.String()
+
+	graph.lock.RLock()
+	defer graph.lock.RUnlock()
+	asks := graph.findOffers(sellingString, buyingString, maxPriceLevels)
+	bids := graph.findOffers(buyingString, sellingString, maxPriceLevels)
+
+	return asks, bids, graph.lastLedger
 }
 
 // add inserts a given offer into the order book graph
@@ -197,7 +304,7 @@ func (graph *OrderBookGraph) FindPaths(
 	sourceAssetBalances []xdr.Int64,
 	validateSourceBalance bool,
 	maxAssetsPerPath int,
-) ([]Path, error) {
+) ([]Path, uint32, error) {
 	destinationAssetString := destinationAsset.String()
 	sourceAssetsMap := map[string]xdr.Int64{}
 	for i, sourceAsset := range sourceAssets {
@@ -224,16 +331,18 @@ func (graph *OrderBookGraph) FindPaths(
 		destinationAsset,
 		destinationAmount,
 	)
+	lastLedger := graph.lastLedger
 	graph.lock.RUnlock()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not determine paths")
+		return nil, lastLedger, errors.Wrap(err, "could not determine paths")
 	}
 
-	return sortAndFilterPaths(
+	paths, err := sortAndFilterPaths(
 		searchState.paths,
 		maxAssetsPerPath,
 		sortBySourceAsset,
 	)
+	return paths, lastLedger, err
 }
 
 // FindFixedPaths returns a list of payment paths where the source and destination
@@ -247,7 +356,7 @@ func (graph *OrderBookGraph) FindFixedPaths(
 	amountToSpend xdr.Int64,
 	destinationAssets []xdr.Asset,
 	maxAssetsPerPath int,
-) ([]Path, error) {
+) ([]Path, uint32, error) {
 	target := map[string]bool{}
 	for _, destinationAsset := range destinationAssets {
 		destinationAssetString := destinationAsset.String()
@@ -271,20 +380,22 @@ func (graph *OrderBookGraph) FindFixedPaths(
 		sourceAsset,
 		amountToSpend,
 	)
+	lastLedger := graph.lastLedger
 	graph.lock.RUnlock()
 	if err != nil {
-		return nil, errors.Wrap(err, "could not determine paths")
+		return nil, lastLedger, errors.Wrap(err, "could not determine paths")
 	}
 
 	sort.Slice(searchState.paths, func(i, j int) bool {
 		return searchState.paths[i].DestinationAmount > searchState.paths[j].DestinationAmount
 	})
 
-	return sortAndFilterPaths(
+	paths, err := sortAndFilterPaths(
 		searchState.paths,
 		maxAssetsPerPath,
 		sortByDestinationAsset,
 	)
+	return paths, lastLedger, err
 }
 
 // compareSourceAsset will group payment paths by `SourceAsset`

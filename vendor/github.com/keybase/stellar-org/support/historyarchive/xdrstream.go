@@ -21,12 +21,29 @@ import (
 
 type XdrStream struct {
 	buf        bytes.Buffer
-	rdr        io.ReadCloser
+	rdr        *countReader
 	rdr2       io.ReadCloser
 	sha256Hash hash.Hash
 
 	validateHash bool
 	expectedHash [sha256.Size]byte
+}
+
+type countReader struct {
+	io.ReadCloser
+	bytesRead int64
+}
+
+func (c *countReader) Read(p []byte) (int, error) {
+	n, err := c.ReadCloser.Read(p)
+	c.bytesRead += int64(n)
+	return n, err
+}
+
+func newCountReader(r io.ReadCloser) *countReader {
+	return &countReader{
+		r, 0,
+	}
 }
 
 func NewXdrStream(in io.ReadCloser) *XdrStream {
@@ -36,10 +53,12 @@ func NewXdrStream(in io.ReadCloser) *XdrStream {
 	teeReader := io.TeeReader(in, sha256Hash)
 
 	return &XdrStream{
-		rdr: struct {
-			io.Reader
-			io.Closer
-		}{bufio.NewReader(teeReader), in},
+		rdr: newCountReader(
+			struct {
+				io.Reader
+				io.Closer
+			}{bufio.NewReader(teeReader), in},
+		),
 		sha256Hash: sha256Hash,
 	}
 }
@@ -73,6 +92,12 @@ func (x *XdrStream) SetExpectedHash(hash [sha256.Size]byte) {
 	x.expectedHash = hash
 }
 
+// ExpectedHash returns the expected hash and a boolean indicating if the
+// expected hash was set
+func (x *XdrStream) ExpectedHash() ([sha256.Size]byte, bool) {
+	return x.expectedHash, x.validateHash
+}
+
 // Close closes all internal readers and checks if the expected hash
 // (if set by SetExpectedHash) matches the actual hash of the stream.
 func (x *XdrStream) Close() error {
@@ -80,18 +105,29 @@ func (x *XdrStream) Close() error {
 		// Read all remaining data from rdr
 		_, err := io.Copy(ioutil.Discard, x.rdr)
 		if err != nil {
+			// close the internal readers to avoid memory leaks
+			x.closeReaders()
 			return errors.Wrap(err, "Error reading remaining bytes from rdr")
 		}
 
 		actualHash := x.sha256Hash.Sum([]byte{})
 
 		if !bytes.Equal(x.expectedHash[:], actualHash[:]) {
+			// close the internal readers to avoid memory leaks
+			x.closeReaders()
 			return errors.New("Stream hash does not match expected hash!")
 		}
 	}
 
+	return x.closeReaders()
+}
+
+func (x *XdrStream) closeReaders() error {
 	if x.rdr != nil {
 		if err := x.rdr.Close(); err != nil {
+			if x.rdr2 != nil {
+				x.rdr2.Close()
+			}
 			return err
 		}
 	}
@@ -142,6 +178,16 @@ func (x *XdrStream) ReadOne(in interface{}) error {
 			readi, nbytes)
 	}
 	return nil
+}
+
+// BytesRead returns the number of bytes read in the stream
+func (x *XdrStream) BytesRead() int64 {
+	return x.rdr.bytesRead
+}
+
+// Discard removes n bytes from the stream
+func (x *XdrStream) Discard(n int64) (int64, error) {
+	return io.CopyN(ioutil.Discard, x.rdr, n)
 }
 
 func WriteFramedXdr(out io.Writer, in interface{}) error {

@@ -65,7 +65,7 @@ valid URI before navigating to it.
 
 Pages represent a subset of a larger collection of objects.  
 As an example, it would be unfeasible to provide the
-[All Transactions](../reference/transactions-all.md) endpoint without paging.  
+[All Transactions](../reference/endpoints/transactions-all.md) endpoint without paging.  
 Over time there will be millions of transactions in the Stellar network's ledger
 and returning them all over a single request would be unfeasible.
 

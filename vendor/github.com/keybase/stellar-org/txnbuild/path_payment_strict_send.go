@@ -36,7 +36,7 @@ func (pp *PathPaymentStrictSend) BuildXDR() (xdr.Operation, error) {
 	}
 
 	// Set XDR destination
-	var xdrDestination xdr.AccountId
+	var xdrDestination xdr.MuxedAccount
 	err = xdrDestination.SetAddress(pp.Destination)
 	if err != nil {
 		return xdr.Operation{}, errors.Wrap(err, "failed to set destination address")
@@ -94,7 +94,8 @@ func (pp *PathPaymentStrictSend) FromXDR(xdrOp xdr.Operation) error {
 	}
 
 	pp.SourceAccount = accountFromXDR(xdrOp.SourceAccount)
-	pp.Destination = result.Destination.Address()
+	destAID := result.Destination.ToAccountId()
+	pp.Destination = destAID.Address()
 	pp.SendAmount = amount.String(result.SendAmount)
 	pp.DestMin = amount.String(result.DestMin)
 
@@ -125,7 +126,7 @@ func (pp *PathPaymentStrictSend) FromXDR(xdrOp xdr.Operation) error {
 // Validate for PathPaymentStrictSend validates the required struct fields. It returns an error if any
 // of the fields are invalid. Otherwise, it returns nil.
 func (pp *PathPaymentStrictSend) Validate() error {
-	err := validateStellarPublicKey(pp.Destination)
+	_, err := xdr.AddressToAccountId(pp.Destination)
 	if err != nil {
 		return NewValidationError("Destination", err.Error())
 	}
@@ -151,4 +152,10 @@ func (pp *PathPaymentStrictSend) Validate() error {
 	}
 
 	return nil
+}
+
+// GetSourceAccount returns the source account of the operation, or nil if not
+// set.
+func (pp *PathPaymentStrictSend) GetSourceAccount() Account {
+	return pp.SourceAccount
 }

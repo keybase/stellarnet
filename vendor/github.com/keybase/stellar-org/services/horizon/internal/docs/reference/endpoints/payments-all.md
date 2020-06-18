@@ -195,4 +195,4 @@ This endpoint responds with a list of payments. See [operation resource](../reso
 
 ## Possible Errors
 
-- The [standard errors](../errors.md#Standard_Errors).
+- The [standard errors](../errors.md#standard-errors).

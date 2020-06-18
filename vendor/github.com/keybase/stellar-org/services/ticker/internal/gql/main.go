@@ -2,6 +2,7 @@ package gql
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/graph-gophers/graphql-go"
 	"github.com/graph-gophers/graphql-go/relay"
@@ -106,8 +107,9 @@ func (r *resolver) Serve(address string) {
 	mux.Handle("/graphiql", GraphiQL{})
 
 	server := &http.Server{
-		Addr:    address,
-		Handler: mux,
+		Addr:        address,
+		Handler:     mux,
+		ReadTimeout: 5 * time.Second,
 	}
 	r.logger.Infof("Starting to serve on address %s\n", address)
 

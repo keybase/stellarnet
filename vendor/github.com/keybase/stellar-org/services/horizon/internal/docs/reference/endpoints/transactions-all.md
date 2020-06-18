@@ -119,8 +119,8 @@ See [transaction resource](../resources/transaction.md) for reference.
         "created_at": "2015-09-24T10:07:09Z",
         "account": "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
         "account_sequence": 279172874343,
-        "max_fee": 0,
-        "fee_paid": 0,
+        "max_fee": 100,
+        "fee_charged": 100,
         "operation_count": 1,
         "envelope_xdr": "AAAAAGXNhLrhGtltTwCpmqlarh7s1DB2hIkbP//jgzn4Fos/AAAACgAAAEEAAABnAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAA2ddmTOFAgr21Crs2RXRGLhiAKxicZb/IERyEZL/Y2kUAAAAXSHboAAAAAAAAAAAB+BaLPwAAAECDEEZmzbgBr5fc3mfJsCjWPDtL6H8/vf16me121CC09ONyWJZnw0PUvp4qusmRwC6ZKfLDdk8F3Rq41s+yOgQD",
         "result_xdr": "AAAAAAAAAAoAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=",
@@ -160,8 +160,8 @@ See [transaction resource](../resources/transaction.md) for reference.
         "created_at": "2015-09-24T07:49:38Z",
         "account": "GBS43BF24ENNS3KPACUZVKK2VYPOZVBQO2CISGZ777RYGOPYC2FT6S3K",
         "account_sequence": 279172874342,
-        "max_fee": 0,
-        "fee_paid": 0,
+        "max_fee": 100,
+        "fee_charged": 100,
         "operation_count": 1,
         "envelope_xdr": "AAAAAGXNhLrhGtltTwCpmqlarh7s1DB2hIkbP//jgzn4Fos/AAAACgAAAEEAAABmAAAAAAAAAAAAAAABAAAAAAAAAAAAAAAAMPT7P7buwqnMueFS4NV10vE2q3C/mcAy4jx03/RdSGsAAAAXSHboAAAAAAAAAAAB+BaLPwAAAEBPWWMNSWyPBbQlhRheXyvAFDVx1rnf68fdDOUHPdDIkHdUczBpzvCjpdgwhQ2NYOX5ga1ZgOIWLy789YNnuIcL",
         "result_xdr": "AAAAAAAAAAoAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAA=",
@@ -185,4 +185,4 @@ See [transaction resource](../resources/transaction.md) for reference.
 
 ## Possible Errors
 
-- The [standard errors](../errors.md#Standard_Errors).
+- The [standard errors](../errors.md#standard-errors).

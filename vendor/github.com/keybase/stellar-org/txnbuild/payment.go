@@ -17,9 +17,9 @@ type Payment struct {
 
 // BuildXDR for Payment returns a fully configured XDR Operation.
 func (p *Payment) BuildXDR() (xdr.Operation, error) {
-	var destAccountID xdr.AccountId
+	var destMuxedAccount xdr.MuxedAccount
 
-	err := destAccountID.SetAddress(p.Destination)
+	err := destMuxedAccount.SetAddress(p.Destination)
 	if err != nil {
 		return xdr.Operation{}, errors.Wrap(err, "failed to set destination address")
 	}
@@ -39,7 +39,7 @@ func (p *Payment) BuildXDR() (xdr.Operation, error) {
 
 	opType := xdr.OperationTypePayment
 	xdrOp := xdr.PaymentOp{
-		Destination: destAccountID,
+		Destination: destMuxedAccount,
 		Amount:      xdrAmount,
 		Asset:       xdrAsset,
 	}
@@ -60,7 +60,8 @@ func (p *Payment) FromXDR(xdrOp xdr.Operation) error {
 	}
 
 	p.SourceAccount = accountFromXDR(xdrOp.SourceAccount)
-	p.Destination = result.Destination.Address()
+	destAID := result.Destination.ToAccountId()
+	p.Destination = destAID.Address()
 	p.Amount = amount.String(result.Amount)
 
 	asset, err := assetFromXDR(result.Asset)
@@ -75,7 +76,7 @@ func (p *Payment) FromXDR(xdrOp xdr.Operation) error {
 // Validate for Payment validates the required struct fields. It returns an error if any
 // of the fields are invalid. Otherwise, it returns nil.
 func (p *Payment) Validate() error {
-	err := validateStellarPublicKey(p.Destination)
+	_, err := xdr.AddressToAccountId(p.Destination)
 	if err != nil {
 		return NewValidationError("Destination", err.Error())
 	}
@@ -91,4 +92,10 @@ func (p *Payment) Validate() error {
 	}
 
 	return nil
+}
+
+// GetSourceAccount returns the source account of the operation, or nil if not
+// set.
+func (p *Payment) GetSourceAccount() Account {
+	return p.SourceAccount
 }

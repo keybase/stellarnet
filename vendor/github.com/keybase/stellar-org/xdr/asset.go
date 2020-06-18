@@ -3,12 +3,27 @@ package xdr
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/stellar/go/strkey"
 )
 
 // This file contains helpers for working with xdr.Asset structs
+
+// AssetTypeToString maps an xdr.AssetType to its string representation
+var AssetTypeToString = map[AssetType]string{
+	AssetTypeAssetTypeNative:           "native",
+	AssetTypeAssetTypeCreditAlphanum4:  "credit_alphanum4",
+	AssetTypeAssetTypeCreditAlphanum12: "credit_alphanum12",
+}
+
+// StringToAssetType maps an strings to its xdr.AssetType representation
+var StringToAssetType = map[string]AssetType{
+	"native":            AssetTypeAssetTypeNative,
+	"credit_alphanum4":  AssetTypeAssetTypeCreditAlphanum4,
+	"credit_alphanum12": AssetTypeAssetTypeCreditAlphanum12,
+}
 
 // MustNewNativeAsset returns a new native asset, panicking if it can't.
 func MustNewNativeAsset() Asset {
@@ -22,14 +37,114 @@ func MustNewNativeAsset() Asset {
 
 // MustNewCreditAsset returns a new general asset, panicking if it can't.
 func MustNewCreditAsset(code string, issuer string) Asset {
-	a := Asset{}
-	accountID := AccountId{}
-	accountID.SetAddress(issuer)
-	err := a.SetCredit(code, accountID)
+	a, err := NewCreditAsset(code, issuer)
 	if err != nil {
 		panic(err)
 	}
 	return a
+}
+
+// NewCreditAsset returns a new general asset, returning an error if it can't.
+func NewCreditAsset(code string, issuer string) (Asset, error) {
+	a := Asset{}
+	accountID := AccountId{}
+	if err := accountID.SetAddress(issuer); err != nil {
+		return Asset{}, err
+	}
+	if err := a.SetCredit(code, accountID); err != nil {
+		return Asset{}, err
+	}
+	return a, nil
+}
+
+// BuildAsset creates a new asset from a given `assetType`, `code`, and `issuer`.
+//
+// Valid assetTypes are:
+// 		- `native`
+//		- `credit_alphanum4`
+//		- `credit_alphanum12`
+func BuildAsset(assetType, issuer, code string) (Asset, error) {
+	t, ok := StringToAssetType[assetType]
+
+	if !ok {
+		return Asset{}, errors.New("invalid asset type: was not one of 'native', 'credit_alphanum4', 'credit_alphanum12'")
+	}
+
+	var asset Asset
+	switch t {
+	case AssetTypeAssetTypeNative:
+		if err := asset.SetNative(); err != nil {
+			return Asset{}, err
+		}
+	default:
+		issuerAccountID := AccountId{}
+		if err := issuerAccountID.SetAddress(issuer); err != nil {
+			return Asset{}, err
+		}
+
+		if err := asset.SetCredit(code, issuerAccountID); err != nil {
+			return Asset{}, err
+		}
+	}
+
+	return asset, nil
+}
+
+var ValidAssetCode = regexp.MustCompile("^[[:alnum:]]{1,12}$")
+
+// BuildAssets parses a list of assets from a given string.
+// The string is expected to be a comma separated list of assets
+// encoded in the format (Code:Issuer or "native") defined by SEP-0011
+// https://github.com/stellar/stellar-protocol/pull/313
+// If the string is empty, BuildAssets will return an empty list of assets
+func BuildAssets(s string) ([]Asset, error) {
+	var assets []Asset
+	if s == "" {
+		return assets, nil
+	}
+
+	assetStrings := strings.Split(s, ",")
+	for _, assetString := range assetStrings {
+		var asset Asset
+
+		// Technically https://github.com/stellar/stellar-protocol/blob/master/ecosystem/sep-0011.md allows
+		// any string up to 12 characters not containing an unescaped colon to represent XLM
+		// however, this function only accepts the string "native" to represent XLM
+		if strings.ToLower(assetString) == "native" {
+			if err := asset.SetNative(); err != nil {
+				return nil, err
+			}
+		} else {
+			parts := strings.Split(assetString, ":")
+			if len(parts) != 2 {
+				return nil, fmt.Errorf("%s is not a valid asset", assetString)
+			}
+
+			code := parts[0]
+			if !ValidAssetCode.MatchString(code) {
+				return nil, fmt.Errorf(
+					"%s is not a valid asset, it contains an invalid asset code",
+					assetString,
+				)
+			}
+
+			issuer, err := AddressToAccountId(parts[1])
+			if err != nil {
+				return nil, fmt.Errorf(
+					"%s is not a valid asset, it contains an invalid issuer",
+					assetString,
+				)
+			}
+
+			if err := asset.SetCredit(code, issuer); err != nil {
+				return nil, fmt.Errorf("%s is not a valid asset", assetString)
+			}
+		}
+
+		assets = append(assets, asset)
+	}
+
+	return assets, nil
 }
 
 // SetCredit overwrites `a` with a credit asset using `code` and `issuer`.  The
@@ -176,14 +291,7 @@ func (a Asset) Extract(typ interface{}, code interface{}, issuer interface{}) er
 	case *AssetType:
 		*typ = a.Type
 	case *string:
-		switch a.Type {
-		case AssetTypeAssetTypeNative:
-			*typ = "native"
-		case AssetTypeAssetTypeCreditAlphanum4:
-			*typ = "credit_alphanum4"
-		case AssetTypeAssetTypeCreditAlphanum12:
-			*typ = "credit_alphanum12"
-		}
+		*typ = AssetTypeToString[a.Type]
 	default:
 		return errors.New("can't extract type")
 	}

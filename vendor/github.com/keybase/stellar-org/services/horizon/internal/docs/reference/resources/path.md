@@ -50,4 +50,4 @@ A **path** resource contains information about a payment path.  A path can be us
 ## Endpoints
 | Resource                                 | Type       | Resource URI Template |
 |------------------------------------------|------------|-----------------------|
-| [Find Payment Paths](../path-finding.md) | Collection | `/paths`              |
+| [Find Payment Paths](../endpoints/path-finding.md) | Collection | `/paths`              |

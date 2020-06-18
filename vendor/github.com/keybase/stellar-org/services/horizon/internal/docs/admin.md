@@ -17,10 +17,7 @@ The Stellar Development Foundation runs two Horizon servers, one for the public 
 
 ## Prerequisites
 
-Horizon is dependent upon a stellar-core server.  Horizon needs access to both the SQL database and the HTTP API that is published by stellar-core. See [the administration guide](https://www.stellar.org/developers/stellar-core/learn/admin.html
-) to learn how to set up and administer a stellar-core server.  Secondly, Horizon is dependent upon a postgres server, which it uses to store processed core data for ease of use. Horizon requires postgres version >= 9.5.
-
-In addition to the two prerequisites above, you may optionally install a redis server to be used for rate limiting requests.
+Horizon is dependent upon a stellar-core server.  Horizon needs access to both the SQL database and the HTTP API that is published by stellar-core. See [the administration guide](https://www.stellar.org/developers/stellar-core/software/admin.html) to learn how to set up and administer a stellar-core server.  Secondly, Horizon is dependent upon a postgres server, which it uses to store processed core data for ease of use. Horizon requires postgres version >= 9.5.
 
 ## Installing
 
@@ -36,7 +33,7 @@ To test the installation, simply run `horizon --help` from a terminal.  If the h
 Should you decide not to use one of our prebuilt releases, you may instead build Horizon from source.  To do so, you need to install some developer tools:
 
 - A unix-like operating system with the common core commands (cp, tar, mkdir, bash, etc.)
-- A compatible distribution of Go (Go 1.12 or later)
+- A compatible distribution of Go (Go 1.13 or later)
 - [git](https://git-scm.com/)
 - [mercurial](https://www.mercurial-scm.org/)
 
@@ -77,7 +74,7 @@ To prepare a database for Horizon's use, first you must ensure the database is b
 
 ### Postgres configuration
 
-It is recommended to set `random_page_cost=1` in Postgres configuration if you are using SSD storage. With this setting Query Planner will make a better use of indexes, expecially for `JOIN` queries. We have noticed a huge speed improvement for some queries.
+It is recommended to set `random_page_cost=1` in Postgres configuration if you are using SSD storage. With this setting Query Planner will make a better use of indexes, especially for `JOIN` queries. We have noticed a huge speed improvement for some queries.
 
 ## Running
 
@@ -97,25 +94,15 @@ Horizon requires a functional stellar-core. Go back and set up stellar-core as d
 
 ## Ingesting live stellar-core data
 
-Horizon provides most of its utility through ingested data.  Your Horizon server can be configured
-to listen for and ingest transaction results from the connected stellar-core.  We recommend that
-within your infrastructure you run one (and only one) Horizon process that is configured in this
-way. While running multiple ingestion processes will not corrupt the Horizon database, your error
-logs will quickly fill up as the two instances race to ingest the data from stellar-core. A notable
-exception to this is when you are reingesting data, which we recommend using multiple processes for
-speed (more on this below).
+Horizon provides most of its utility through ingested data.  Your Horizon server can be configured to listen for and ingest transaction results from the connected stellar-core.
 
 To enable ingestion, you must either pass `--ingest=true` on the command line or set the `INGEST`
-environment variable to "true".
+environment variable to "true". Since version 1.0.0 you can start multiple ingesting machines in your cluster.
 
-### Ingesting historical data
+### Ingesting historical data and reingesting Ledgers
 
-To enable ingestion of historical data from stellar-core you need to run `horizon db backfill NUM_LEDGERS`. If you're running a full validator with published history archive, for example, you might want to ingest all of history. In this case your `NUM_LEDGERS` should be slightly higher than the current ledger id on the network. You can run this process in the background while your Horizon server is up. This continuously decrements the `history.elder_ledger` in your /metrics endpoint until `NUM_LEDGERS` is reached and the backfill is complete.
-
-### Reingesting Ledgers
-A notable exception to running only a single Horizon process is when you are reingesting ledgers,
-which we recommend you run multiple processes for in order to dramatically speed up re-ingestion
-time. This is done through the `horizon db range [START_LEDGER] [END_LEDGER]` command, which could
+To reingest older ledgers (due to a version upgrade) or to ingest ledgers closed by the network before you
+started Horizon. This is done through the `horizon db range [START_LEDGER] [END_LEDGER]` command, which could
 be run as follows:
 
 ```
@@ -125,8 +112,7 @@ horizon3> horizon db reingest range 20001 30000
 # ... etc.
 ```
 
-This allows reingestion to be split up and done in parallel by multiple Horizon processes, and is
-available as of Horizon [0.17.4](https://github.com/stellar/go/releases/tag/horizon-v0.17.4).
+This allows reingestion to be split up and done in parallel by multiple Horizon processes.
 
 ### Managing storage for historical data
 
@@ -152,11 +138,74 @@ We recommend you configure the HISTORY_RETENTION_COUNT in Horizon to a value les
 4.  Clear ledger metadata from before the gap by running `stellar-core -c "maintenance?queue=true"`.
 5.  Restart Horizon.
 
+### Some endpoints are not available during state ingestion
+
+Endpoints that display state information are not available during initial state ingestion and will return a `503 Service Unavailable`/`Still Ingesting` error.  An example is the `/paths` endpoint (built using offers). Such endpoints will become available after state ingestion is done (usually within a couple of minutes).
+
+### State ingestion is taking a lot of time
+
+State ingestion shouldn't take more than a couple of minutes on an AWS `c5.xlarge` instance, or equivalent.
+
+It's possible that the progress logs (see below) will not show anything new for a longer period of time or print a lot of progress entries every few seconds. This happens because of the way history archives are designed. The ingestion is still working but it's processing entries of type `DEADENTRY`'. If there is a lot of them in the bucket, there are no _active_ entries to process. We plan to improve the progress logs to display actual percentage progress so it's easier to estimate ETA.
+
+If you see that ingestion is not proceeding for a very long period of time:
+1. Check the RAM usage on the machine. It's possible that system run out of RAM and it using swap memory that is extremely slow.
+2. If above is not the case, file a new issue in this repository.
+
+### CPU usage goes high every few minutes
+
+This is _by design_. Horizon runs a state verifier routine that compares state in local storage to history archives every 64 ledgers to ensure data changes are applied correctly. If data corruption is detected Horizon will block access to endpoints serving invalid data.
+
+We recommend to keep this security feature turned on however if it's causing problems (due to CPU usage) this can be disabled by `--ingest-disable-state-verification` CLI param or `INGEST-DISABLE-STATE-VERIFICATION` env variable.
+
+### I see `Waiting for the next checkpoint...` messages
+
+If you were running the new system in the past during experimental stage (`ENABLE_EXPERIMENTAL_INGESTION` flag) it's possible that the old and new systems are not in sync. In such case, the upgrade code will activate and will make sure the data is in sync. When this happens you may see `Waiting for the next checkpoint...` messages for up to 5 minutes.
+
+## Reading the logs
+
+In order to check the progress and the status of experimental ingestion you should check the logs. All logs connected to experimental ingestion are tagged with `service=expingest`.
+
+It starts with informing you about state ingestion:
+```
+INFO[2019-08-29T13:04:13.473+02:00] Starting ingestion system from empty state...  pid=5965 service=expingest temp_set="*io.MemoryTempSet"
+INFO[2019-08-29T13:04:15.263+02:00] Reading from History Archive Snapshot         ledger=25565887 pid=5965 service=expingest
+```
+During state ingestion, Horizon will log number of processed entries every 100,000 entries (there are currently around 7M entries in the public network):
+```
+INFO[2019-08-29T13:04:34.652+02:00] Processing entries from History Archive Snapshot  ledger=25565887 numEntries=100000 pid=5965 service=expingest
+INFO[2019-08-29T13:04:38.487+02:00] Processing entries from History Archive Snapshot  ledger=25565887 numEntries=200000 pid=5965 service=expingest
+INFO[2019-08-29T13:04:41.322+02:00] Processing entries from History Archive Snapshot  ledger=25565887 numEntries=300000 pid=5965 service=expingest
+INFO[2019-08-29T13:04:48.429+02:00] Processing entries from History Archive Snapshot  ledger=25565887 numEntries=400000 pid=5965 service=expingest
+INFO[2019-08-29T13:05:00.306+02:00] Processing entries from History Archive Snapshot  ledger=25565887 numEntries=500000 pid=5965 service=expingest
+```
+When state ingestion is finished it will proceed to ledger ingestion starting from the next ledger after checkpoint ledger (25565887+1 in this example) to update the state using transaction meta:
+```
+INFO[2019-08-29T13:39:41.590+02:00] Processing entries from History Archive Snapshot  ledger=25565887 numEntries=5300000 pid=5965 service=expingest
+INFO[2019-08-29T13:39:44.518+02:00] Processing entries from History Archive Snapshot  ledger=25565887 numEntries=5400000 pid=5965 service=expingest
+INFO[2019-08-29T13:39:47.488+02:00] Processing entries from History Archive Snapshot  ledger=25565887 numEntries=5500000 pid=5965 service=expingest
+INFO[2019-08-29T13:40:00.670+02:00] Processed ledger                              ledger=25565887 pid=5965 service=expingest type=state_pipeline
+INFO[2019-08-29T13:40:00.670+02:00] Finished processing History Archive Snapshot  duration=2145.337575904 ledger=25565887 numEntries=5529931 pid=5965 service=expingest shutdown=false
+INFO[2019-08-29T13:40:00.693+02:00] Reading new ledger                            ledger=25565888 pid=5965 service=expingest
+INFO[2019-08-29T13:40:00.694+02:00] Processing ledger                             ledger=25565888 pid=5965 service=expingest type=ledger_pipeline updating_database=true
+INFO[2019-08-29T13:40:00.779+02:00] Processed ledger                              ledger=25565888 pid=5965 service=expingest type=ledger_pipeline
+INFO[2019-08-29T13:40:00.779+02:00] Finished processing ledger                    duration=0.086024492 ledger=25565888 pid=5965 service=expingest shutdown=false transactions=14
+INFO[2019-08-29T13:40:00.815+02:00] Reading new ledger                            ledger=25565889 pid=5965 service=expingest
+INFO[2019-08-29T13:40:00.816+02:00] Processing ledger                             ledger=25565889 pid=5965 service=expingest type=ledger_pipeline updating_database=true
+INFO[2019-08-29T13:40:00.881+02:00] Processed ledger                              ledger=25565889 pid=5965 service=expingest type=ledger_pipeline
+INFO[2019-08-29T13:40:00.881+02:00] Finished processing ledger                    duration=0.06619956 ledger=25565889 pid=5965 service=expingest shutdown=false transactions=29
+INFO[2019-08-29T13:40:00.901+02:00] Reading new ledger                            ledger=25565890 pid=5965 service=expingest
+INFO[2019-08-29T13:40:00.902+02:00] Processing ledger                             ledger=25565890 pid=5965 service=expingest type=ledger_pipeline updating_database=true
+INFO[2019-08-29T13:40:00.972+02:00] Processed ledger                              ledger=25565890 pid=5965 service=expingest type=ledger_pipeline
+INFO[2019-08-29T13:40:00.972+02:00] Finished processing ledger                    duration=0.071039012 ledger=25565890 pid=5965 service=expingest shutdown=false transactions=20
+```
+
+
 ## Managing Stale Historical Data
 
 Horizon ingests ledger data from a connected instance of stellar-core.  In the event that stellar-core stops running (or if Horizon stops ingesting data for any other reason), the view provided by Horizon will start to lag behind reality.  For simpler applications, this may be fine, but in many cases this lag is unacceptable and the application should not continue operating until the lag is resolved.
 
-To help applications that cannot tolerate lag, Horizon provides a configurable "staleness" threshold.  Given that enough lag has accumulated to surpass this threshold (expressed in number of ledgers), Horizon will only respond with an error: [`stale_history`](./errors/stale-history.md).  To configure this option, use either the `--history-stale-threshold` command line flag or the `HISTORY_STALE_THRESHOLD` environment variable.  NOTE:  non-historical requests (such as submitting transactions or finding payment paths) will not error out when the staleness threshold is surpassed.
+To help applications that cannot tolerate lag, Horizon provides a configurable "staleness" threshold.  Given that enough lag has accumulated to surpass this threshold (expressed in number of ledgers), Horizon will only respond with an error: [`stale_history`](./reference/errors/stale-history.md).  To configure this option, use either the `--history-stale-threshold` command line flag or the `HISTORY_STALE_THRESHOLD` environment variable.  NOTE:  non-historical requests (such as submitting transactions or finding payment paths) will not error out when the staleness threshold is surpassed.
 
 ## Monitoring
 
@@ -209,23 +258,6 @@ Below we present a few standard log entries with associated fields. You can use 
 | `streaming`      | Boolean, `true` if request is a streaming request                                              |
 | `referer`        | Value of `Referer` header                                                                      |
 | `req`            | Random value that uniquely identifies a request, attached to all logs within this HTTP request |
-
-### Processing (ingesting) a new ledger
-
-| Key       | Value                    |
-|-----------|--------------------------|
-| **`msg`** | **`Reading new ledger`** |
-| `ledger`  | Ledger sequence          |
-
-### Finished processing (ingesting) a new ledger
-
-| Key            | Value                                |
-|----------------|--------------------------------------|
-| **`msg`**      | **`Finished processing ledger`**     |
-| `ledger`       | Ledger sequence                      |
-| `duration`     | Duration in seconds                  |
-| `transactions` | Number of transactions in the ledger |
-
 
 ### Metrics
 

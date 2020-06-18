@@ -9,6 +9,7 @@ type Operation interface {
 	BuildXDR() (xdr.Operation, error)
 	FromXDR(xdrOp xdr.Operation) error
 	Validate() error
+	GetSourceAccount() Account
 }
 
 // SetOpSourceAccount sets the source account ID on an Operation.
@@ -16,7 +17,7 @@ func SetOpSourceAccount(op *xdr.Operation, sourceAccount Account) {
 	if sourceAccount == nil {
 		return
 	}
-	var opSourceAccountID xdr.AccountId
+	var opSourceAccountID xdr.MuxedAccount
 	opSourceAccountID.SetAddress(sourceAccount.GetAccountID())
 	op.SourceAccount = &opSourceAccountID
 }
@@ -60,9 +61,10 @@ func operationFromXDR(xdrOp xdr.Operation) (Operation, error) {
 }
 
 // accountFromXDR returns a txnbuild Account from a XDR Account.
-func accountFromXDR(account *xdr.AccountId) Account {
+func accountFromXDR(account *xdr.MuxedAccount) Account {
 	if account != nil {
-		return &SimpleAccount{AccountID: account.Address()}
+		aid := account.ToAccountId()
+		return &SimpleAccount{AccountID: aid.Address()}
 	}
 	return nil
 }

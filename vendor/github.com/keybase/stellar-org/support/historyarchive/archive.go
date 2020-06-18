@@ -6,6 +6,7 @@ package historyarchive
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -33,6 +34,7 @@ type CommandOptions struct {
 }
 
 type ConnectOptions struct {
+	Context          context.Context
 	S3Region         string
 	S3Endpoint       string
 	UnsignedRequests bool
@@ -242,6 +244,11 @@ func Connect(u string, opts ConnectOptions) (*Archive, error) {
 	if err != nil {
 		return &arch, err
 	}
+
+	if opts.Context == nil {
+		opts.Context = context.Background()
+	}
+
 	pth := parsed.Path
 	if parsed.Scheme == "s3" {
 		// Inside s3, all paths start _without_ the leading /
