@@ -5,12 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 
 	"github.com/stellar/go/amount"
-	"github.com/stellar/go/build"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/network"
 	"github.com/stellar/go/price"
+	build "github.com/stellar/go/txnbuild"
 	"github.com/stellar/go/xdr"
 )
 
@@ -22,18 +23,18 @@ import (
 // when the Sign() function is called in order to make the transaction
 // building code cleaner.
 type Tx struct {
-	internal  xdr.Transaction
+	internal  xdr.TransactionV0
 	source    AddressStr
-	seqnoProv build.SequenceProvider
+	seqnoProv SequenceProvider
 	netPass   string
 	baseFee   uint64
 	err       error
 }
 
 // NewBaseTx creates a Tx with the common transaction elements.
-func NewBaseTx(source AddressStr, seqnoProvider build.SequenceProvider, baseFee uint64) *Tx {
-	if baseFee < build.DefaultBaseFee {
-		baseFee = build.DefaultBaseFee
+func NewBaseTx(source AddressStr, seqnoProvider SequenceProvider, baseFee uint64) *Tx {
+	if baseFee < build.MinBaseFee {
+		baseFee = build.MinBaseFee
 	}
 	t := &Tx{
 		source:    source,
@@ -46,7 +47,7 @@ func NewBaseTx(source AddressStr, seqnoProvider build.SequenceProvider, baseFee 
 
 // newBaseTxSeed is a convenience function to get the address out of `from` before
 // calling NewBaseTx.
-func newBaseTxSeed(from SeedStr, seqnoProvider build.SequenceProvider, baseFee uint64) (*Tx, error) {
+func newBaseTxSeed(from SeedStr, seqnoProvider SequenceProvider, baseFee uint64) (*Tx, error) {
 	fromAddress, err := from.Address()
 	if err != nil {
 		return nil, err
@@ -65,7 +66,7 @@ func (t *Tx) AddPaymentOp(to AddressStr, amt string) {
 	if t.err != nil {
 		return
 	}
-	op.Destination, t.err = to.AccountID()
+	t.err = op.Destination.SetAddress(to.String())
 	if t.err != nil {
 		return
 	}
@@ -84,7 +85,7 @@ func (t *Tx) AddAssetPaymentOp(to AddressStr, asset xdr.Asset, amt string) {
 	if t.err != nil {
 		return
 	}
-	op.Destination, t.err = to.AccountID()
+	t.err = op.Destination.SetAddress(to.String())
 	if t.err != nil {
 		return
 	}
@@ -113,7 +114,7 @@ func (t *Tx) AddPathPaymentOp(to AddressStr, sendAsset AssetBase, sendAmountMax 
 	if t.err != nil {
 		return
 	}
-	op.Destination, t.err = to.AccountID()
+	t.err = op.Destination.SetAddress(to.String())
 	if t.err != nil {
 		return
 	}
@@ -386,7 +387,7 @@ func (t *Tx) AddMemoID(id *uint64) {
 }
 
 // AddTimeBounds adds time bounds to the transaction.
-func (t *Tx) AddTimeBounds(min, max uint64) {
+func (t *Tx) AddTimeBounds(min, max int64) {
 	if t.err != nil {
 		return
 	}
@@ -439,17 +440,22 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 	}
 	t.internal.SeqNum = seqno + 1
 	t.internal.Fee = xdr.Uint32(t.baseFee * uint64(len(t.internal.Operations)))
-	t.internal.SourceAccount, err = t.source.AccountID()
+	accountID, err := t.source.AccountID()
+	if err != nil {
+		return SignResult{}, err
+	}
+	ed25519, ok := accountID.GetEd25519()
+	if !ok {
+		return SignResult{}, fmt.Errorf("expected source account ID to be Ed25519, got %s", accountID.Type.String())
+	}
+	t.internal.SourceAccountEd25519 = ed25519
+
+	hash, err := network.HashTransactionV0(t.internal, t.netPass)
 	if err != nil {
 		return SignResult{}, err
 	}
 
-	hash, err := network.HashTransaction(&t.internal, t.netPass)
-	if err != nil {
-		return SignResult{}, err
-	}
-
-	envelope := xdr.TransactionEnvelope{Tx: t.internal}
+	envelope := xdr.TransactionV0Envelope{Tx: t.internal}
 
 	for _, signer := range signers {
 		kp, err := keypair.Parse(signer.SecureNoLogString())
@@ -464,8 +470,13 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 		envelope.Signatures = append(envelope.Signatures, sig)
 	}
 
+	// Keep serializing V0 transactions even if protocol 13 is live.
+	outerEnvelope, err := xdr.NewTransactionEnvelope(xdr.EnvelopeTypeEnvelopeTypeTxV0, envelope)
+	if err != nil {
+		return SignResult{}, fmt.Errorf("failed to create transaction envelope V0: %w", err)
+	}
 	var buf bytes.Buffer
-	_, err = xdr.Marshal(&buf, envelope)
+	_, err = xdr.Marshal(&buf, outerEnvelope)
 	if err != nil {
 		return SignResult{}, err
 	}

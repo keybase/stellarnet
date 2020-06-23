@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/stellar/go/clients/horizon"
+	horizon "github.com/stellar/go/clients/horizonclient"
 	horizonProtocol "github.com/stellar/go/protocols/horizon"
 )
 

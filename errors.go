@@ -7,7 +7,7 @@ import (
 
 	perrors "github.com/pkg/errors"
 
-	"github.com/stellar/go/clients/horizon"
+	horizon "github.com/stellar/go/clients/horizonclient"
 )
 
 // TimeoutHandler will be called whenever a timeout error happens.

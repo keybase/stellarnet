@@ -91,7 +91,7 @@ func (a *AssetSummary) IssuerString() string {
 // Asset returns details about an asset that matches assetCode
 // from issuerID.
 func Asset(assetCode string, issuerID AddressStr) (*AssetSummary, error) {
-	u, err := url.Parse(Client().URL + "/assets")
+	u, err := url.Parse(Client().HorizonURL + "/assets")
 	if err != nil {
 		return nil, errMap(err)
 	}
@@ -157,7 +157,7 @@ func AssetSearch(arg AssetSearchArg) (res []AssetSummary, err error) {
 		return res, nil
 	}
 
-	u, err := url.Parse(Client().URL + "/assets")
+	u, err := url.Parse(Client().HorizonURL + "/assets")
 	if err != nil {
 		return nil, errMap(err)
 	}
@@ -197,7 +197,7 @@ func AssetList(cursor string, limit int, order string) (res []AssetSummary, next
 	if limit < 1 || limit > 200 {
 		limit = 200
 	}
-	u, err := url.Parse(Client().URL + "/assets")
+	u, err := url.Parse(Client().HorizonURL + "/assets")
 	if err != nil {
 		return nil, "", errMap(err)
 	}

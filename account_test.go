@@ -9,10 +9,10 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/keybase/stellarnet/testclient"
-	"github.com/stellar/go/build"
-	"github.com/stellar/go/clients/horizon"
+	horizon "github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/keypair"
 	horizonProtocol "github.com/stellar/go/protocols/horizon"
+	build "github.com/stellar/go/txnbuild"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/require"
 )
@@ -299,7 +299,7 @@ func TestScenario(t *testing.T) {
 	require.Equal(t, txid2, txid3)
 
 	t.Logf("bob merges account into alice's account")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), nil /* timeBounds */, build.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -316,7 +316,7 @@ func TestScenario(t *testing.T) {
 
 	t.Logf("alice merges into an unfunded account")
 	var nines uint64 = 999
-	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client(), nil /* timeBounds */, build.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -324,7 +324,7 @@ func TestScenario(t *testing.T) {
 	t.Logf("charlie merges into a funded account")
 	lip := helper.Keypair(t, "Lip")
 	testclient.GetTestLumens(t, lip)
-	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client(), nil /* timeBounds */, build.MinBaseFee)
 	require.NoError(t, err)
 }
 
@@ -343,7 +343,7 @@ func TestAccountMergeAmount(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Logf("bob merges back to alice")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), nil /* timeBounds */, build.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -440,7 +440,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-			"10.0", "", Client(), &tc.tb, build.DefaultBaseFee)
+			"10.0", "", Client(), &tc.tb, build.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -450,7 +450,7 @@ func TestTimeBounds(t *testing.T) {
 
 	tb := MakeTimeboundsWithMaxTime(time.Date(2030, time.November, 10, 23, 0, 0, 0, time.UTC))
 	tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-		"10.0", "", Client(), &tb, build.DefaultBaseFee)
+		"10.0", "", Client(), &tb, build.MinBaseFee)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -461,7 +461,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-			"15.0", "", Client(), &tc.tb, build.DefaultBaseFee)
+			"15.0", "", Client(), &tc.tb, build.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -470,7 +470,7 @@ func TestTimeBounds(t *testing.T) {
 	}
 
 	tx, err = PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-		"15.0", "", Client(), &tb, build.DefaultBaseFee)
+		"15.0", "", Client(), &tb, build.MinBaseFee)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -490,7 +490,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := RelocateTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice),
-			true, nil, Client(), &tc.tb, build.DefaultBaseFee)
+			true, nil, Client(), &tc.tb, build.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -528,7 +528,7 @@ func TestConcurrentSubmit(t *testing.T) {
 	n := 20
 	prepared := make([]SignResult, n)
 	for i := 0; i < n; i++ {
-		sig, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), fmt.Sprintf("%d", i+1), "", sprov, nil, build.DefaultBaseFee)
+		sig, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), fmt.Sprintf("%d", i+1), "", sprov, nil, build.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -850,7 +850,7 @@ func TestAccountMergeFull(t *testing.T) {
 	}
 
 	// do the merge
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), Client(), nil /* timeBounds */, build.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -877,7 +877,7 @@ func TestAccountMergeFull(t *testing.T) {
 
 	// if we try to merge Bob's account into another account that doesn't support
 	// the custom asset, it will fail
-	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), nil /* timeBounds */, build.MinBaseFee)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "cannot merge")
 
@@ -891,7 +891,7 @@ func TestAccountMergeFull(t *testing.T) {
 	_, _, _, err = pathPayment(seedStr(t, helper.Bob), issuerAddr, path.SourceAsset(), sendAmountMax, path.DestinationAsset(), path.DestinationAmount, PathAssetSliceToAssetBase(path.Path), "pub memo path pay")
 	require.NoError(t, err)
 	// attempt the merge again from bob into charlie
-	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), nil /* timeBounds */, build.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
