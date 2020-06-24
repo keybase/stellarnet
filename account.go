@@ -486,6 +486,16 @@ func HashTx(tx xdr.Transaction) (string, error) {
 	return hex.EncodeToString(bs[:]), nil
 }
 
+// HashTxEnv returns the hex transaction ID of the transaction in transaction
+// envelope using the active network passphrase.
+func HashTxEnv(env xdr.TransactionEnvelope) (string, error) {
+	bs, err := snetwork.HashTransactionInEnvelope(env, Network().Passphrase)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(bs[:]), nil
+}
+
 // CheckTxID validates and canonicalizes a transaction ID
 // Transaction IDs are lowercase hex-encoded 32-byte strings.
 func CheckTxID(txID string) (string, error) {
