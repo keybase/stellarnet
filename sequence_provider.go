@@ -8,11 +8,14 @@ import (
 	"github.com/stellar/go/xdr"
 )
 
+// SequenceProvider contains SequenceForAccount to look up latest sequence
+// number of a Stellar account.
 type SequenceProvider interface {
 	// Look up a sequence by address
 	SequenceForAccount(aid string) (xdr.SequenceNumber, error)
 }
 
+// ClientSequenceProvider implements SequenceProvider using horizon.Client.
 type ClientSequenceProvider struct {
 	Client *horizon.Client
 }
