@@ -14,25 +14,33 @@ func FeeStats(f FeeStatFetcher) (NumericFeeStats, error) {
 	return resp.Convert()
 }
 
+// FeeStatsSet describes JSON object returned from horizon for `fee_charged`
+// and `max_fee` fields in `/fee_stats` endpoint.
+type FeeStatsSet struct {
+	Min  string `json:"min"`
+	Max  string `json:"max"`
+	Mode string `json:"mode"`
+	P10  string `json:"p10"`
+	P20  string `json:"p20"`
+	P30  string `json:"p30"`
+	P40  string `json:"p40"`
+	P50  string `json:"p50"`
+	P60  string `json:"p60"`
+	P70  string `json:"p70"`
+	P80  string `json:"p80"`
+	P90  string `json:"p90"`
+	P95  string `json:"p95"`
+	P99  string `json:"p99"`
+}
+
 // FeeStatsResponse describes the json response from the horizon
 // /fee_stats endpoint (which is unfortunately all strings).
 type FeeStatsResponse struct {
-	LastLedger          string `json:"last_ledger"`
-	LastLedgerBaseFee   string `json:"last_ledger_base_fee"`
-	LedgerCapacityUsage string `json:"ledger_capacity_usage"`
-	MinAcceptedFee      string `json:"min_accepted_fee"`
-	ModeAcceptedFee     string `json:"mode_accepted_fee"`
-	P10AcceptedFee      string `json:"p10_accepted_fee"`
-	P20AcceptedFee      string `json:"p20_accepted_fee"`
-	P30AcceptedFee      string `json:"p30_accepted_fee"`
-	P40AcceptedFee      string `json:"p40_accepted_fee"`
-	P50AcceptedFee      string `json:"p50_accepted_fee"`
-	P60AcceptedFee      string `json:"p60_accepted_fee"`
-	P70AcceptedFee      string `json:"p70_accepted_fee"`
-	P80AcceptedFee      string `json:"p80_accepted_fee"`
-	P90AcceptedFee      string `json:"p90_accepted_fee"`
-	P95AcceptedFee      string `json:"p95_accepted_fee"`
-	P99AcceptedFee      string `json:"p99_accepted_fee"`
+	LastLedger          string      `json:"last_ledger"`
+	LastLedgerBaseFee   string      `json:"last_ledger_base_fee"`
+	LedgerCapacityUsage string      `json:"ledger_capacity_usage"`
+	FeeCharged          FeeStatsSet `json:"fee_charged"`
+	MaxFee              FeeStatsSet `json:"max_fee"`
 }
 
 // Convert converts a FeeStatsResponse into NumericFeeStats by
@@ -52,55 +60,56 @@ func (f FeeStatsResponse) Convert() (x NumericFeeStats, err error) {
 	if err != nil {
 		return x, err
 	}
-	s.MinAcceptedFee, err = strconv.ParseUint(f.MinAcceptedFee, 10, 64)
+	feeCharged := f.FeeCharged
+	s.MinAcceptedFee, err = strconv.ParseUint(feeCharged.Min, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.ModeAcceptedFee, err = strconv.ParseUint(f.ModeAcceptedFee, 10, 64)
+	s.ModeAcceptedFee, err = strconv.ParseUint(feeCharged.Max, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P10AcceptedFee, err = strconv.ParseUint(f.P10AcceptedFee, 10, 64)
+	s.P10AcceptedFee, err = strconv.ParseUint(feeCharged.P10, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P20AcceptedFee, err = strconv.ParseUint(f.P20AcceptedFee, 10, 64)
+	s.P20AcceptedFee, err = strconv.ParseUint(feeCharged.P20, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P30AcceptedFee, err = strconv.ParseUint(f.P30AcceptedFee, 10, 64)
+	s.P30AcceptedFee, err = strconv.ParseUint(feeCharged.P30, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P40AcceptedFee, err = strconv.ParseUint(f.P40AcceptedFee, 10, 64)
+	s.P40AcceptedFee, err = strconv.ParseUint(feeCharged.P40, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P50AcceptedFee, err = strconv.ParseUint(f.P50AcceptedFee, 10, 64)
+	s.P50AcceptedFee, err = strconv.ParseUint(feeCharged.P50, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P60AcceptedFee, err = strconv.ParseUint(f.P60AcceptedFee, 10, 64)
+	s.P60AcceptedFee, err = strconv.ParseUint(feeCharged.P60, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P70AcceptedFee, err = strconv.ParseUint(f.P70AcceptedFee, 10, 64)
+	s.P70AcceptedFee, err = strconv.ParseUint(feeCharged.P70, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P80AcceptedFee, err = strconv.ParseUint(f.P80AcceptedFee, 10, 64)
+	s.P80AcceptedFee, err = strconv.ParseUint(feeCharged.P80, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P90AcceptedFee, err = strconv.ParseUint(f.P90AcceptedFee, 10, 64)
+	s.P90AcceptedFee, err = strconv.ParseUint(feeCharged.P90, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P95AcceptedFee, err = strconv.ParseUint(f.P95AcceptedFee, 10, 64)
+	s.P95AcceptedFee, err = strconv.ParseUint(feeCharged.P95, 10, 64)
 	if err != nil {
 		return x, err
 	}
-	s.P99AcceptedFee, err = strconv.ParseUint(f.P99AcceptedFee, 10, 64)
+	s.P99AcceptedFee, err = strconv.ParseUint(feeCharged.P99, 10, 64)
 	if err != nil {
 		return x, err
 	}

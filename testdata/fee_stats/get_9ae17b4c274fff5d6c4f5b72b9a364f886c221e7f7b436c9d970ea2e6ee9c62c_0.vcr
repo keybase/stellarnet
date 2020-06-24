@@ -3,16 +3,16 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Wed, 24 Jun 2020 14:04:55 GMT
+Date: Wed, 24 Jun 2020 18:29:09 GMT
 Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 99
+X-Ratelimit-Remaining: 100
 X-Ratelimit-Reset: 1
 
 {
-  "last_ledger": "890143",
+  "last_ledger": "893044",
   "last_ledger_base_fee": "100",
-  "ledger_capacity_usage": "0.53",
+  "ledger_capacity_usage": "0.22",
   "fee_charged": {
     "max": "200",
     "min": "100",
@@ -25,22 +25,22 @@ X-Ratelimit-Reset: 1
     "p60": "100",
     "p70": "100",
     "p80": "100",
-    "p90": "200",
+    "p90": "100",
     "p95": "200",
     "p99": "200"
   },
   "max_fee": {
     "max": "100000",
     "min": "100",
-    "mode": "100000",
-    "p10": "200",
-    "p20": "500",
-    "p30": "100000",
-    "p40": "100000",
-    "p50": "100000",
-    "p60": "100000",
-    "p70": "100000",
-    "p80": "100000",
+    "mode": "100",
+    "p10": "100",
+    "p20": "100",
+    "p30": "100",
+    "p40": "200",
+    "p50": "200",
+    "p60": "500",
+    "p70": "500",
+    "p80": "500",
     "p90": "100000",
     "p95": "100000",
     "p99": "100000"

@@ -3,6 +3,9 @@ package stellarnet
 import (
 	"testing"
 
+	"github.com/stellar/go/txnbuild"
+	"github.com/stretchr/testify/require"
+
 	"github.com/keybase/stellarnet/testclient"
 )
 
@@ -15,20 +18,16 @@ func TestFeeStats(t *testing.T) {
 	helper.SetState(t, "fee_stats")
 
 	stats, err := FeeStats(&HorizonFeeStatFetcher{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
+	require.Greater(t, stats.LastLedger, int32(0))
+	require.Greater(t, stats.LedgerCapacityUsage, 0.0)
+	require.Greater(t, stats.P95AcceptedFee, uint64(0))
+	require.Greater(t, stats.MinAcceptedFee, uint64(0))
+	require.Greater(t, stats.ModeAcceptedFee, uint64(0))
 
-	if stats.LastLedger == 0 {
-		t.Error("last ledger: 0, expected non-zero")
-	}
-	if stats.LedgerCapacityUsage == 0.0 {
-		t.Error("ledger capacity usage: 0.0, expected non-zero")
-	}
-	if stats.MinAcceptedFee == 0 {
-		t.Error("min accepted fee: 0, expected non-zero")
-	}
-	if stats.P95AcceptedFee == 0 {
-		t.Error("p95 accepted fee: 0, expected non-zero")
-	}
+	// Fee can't be lower than MinBaseFee, expect to see that in the stats.
+	require.EqualValues(t, txnbuild.MinBaseFee, stats.MinAcceptedFee)
+
+	// This one is usually the case on testnet as well.
+	require.EqualValues(t, txnbuild.MinBaseFee, stats.P10AcceptedFee)
 }
