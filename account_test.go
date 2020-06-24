@@ -746,7 +746,7 @@ func TestPathPayments(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	unpackedTx := unpackedTxEnv.MustV0()
+	unpackedTx := unpackedTxEnv.MustV1()
 	t.Logf("envelope: %+v", unpackedTx)
 
 	if len(unpackedTx.Tx.Operations) != 1 {
@@ -818,7 +818,7 @@ func TestAccountMergeFull(t *testing.T) {
 	issuerAddr, err := NewAddressStr(issuerPair.Address())
 	require.NoError(t, err)
 	distPair := helper.Keypair(t, "dist")
-	_, _, err = CreateCustomAssetWithKPs(sourceSeed, issuerPair, distPair, assetCode, "10000", "keybase.io/blueasset", "2.3", 200)
+	_, _, err = CreateCustomAssetWithKPs(sourceSeed, issuerPair, distPair, assetCode, "10000", "keybase.io/blueasset", "2.3", build.MinBaseFee)
 	require.NoError(t, err)
 
 	// send 10 lumens from source to alice and bob to create their accounts
@@ -827,9 +827,9 @@ func TestAccountMergeFull(t *testing.T) {
 	_, _, _, err = SendXLM(sourceSeed, acctBob.address, "10.0", "" /* empty memo */)
 	require.NoError(t, err)
 	// create trustlines for our new asset to Alice and Bob
-	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, "10000", 200)
+	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, "10000", build.MinBaseFee)
 	require.NoError(t, err)
-	_, err = CreateTrustline(seedStr(t, helper.Bob), assetCode, issuerAddr, "10000", 200)
+	_, err = CreateTrustline(seedStr(t, helper.Bob), assetCode, issuerAddr, "10000", build.MinBaseFee)
 	require.NoError(t, err)
 	// send a path payment from the source to Alice so alice can also have some of the custom asset
 	paths, err := acctSource.FindPaymentPaths(acctAlice.address, assetCode, issuerAddr, "10")
@@ -863,12 +863,17 @@ func TestAccountMergeFull(t *testing.T) {
 	require.NoError(t, err)
 
 	// bob now has all the assets
+	t.Logf("Bob account is %s", acctBob.address.String())
 	balances, err = acctBob.Balances()
 	require.NoError(t, err)
 	require.Equal(t, 2, len(balances))
 	for _, balance := range balances {
 		if balance.Asset.Type == "native" {
-			require.Equal(t, "19.9999450", balance.Balance)
+			// NOTE (zapu): If transactions here ever change their base fee to
+			// something higher than minimum, this balance might differ if
+			// network charges more than 100 stroops per operation in a tx.
+			require.Regexp(t, `^19.9999`, balance.Balance)
+			require.Equal(t, "19.9999500", balance.Balance)
 		} else if balance.Asset.Code == assetCode {
 			require.Equal(t, "10.0000000", balance.Balance)
 		} else {

@@ -1,0 +1,47 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Wed, 24 Jun 2020 18:14:27 GMT
+Latest-Ledger: 892881
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 98
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=enec7732\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=enec7732\u0026cursor=enec7732_GCWZZVVOL37DLFJI5KQDSBRNAHMIPXNCYTZ3T523MG2SEKGLVOWX256Q_credit_alphanum12\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=enec7732\u0026cursor=enec7732_GCWZZVVOL37DLFJI5KQDSBRNAHMIPXNCYTZ3T523MG2SEKGLVOWX256Q_credit_alphanum12\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "enec7732",
+        "asset_issuer": "GCWZZVVOL37DLFJI5KQDSBRNAHMIPXNCYTZ3T523MG2SEKGLVOWX256Q",
+        "paging_token": "enec7732_GCWZZVVOL37DLFJI5KQDSBRNAHMIPXNCYTZ3T523MG2SEKGLVOWX256Q_credit_alphanum12",
+        "amount": "3183550000021.0000000",
+        "num_accounts": 647,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      }
+    ]
+  }
+}

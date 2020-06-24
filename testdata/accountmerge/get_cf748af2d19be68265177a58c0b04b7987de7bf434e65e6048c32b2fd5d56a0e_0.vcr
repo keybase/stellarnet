@@ -1,0 +1,29 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Wed, 24 Jun 2020 14:43:25 GMT
+Latest-Ledger: 890564
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
+
+{
+  "_embedded": {
+    "records": [
+      {
+        "source_asset_type": "credit_alphanum4",
+        "source_asset_code": "SOMN",
+        "source_asset_issuer": "GA4D5UZQ2IVDG7DFMDTKAYXKMRLBKLXN5XKPVJXHUC4YR2NHXJLTUSFZ",
+        "source_amount": "10.0000000",
+        "destination_asset_type": "credit_alphanum4",
+        "destination_asset_code": "SOMN",
+        "destination_asset_issuer": "GA4D5UZQ2IVDG7DFMDTKAYXKMRLBKLXN5XKPVJXHUC4YR2NHXJLTUSFZ",
+        "destination_amount": "10.0000000",
+        "path": []
+      }
+    ]
+  }
+}

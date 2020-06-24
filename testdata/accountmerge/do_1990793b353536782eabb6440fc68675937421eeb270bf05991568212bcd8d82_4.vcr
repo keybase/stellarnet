@@ -1,0 +1,92 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Wed, 24 Jun 2020 14:43:25 GMT
+Latest-Ledger: 890564
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN",
+  "account_id": "GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN",
+  "sequence": "3824926075125761",
+  "subentry_count": 1,
+  "last_modified_ledger": 890564,
+  "last_modified_time": "2020-06-24T14:43:18Z",
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false,
+    "auth_immutable": false
+  },
+  "balances": [
+    {
+      "balance": "10.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "last_modified_ledger": 890564,
+      "is_authorized": true,
+      "is_authorized_to_maintain_liabilities": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "SOMN",
+      "asset_issuer": "GA4D5UZQ2IVDG7DFMDTKAYXKMRLBKLXN5XKPVJXHUC4YR2NHXJLTUSFZ"
+    },
+    {
+      "balance": "19.9999500",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "weight": 1,
+      "key": "GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {},
+  "paging_token": "GB6VOCHH35TZVUAFXTWWFVORON4VME6FYHWOAUJL2FFR6Q4YBKR6B6TN"
+}

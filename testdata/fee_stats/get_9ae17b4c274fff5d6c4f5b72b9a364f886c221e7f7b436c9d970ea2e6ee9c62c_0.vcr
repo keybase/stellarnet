@@ -3,27 +3,46 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Mon, 07 Oct 2019 13:46:41 GMT
-Vary: Origin
+Date: Wed, 24 Jun 2020 14:04:55 GMT
+Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 99
 X-Ratelimit-Reset: 1
 
 {
-  "last_ledger": "1075403",
+  "last_ledger": "890143",
   "last_ledger_base_fee": "100",
-  "ledger_capacity_usage": "0.20",
-  "min_accepted_fee": "100",
-  "mode_accepted_fee": "100",
-  "p10_accepted_fee": "100",
-  "p20_accepted_fee": "100",
-  "p30_accepted_fee": "100",
-  "p40_accepted_fee": "100",
-  "p50_accepted_fee": "100",
-  "p60_accepted_fee": "100",
-  "p70_accepted_fee": "140",
-  "p80_accepted_fee": "200",
-  "p90_accepted_fee": "200",
-  "p95_accepted_fee": "200",
-  "p99_accepted_fee": "200"
+  "ledger_capacity_usage": "0.53",
+  "fee_charged": {
+    "max": "200",
+    "min": "100",
+    "mode": "100",
+    "p10": "100",
+    "p20": "100",
+    "p30": "100",
+    "p40": "100",
+    "p50": "100",
+    "p60": "100",
+    "p70": "100",
+    "p80": "100",
+    "p90": "200",
+    "p95": "200",
+    "p99": "200"
+  },
+  "max_fee": {
+    "max": "100000",
+    "min": "100",
+    "mode": "100000",
+    "p10": "200",
+    "p20": "500",
+    "p30": "100000",
+    "p40": "100000",
+    "p50": "100000",
+    "p60": "100000",
+    "p70": "100000",
+    "p80": "100000",
+    "p90": "100000",
+    "p95": "100000",
+    "p99": "100000"
+  }
 }

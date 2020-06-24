@@ -1,0 +1,59 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Wed, 24 Jun 2020 14:00:22 GMT
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/transactions/9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4/operations?cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/transactions/9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4/operations?cursor=3822916030435329\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/transactions/9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4/operations?cursor=3822916030435329\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/3822916030435329"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/3822916030435329/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=3822916030435329"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=3822916030435329"
+          }
+        },
+        "id": "3822916030435329",
+        "paging_token": "3822916030435329",
+        "transaction_successful": true,
+        "source_account": "GBBEBRPRLYXQVVJZTFEJ43NIKJ47IHY7QQBX3VGDJUQINU4JDT2QXPUD",
+        "type": "payment",
+        "type_i": 1,
+        "created_at": "2020-06-24T14:00:20Z",
+        "transaction_hash": "9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4",
+        "asset_type": "native",
+        "from": "GBBEBRPRLYXQVVJZTFEJ43NIKJ47IHY7QQBX3VGDJUQINU4JDT2QXPUD",
+        "to": "GDTFAJ7VC6TL7ZMZAA3WQG4DSJKSIQ37S3TCUZMYL443A6GHDXLDWTIS",
+        "amount": "1.0000000"
+      }
+    ]
+  }
+}

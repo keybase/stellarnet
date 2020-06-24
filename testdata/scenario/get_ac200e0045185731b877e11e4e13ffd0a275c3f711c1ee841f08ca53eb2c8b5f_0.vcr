@@ -1,0 +1,63 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Wed, 24 Jun 2020 14:00:23 GMT
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "memo": "a memo",
+  "memo_bytes": "YSBtZW1v",
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/transactions/9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4"
+    },
+    "account": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GBBEBRPRLYXQVVJZTFEJ43NIKJ47IHY7QQBX3VGDJUQINU4JDT2QXPUD"
+    },
+    "ledger": {
+      "href": "https://horizon-testnet.stellar.org/ledgers/890092"
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/transactions/9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/transactions/9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "precedes": {
+      "href": "https://horizon-testnet.stellar.org/transactions?order=asc\u0026cursor=3822916030435328"
+    },
+    "succeeds": {
+      "href": "https://horizon-testnet.stellar.org/transactions?order=desc\u0026cursor=3822916030435328"
+    },
+    "transaction": {
+      "href": "https://horizon-testnet.stellar.org/transactions/9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4"
+    }
+  },
+  "id": "9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4",
+  "paging_token": "3822916030435328",
+  "successful": true,
+  "hash": "9deef8961cd1606c4083f5517a7b996f037e3233e6e877ca8f422e16cf84b5c4",
+  "ledger": 890092,
+  "created_at": "2020-06-24T14:00:20Z",
+  "source_account": "GBBEBRPRLYXQVVJZTFEJ43NIKJ47IHY7QQBX3VGDJUQINU4JDT2QXPUD",
+  "source_account_sequence": "3822911735463937",
+  "fee_account": "GBBEBRPRLYXQVVJZTFEJ43NIKJ47IHY7QQBX3VGDJUQINU4JDT2QXPUD",
+  "fee_charged": "100",
+  "max_fee": "100",
+  "operation_count": 1,
+  "envelope_xdr": "AAAAAgAAAABCQMXxXi8K1TmZSJ5tqFJ59B8fhAN91MNNIIbTiRz1CwAAAGQADZTrAAAAAQAAAAAAAAABAAAABmEgbWVtbwAAAAAAAQAAAAAAAAABAAAAAOZQJ/UXpr/lmQA3aBuDklUkQ3+W5iplmF85sHjHHdY7AAAAAAAAAAAAmJaAAAAAAAAAAAGJHPULAAAAQJF7jmuvqBIth4jf8ocJZvs+BjLiYMDk/yXe2wsTmkoESutlrvGznuvrM68gGWDmImiQRTaSEn4irwuF8fxhbQ8=",
+  "result_xdr": "AAAAAAAAAGQAAAAAAAAAAQAAAAAAAAABAAAAAAAAAAA=",
+  "result_meta_xdr": "AAAAAgAAAAIAAAADAA2U7AAAAAAAAAAAQkDF8V4vCtU5mUiebahSefQfH4QDfdTDTSCG04kc9QsAAAAABfXgnAANlOsAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAABAA2U7AAAAAAAAAAAQkDF8V4vCtU5mUiebahSefQfH4QDfdTDTSCG04kc9QsAAAAABfXgnAANlOsAAAABAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAABAAAABAAAAAMADZTrAAAAAAAAAADmUCf1F6a/5ZkAN2gbg5JVJEN/luYqZZhfObB4xx3WOwAAABdCgQY4AA2U6QAAAAIAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEADZTsAAAAAAAAAADmUCf1F6a/5ZkAN2gbg5JVJEN/luYqZZhfObB4xx3WOwAAABdDGZy4AA2U6QAAAAIAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAMADZTsAAAAAAAAAABCQMXxXi8K1TmZSJ5tqFJ59B8fhAN91MNNIIbTiRz1CwAAAAAF9eCcAA2U6wAAAAEAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEADZTsAAAAAAAAAABCQMXxXi8K1TmZSJ5tqFJ59B8fhAN91MNNIIbTiRz1CwAAAAAFXUocAA2U6wAAAAEAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  "fee_meta_xdr": "AAAAAgAAAAMADZTrAAAAAAAAAABCQMXxXi8K1TmZSJ5tqFJ59B8fhAN91MNNIIbTiRz1CwAAAAAF9eEAAA2U6wAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEADZTsAAAAAAAAAABCQMXxXi8K1TmZSJ5tqFJ59B8fhAN91MNNIIbTiRz1CwAAAAAF9eCcAA2U6wAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA==",
+  "memo_type": "text",
+  "signatures": [
+    "kXuOa6+oEi2HiN/yhwlm+z4GMuJgwOT/Jd7bCxOaSgRK62Wu8bOe6+szryAZYOYiaJBFNpISfiKvC4Xx/GFtDw=="
+  ]
+}

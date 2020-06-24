@@ -162,13 +162,13 @@ func (t *Tx) AddAccountMergeOp(to AddressStr) {
 		return
 	}
 
-	accountID, err := to.AccountID()
-	if err != nil {
-		t.err = err
+	var muxedAccountID xdr.MuxedAccount
+	t.err = muxedAccountID.SetAddress(to.String())
+	if t.err != nil {
 		return
 	}
 
-	t.addOp(xdr.OperationTypeAccountMerge, accountID)
+	t.addOp(xdr.OperationTypeAccountMerge, muxedAccountID)
 }
 
 // AddInflationDestinationOp adds a set_options operation for the inflation
@@ -292,7 +292,7 @@ func (t *Tx) AddDeleteTrustlineOp(assetCode string, assetIssuer AddressStr) {
 func (t *Tx) addOp(opType xdr.OperationType, op interface{}) {
 	body, err := xdr.NewOperationBody(opType, op)
 	if err != nil {
-		t.err = err
+		t.err = fmt.Errorf("xdr.NewOperationBody for %s failed with: %w", opType.String(), err)
 		return
 	}
 	wop := xdr.Operation{
@@ -483,6 +483,8 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 	signed := base64.StdEncoding.EncodeToString(buf.Bytes())
 	txHashHex := hex.EncodeToString(hash[:])
 
+	// fmt.Printf("Hash tx is: %s\n", txHashHex)
+	// fmt.Printf("XDR is: %s\n", signed)
 	return SignResult{
 		Seqno:  uint64(t.internal.SeqNum),
 		Signed: signed,

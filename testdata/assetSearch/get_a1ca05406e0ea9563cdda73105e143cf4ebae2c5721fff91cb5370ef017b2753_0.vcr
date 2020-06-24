@@ -3,10 +3,11 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Mon, 07 Oct 2019 13:58:04 GMT
-Vary: Origin
+Date: Wed, 24 Jun 2020 18:14:26 GMT
+Latest-Ledger: 892881
+Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 99
+X-Ratelimit-Remaining: 100
 X-Ratelimit-Reset: 1
 
 {
@@ -15,10 +16,10 @@ X-Ratelimit-Reset: 1
       "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026cursor=\u0026limit=10\u0026order=asc"
     },
     "next": {
-      "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026cursor=BTC_GAJ3UCZHJNFAWRXAXVNFWF2463CEN6LM6AD4D3RPRETITNNAS7SHKFU4_credit_alphanum4\u0026limit=10\u0026order=asc"
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026cursor=BTC_GABEVMLV76NOMY36FWN33I2LI3W2HA54N5VRFUR4VWIUDFIGBXDUK6CZ_credit_alphanum4\u0026limit=10\u0026order=asc"
     },
     "prev": {
-      "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026cursor=BTC_GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN_credit_alphanum4\u0026limit=10\u0026order=desc"
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026cursor=BTC_GA3F3MPEVGRADMCZTZ7CUP6ORNEVACMMYTCZHBT4NLQBQYDZC5Q2OXZC_credit_alphanum4\u0026limit=10\u0026order=desc"
     }
   },
   "_embedded": {
@@ -31,10 +32,10 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "BTC",
-        "asset_issuer": "GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN",
-        "paging_token": "BTC_GA2PT4VK3QCU25H3SP6RYURX2IETKAJ3NSHLQJ7GFCZZ64FN5TAQNLZN_credit_alphanum4",
-        "amount": "1000.0000000",
-        "num_accounts": 2,
+        "asset_issuer": "GA3F3MPEVGRADMCZTZ7CUP6ORNEVACMMYTCZHBT4NLQBQYDZC5Q2OXZC",
+        "paging_token": "BTC_GA3F3MPEVGRADMCZTZ7CUP6ORNEVACMMYTCZHBT4NLQBQYDZC5Q2OXZC_credit_alphanum4",
+        "amount": "7.9470400",
+        "num_accounts": 10,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -49,10 +50,10 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "BTC",
-        "asset_issuer": "GA35HLNPZKDW7OBFN44PNVI3J7ZVHH2U5H57PMUHIEQ7C3BF4P233PNS",
-        "paging_token": "BTC_GA35HLNPZKDW7OBFN44PNVI3J7ZVHH2U5H57PMUHIEQ7C3BF4P233PNS_credit_alphanum4",
+        "asset_issuer": "GA4H3Q27JYUWEJALB3IE63GENYWV7KEIYR6BLGAIMPNL56NVRGR3ZECR",
+        "paging_token": "BTC_GA4H3Q27JYUWEJALB3IE63GENYWV7KEIYR6BLGAIMPNL56NVRGR3ZECR_credit_alphanum4",
         "amount": "10000000.0000000",
-        "num_accounts": 1,
+        "num_accounts": 66,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -67,10 +68,10 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "BTC",
-        "asset_issuer": "GA3ADRPHMVPLNAC4KTUPASAPUPJWVUBTRUJSFWVZALQG7RAGYHNRF5NA",
-        "paging_token": "BTC_GA3ADRPHMVPLNAC4KTUPASAPUPJWVUBTRUJSFWVZALQG7RAGYHNRF5NA_credit_alphanum4",
-        "amount": "0.0000000",
-        "num_accounts": 1,
+        "asset_issuer": "GA4L7TB5S2YEYVGGA6ABHVSHZTBCOXTRS7ANJETMES3R2RO2VT32XYC3",
+        "paging_token": "BTC_GA4L7TB5S2YEYVGGA6ABHVSHZTBCOXTRS7ANJETMES3R2RO2VT32XYC3_credit_alphanum4",
+        "amount": "0.0046800",
+        "num_accounts": 491,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -85,62 +86,8 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "BTC",
-        "asset_issuer": "GA4EFI55YTKKGUDKTUB3AREK7VDZAZEZCTAKVPIYZ7FG2TRTRM73DN6Y",
-        "paging_token": "BTC_GA4EFI55YTKKGUDKTUB3AREK7VDZAZEZCTAKVPIYZ7FG2TRTRM73DN6Y_credit_alphanum4",
-        "amount": "17776.0000000",
-        "num_accounts": 3,
-        "flags": {
-          "auth_required": false,
-          "auth_revocable": false,
-          "auth_immutable": false
-        }
-      },
-      {
-        "_links": {
-          "toml": {
-            "href": ""
-          }
-        },
-        "asset_type": "credit_alphanum4",
-        "asset_code": "BTC",
-        "asset_issuer": "GA5X3POHQR45UV5YUFPFERDY4E4WCR6ZAPK6QUYPOL6BOX42GKGURCEC",
-        "paging_token": "BTC_GA5X3POHQR45UV5YUFPFERDY4E4WCR6ZAPK6QUYPOL6BOX42GKGURCEC_credit_alphanum4",
-        "amount": "0.0000000",
-        "num_accounts": 1,
-        "flags": {
-          "auth_required": false,
-          "auth_revocable": false,
-          "auth_immutable": false
-        }
-      },
-      {
-        "_links": {
-          "toml": {
-            "href": ""
-          }
-        },
-        "asset_type": "credit_alphanum4",
-        "asset_code": "BTC",
-        "asset_issuer": "GAAEFDZU6EDDB3YSCQQR6WKHB5DA77POJNUJWHWQOI4JZXP3CUC5HUTD",
-        "paging_token": "BTC_GAAEFDZU6EDDB3YSCQQR6WKHB5DA77POJNUJWHWQOI4JZXP3CUC5HUTD_credit_alphanum4",
-        "amount": "10000000.0000000",
-        "num_accounts": 1,
-        "flags": {
-          "auth_required": false,
-          "auth_revocable": false,
-          "auth_immutable": false
-        }
-      },
-      {
-        "_links": {
-          "toml": {
-            "href": ""
-          }
-        },
-        "asset_type": "credit_alphanum4",
-        "asset_code": "BTC",
-        "asset_issuer": "GABWYRWYENGZIM4RRM6VJ7KRRRFIE464QZQF3MBDI2B4KKWEOJVJUZ7U",
-        "paging_token": "BTC_GABWYRWYENGZIM4RRM6VJ7KRRRFIE464QZQF3MBDI2B4KKWEOJVJUZ7U_credit_alphanum4",
+        "asset_issuer": "GA5EPE5MIWY6PIHK7ZZIQ7SOFEFLXU66G5RIHXWPXI5TI3RQS4UK4OY4",
+        "paging_token": "BTC_GA5EPE5MIWY6PIHK7ZZIQ7SOFEFLXU66G5RIHXWPXI5TI3RQS4UK4OY4_credit_alphanum4",
         "amount": "0.0000000",
         "num_accounts": 2,
         "flags": {
@@ -157,8 +104,8 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "BTC",
-        "asset_issuer": "GACZKENF7M6MBR6SYPNMWXZ6K5PSYJXI7LAY44F3TYI4U6GHBSLOUH7I",
-        "paging_token": "BTC_GACZKENF7M6MBR6SYPNMWXZ6K5PSYJXI7LAY44F3TYI4U6GHBSLOUH7I_credit_alphanum4",
+        "asset_issuer": "GA5QGEJ6B5YRLTSTYROJW5S62RX64SDO7VCERWCPCJ3AI327JF33C7DW",
+        "paging_token": "BTC_GA5QGEJ6B5YRLTSTYROJW5S62RX64SDO7VCERWCPCJ3AI327JF33C7DW_credit_alphanum4",
         "amount": "0.0000000",
         "num_accounts": 1,
         "flags": {
@@ -175,8 +122,26 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "BTC",
-        "asset_issuer": "GAILV66PTQGBMOQKOPBQAQZQHDO2SRUBED4TUOTP2RR53BVR4HPZID7I",
-        "paging_token": "BTC_GAILV66PTQGBMOQKOPBQAQZQHDO2SRUBED4TUOTP2RR53BVR4HPZID7I_credit_alphanum4",
+        "asset_issuer": "GA5VX3ZCCT2URCCPJY2TASHPIDIUE2NBEA7NPQDUQUO5EUJAVEL6LXZ7",
+        "paging_token": "BTC_GA5VX3ZCCT2URCCPJY2TASHPIDIUE2NBEA7NPQDUQUO5EUJAVEL6LXZ7_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 6,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "BTC",
+        "asset_issuer": "GA74FF6RAG6WG6CBY5DRBJHTRCUQIEXHNVSDTYPSUXBCR5PCA6Q5NC3R",
+        "paging_token": "BTC_GA74FF6RAG6WG6CBY5DRBJHTRCUQIEXHNVSDTYPSUXBCR5PCA6Q5NC3R_credit_alphanum4",
         "amount": "0.0000000",
         "num_accounts": 1,
         "flags": {
@@ -193,8 +158,44 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "BTC",
-        "asset_issuer": "GAJ3UCZHJNFAWRXAXVNFWF2463CEN6LM6AD4D3RPRETITNNAS7SHKFU4",
-        "paging_token": "BTC_GAJ3UCZHJNFAWRXAXVNFWF2463CEN6LM6AD4D3RPRETITNNAS7SHKFU4_credit_alphanum4",
+        "asset_issuer": "GA7A4Y5WXLPYF5GKIRAB3DXKFYHNCXLGWTXYQT4FX7YCWHBKR473MZ5E",
+        "paging_token": "BTC_GA7A4Y5WXLPYF5GKIRAB3DXKFYHNCXLGWTXYQT4FX7YCWHBKR473MZ5E_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "BTC",
+        "asset_issuer": "GA7GKKIQEPGVWJUOK5NIGRNL3Q4YCGNGBOFERKRE4EUZDVU7ZVNNLEAS",
+        "paging_token": "BTC_GA7GKKIQEPGVWJUOK5NIGRNL3Q4YCGNGBOFERKRE4EUZDVU7ZVNNLEAS_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 13,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "BTC",
+        "asset_issuer": "GABEVMLV76NOMY36FWN33I2LI3W2HA54N5VRFUR4VWIUDFIGBXDUK6CZ",
+        "paging_token": "BTC_GABEVMLV76NOMY36FWN33I2LI3W2HA54N5VRFUR4VWIUDFIGBXDUK6CZ_credit_alphanum4",
         "amount": "0.0000000",
         "num_accounts": 1,
         "flags": {

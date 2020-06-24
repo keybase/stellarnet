@@ -1,0 +1,47 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Wed, 24 Jun 2020 14:02:30 GMT
+Latest-Ledger: 890117
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=SARO\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=SARO\u0026cursor=SARO_GCB7A3Z6O5XI55YLVOMYOSDWXFGOFWKZNVG643SBPGDRT7TAUX6E7BSD_credit_alphanum4\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=SARO\u0026cursor=SARO_GCB7A3Z6O5XI55YLVOMYOSDWXFGOFWKZNVG643SBPGDRT7TAUX6E7BSD_credit_alphanum4\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": "https://keybase.io/blueasset/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "SARO",
+        "asset_issuer": "GCB7A3Z6O5XI55YLVOMYOSDWXFGOFWKZNVG643SBPGDRT7TAUX6E7BSD",
+        "paging_token": "SARO_GCB7A3Z6O5XI55YLVOMYOSDWXFGOFWKZNVG643SBPGDRT7TAUX6E7BSD_credit_alphanum4",
+        "amount": "10000.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      }
+    ]
+  }
+}
