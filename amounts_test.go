@@ -4,6 +4,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/keybase/stellarnet/testclient"
+	"github.com/stellar/go/txnbuild"
 	"github.com/stretchr/testify/require"
 )
 
@@ -287,7 +289,7 @@ func TestPathPaymentMaxValue(t *testing.T) {
 }
 
 type feeTest struct {
-	in  int32
+	in  int64
 	out string
 }
 
@@ -303,6 +305,32 @@ func TestFeeString(t *testing.T) {
 			t.Errorf("%d: FeeString(%d) => %s != %s", i, test.in, FeeString(test.in), test.out)
 		}
 	}
+}
+
+func TestFeeStringInTransaction(t *testing.T) {
+	// Get an actual transaction from the network and call FeeString on
+	// details.FeeCharged. This has changed in protocol 13, that field used to
+	// be called FeePaid.
+
+	helper, client, network := testclient.Setup(t)
+	SetClientAndNetwork(client, network)
+	helper.SetState(t, "feestring")
+
+	testclient.GetTestLumens(t, helper.Alice)
+
+	sp := ClientSequenceProvider{Client: Client()}
+	tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
+		"10.0", "", sp, nil /* timeBounds */, 5*txnbuild.MinBaseFee)
+	require.NoError(t, err)
+
+	_, err = Submit(tx.Signed)
+	require.NoError(t, err)
+
+	details, err := TxDetails(tx.TxHash)
+	require.NoError(t, err)
+
+	feeString := FeeString(details.FeeCharged)
+	require.Equal(t, "0.0000100", feeString)
 }
 
 func TestGetStellarExchangeRate(t *testing.T) {

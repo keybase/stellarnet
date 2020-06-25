@@ -9,9 +9,8 @@ import (
 	"github.com/keybase/stellarnet/testclient"
 )
 
-// TestFeeStats makes sure that the horizon fetcher
-// works, is decodable, and returns non-zero values for
-// some important fields.
+// TestFeeStats makes sure that the horizon fetcher works, is decodable, and
+// returns non-zero values for some important fields.
 func TestFeeStats(t *testing.T) {
 	helper, client, network := testclient.Setup(t)
 	SetClientAndNetwork(client, network)

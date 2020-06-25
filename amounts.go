@@ -208,8 +208,8 @@ func PathPaymentMaxValue(amount string) (string, error) {
 
 // FeeString converts a horizon.Transaction.FeePaid int32 from
 // stroops to a lumens string.
-func FeeString(fee int32) string {
-	n := big.NewRat(int64(fee), StroopsPerLumen)
+func FeeString(fee int64) string {
+	n := big.NewRat(fee, StroopsPerLumen)
 	return n.FloatString(7)
 }
 

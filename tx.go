@@ -483,8 +483,6 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 	signed := base64.StdEncoding.EncodeToString(buf.Bytes())
 	txHashHex := hex.EncodeToString(hash[:])
 
-	// fmt.Printf("Hash tx is: %s\n", txHashHex)
-	// fmt.Printf("XDR is: %s\n", signed)
 	return SignResult{
 		Seqno:  uint64(t.internal.SeqNum),
 		Signed: signed,
