@@ -7,16 +7,11 @@ import (
 	"github.com/stellar/go/xdr"
 )
 
-func muxedAccountToStr(acc xdr.MuxedAccount) string {
-	addr := acc.ToAccountId()
-	return addr.Address()
-}
-
 // OpSummary returns a string summary of an operation.
 func OpSummary(op xdr.Operation, pastTense bool) string {
 	body := opBodySummary(op, pastTense)
 	if op.SourceAccount != nil {
-		return fmt.Sprintf("[Source account %s] %s", muxedAccountToStr(*op.SourceAccount), body)
+		return fmt.Sprintf("[Source account %s] %s", MuxedAccountToAccountString(*op.SourceAccount), body)
 	}
 	return body
 }
@@ -40,13 +35,13 @@ func opBodySummary(op xdr.Operation, pastTense bool) string {
 		return fmt.Sprintf("Create%s account %s with starting balance of %s XLM", past("d"), iop.Destination.Address(), StringFromStellarXdrAmount(iop.StartingBalance))
 	case xdr.OperationTypePayment:
 		iop := op.Body.MustPaymentOp()
-		return fmt.Sprintf("%s %s to account %s", tense("Pay", "Paid"), XDRAssetAmountSummary(iop.Amount, iop.Asset), muxedAccountToStr(iop.Destination))
+		return fmt.Sprintf("%s %s to account %s", tense("Pay", "Paid"), XDRAssetAmountSummary(iop.Amount, iop.Asset), MuxedAccountToAccountString(iop.Destination))
 	case xdr.OperationTypePathPaymentStrictReceive:
 		iop := op.Body.MustPathPaymentStrictReceiveOp()
-		return fmt.Sprintf("%s %s to account %s using at most %s", tense("Pay", "Paid"), XDRAssetAmountSummary(iop.DestAmount, iop.DestAsset), muxedAccountToStr(iop.Destination), XDRAssetAmountSummary(iop.SendMax, iop.SendAsset))
+		return fmt.Sprintf("%s %s to account %s using at most %s", tense("Pay", "Paid"), XDRAssetAmountSummary(iop.DestAmount, iop.DestAsset), MuxedAccountToAccountString(iop.Destination), XDRAssetAmountSummary(iop.SendMax, iop.SendAsset))
 	case xdr.OperationTypePathPaymentStrictSend:
 		iop := op.Body.MustPathPaymentStrictSendOp()
-		return fmt.Sprintf("%s at least %s to account %s using %s", tense("Pay", "Paid"), XDRAssetAmountSummary(iop.DestMin, iop.DestAsset), muxedAccountToStr(iop.Destination), XDRAssetAmountSummary(iop.SendAmount, iop.SendAsset))
+		return fmt.Sprintf("%s at least %s to account %s using %s", tense("Pay", "Paid"), XDRAssetAmountSummary(iop.DestMin, iop.DestAsset), MuxedAccountToAccountString(iop.Destination), XDRAssetAmountSummary(iop.SendAmount, iop.SendAsset))
 	case xdr.OperationTypeManageSellOffer:
 		iop := op.Body.MustManageSellOfferOp()
 		switch {
@@ -125,7 +120,7 @@ func opBodySummary(op xdr.Operation, pastTense bool) string {
 		// oh of cource, MustDestination...why would it possibly match
 		// everything else?
 		destination := op.Body.MustDestination()
-		return fmt.Sprintf("Merge%s account into %s", past("d"), muxedAccountToStr(destination))
+		return fmt.Sprintf("Merge%s account into %s", past("d"), MuxedAccountToAccountString(destination))
 	case xdr.OperationTypeManageData:
 		iop := op.Body.MustManageDataOp()
 		if iop.DataValue == nil {

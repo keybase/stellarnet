@@ -206,7 +206,7 @@ func PathPaymentMaxValue(amount string) (string, error) {
 	return StringFromStellarAmount(amtMax), nil
 }
 
-// FeeString converts a horizon.Transaction.FeePaid int32 from
+// FeeString converts a horizon.Transaction.FeeCharged int32 from
 // stroops to a lumens string.
 func FeeString(fee int64) string {
 	n := big.NewRat(fee, StroopsPerLumen)

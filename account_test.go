@@ -758,7 +758,7 @@ func TestPathPayments(t *testing.T) {
 	}
 	t.Logf("path payment op: %+v", op.Body.PathPaymentStrictReceiveOp)
 	pathOp := op.Body.PathPaymentStrictReceiveOp
-	require.Equal(t, acctAlice.address.String(), muxedAccountToStr(pathOp.Destination), "unexpected destination address")
+	require.Equal(t, acctAlice.address.String(), MuxedAccountToAccountString(pathOp.Destination), "unexpected destination address")
 }
 
 type testSeqnoProv struct {
