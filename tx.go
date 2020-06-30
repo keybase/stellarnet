@@ -23,7 +23,7 @@ import (
 // when the Sign() function is called in order to make the transaction
 // building code cleaner.
 type Tx struct {
-	internal  xdr.TransactionV0
+	internal  xdr.Transaction
 	source    AddressStr
 	seqnoProv SequenceProvider
 	netPass   string
@@ -440,22 +440,18 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 	}
 	t.internal.SeqNum = seqno + 1
 	t.internal.Fee = xdr.Uint32(t.baseFee * uint64(len(t.internal.Operations)))
-	accountID, err := t.source.AccountID()
+	sourceAccount, err := t.source.MuxedAccount()
 	if err != nil {
-		return SignResult{}, err
+		return SignResult{}, fmt.Errorf("invalid SourceAccount (cannot convert to MuxedAccount): %w", err)
 	}
-	ed25519, ok := accountID.GetEd25519()
-	if !ok {
-		return SignResult{}, fmt.Errorf("expected source account ID to be Ed25519, got %s", accountID.Type.String())
-	}
-	t.internal.SourceAccountEd25519 = ed25519
+	t.internal.SourceAccount = sourceAccount
 
-	hash, err := network.HashTransactionV0(t.internal, t.netPass)
+	hash, err := network.HashTransaction(t.internal, t.netPass)
 	if err != nil {
 		return SignResult{}, err
 	}
 
-	envelope := xdr.TransactionV0Envelope{Tx: t.internal}
+	envelope := xdr.TransactionV1Envelope{Tx: t.internal}
 
 	for _, signer := range signers {
 		kp, err := keypair.Parse(signer.SecureNoLogString())
@@ -471,7 +467,7 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 	}
 
 	// Keep serializing V0 transactions even if protocol 13 is live.
-	outerEnvelope, err := xdr.NewTransactionEnvelope(xdr.EnvelopeTypeEnvelopeTypeTxV0, envelope)
+	outerEnvelope, err := xdr.NewTransactionEnvelope(xdr.EnvelopeTypeEnvelopeTypeTx, envelope)
 	if err != nil {
 		return SignResult{}, fmt.Errorf("failed to create transaction envelope V0: %w", err)
 	}
