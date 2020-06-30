@@ -34,7 +34,7 @@ type Tx struct {
 // NewBaseTx creates a Tx with the common transaction elements.
 func NewBaseTx(source AddressStr, seqnoProvider SequenceProvider, baseFee uint64) *Tx {
 	if baseFee < build.MinBaseFee {
-		baseFee = build.MinBaseFee
+		// baseFee = build.MinBaseFee
 	}
 	t := &Tx{
 		source:    source,
@@ -466,7 +466,6 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 		envelope.Signatures = append(envelope.Signatures, sig)
 	}
 
-	// Keep serializing V0 transactions even if protocol 13 is live.
 	outerEnvelope, err := xdr.NewTransactionEnvelope(xdr.EnvelopeTypeEnvelopeTypeTx, envelope)
 	if err != nil {
 		return SignResult{}, fmt.Errorf("failed to create transaction envelope V0: %w", err)
