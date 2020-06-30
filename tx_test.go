@@ -51,8 +51,12 @@ func TestMultipleOps(t *testing.T) {
 	r, err = tx.Sign(seedStr(t, helper.Alice))
 	require.NoError(t, err)
 	t.Logf("sign result: %+v", r)
-	_, err = Submit(r.Signed)
+	res, err := Submit(r.Signed)
 	require.NoError(t, err)
+
+	details, err := TxDetails(res.TxID)
+	require.NoError(t, err)
+	t.Logf("Fee for the multiop was: %s", FeeString(details.FeeCharged))
 
 	balance, err = acctBob.BalanceXLM()
 	require.NoError(t, err)
@@ -62,7 +66,7 @@ func TestMultipleOps(t *testing.T) {
 	require.Equal(t, "120.0000000", balance)
 	balance, err = acctAlice.BalanceXLM()
 	require.NoError(t, err)
-	require.Equal(t, "9819.9979800", balance)
+	require.Equal(t, "9819.9989800", balance)
 
 	tx = NewBaseTx(addressStr(t, helper.Alice), sp, testBaseFee)
 	for i := 0; i < 100; i++ {

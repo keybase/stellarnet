@@ -1,0 +1,28 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 30 Jun 2020 13:55:08 GMT
+Latest-Ledger: 985134
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=KXRN\u0026asset_issuer=GAA4I76BDD55MCGUEQLCHWL7UDWYNH4X4S6A2SLOAUS4MBDN46BTUQLO\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=KXRN\u0026asset_issuer=GAA4I76BDD55MCGUEQLCHWL7UDWYNH4X4S6A2SLOAUS4MBDN46BTUQLO\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=KXRN\u0026asset_issuer=GAA4I76BDD55MCGUEQLCHWL7UDWYNH4X4S6A2SLOAUS4MBDN46BTUQLO\u0026cursor=\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": []
+  }
+}

@@ -3,8 +3,8 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Wed, 24 Jun 2020 18:19:20 GMT
-Latest-Ledger: 892936
+Date: Tue, 30 Jun 2020 14:21:04 GMT
+Latest-Ledger: 985409
 Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 100
@@ -46,10 +46,10 @@ X-Ratelimit-Reset: 1
   },
   "id": "GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K",
   "account_id": "GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K",
-  "sequence": "3385830093619207",
-  "subentry_count": 7,
-  "last_modified_ledger": 892934,
-  "last_modified_time": "2020-06-24T18:19:05Z",
+  "sequence": "3385830093619211",
+  "subentry_count": 11,
+  "last_modified_ledger": 985407,
+  "last_modified_time": "2020-06-30T14:20:51Z",
   "thresholds": {
     "low_threshold": 0,
     "med_threshold": 0,
@@ -66,6 +66,18 @@ X-Ratelimit-Reset: 1
       "limit": "10000.0000000",
       "buying_liabilities": "0.0000000",
       "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 985172,
+      "is_authorized": true,
+      "is_authorized_to_maintain_liabilities": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "AHXL",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
       "last_modified_ledger": 788384,
       "is_authorized": true,
       "is_authorized_to_maintain_liabilities": true,
@@ -77,8 +89,8 @@ X-Ratelimit-Reset: 1
       "balance": "10000.0000000",
       "limit": "10000.0000000",
       "buying_liabilities": "0.0000000",
-      "selling_liabilities": "0.0000000",
-      "last_modified_ledger": 892935,
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 892937,
       "is_authorized": true,
       "is_authorized_to_maintain_liabilities": true,
       "asset_type": "credit_alphanum4",
@@ -110,8 +122,20 @@ X-Ratelimit-Reset: 1
       "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
     },
     {
-      "balance": "19.9999200",
-      "buying_liabilities": "69000.0000000",
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "last_modified_ledger": 985408,
+      "is_authorized": true,
+      "is_authorized_to_maintain_liabilities": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "ZYCA",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "29.9998800",
+      "buying_liabilities": "115000.0000000",
       "selling_liabilities": "0.0000000",
       "asset_type": "native"
     }

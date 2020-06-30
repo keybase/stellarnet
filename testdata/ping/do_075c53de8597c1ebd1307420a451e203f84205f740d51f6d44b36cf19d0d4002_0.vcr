@@ -3,10 +3,10 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Wed, 24 Jun 2020 14:04:55 GMT
+Date: Tue, 30 Jun 2020 13:58:36 GMT
 Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 99
+X-Ratelimit-Remaining: 100
 X-Ratelimit-Reset: 1
 
 {
@@ -100,10 +100,10 @@ X-Ratelimit-Reset: 1
   },
   "horizon_version": "1.4.0-d535a7970fa8f82f31d00eff35d442b23add9ba7",
   "core_version": "stellar-core 13.1.0 (469b2e70dec29ade2c57d39bc9db129579e63207)",
-  "ingest_latest_ledger": 890143,
-  "history_latest_ledger": 890143,
+  "ingest_latest_ledger": 985172,
+  "history_latest_ledger": 985172,
   "history_elder_ledger": 1,
-  "core_latest_ledger": 890143,
+  "core_latest_ledger": 985172,
   "network_passphrase": "Test SDF Network ; September 2015",
   "current_protocol_version": 13,
   "core_supported_protocol_version": 13

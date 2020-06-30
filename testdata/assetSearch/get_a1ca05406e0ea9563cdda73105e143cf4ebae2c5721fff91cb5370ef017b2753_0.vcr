@@ -3,8 +3,8 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Wed, 24 Jun 2020 18:14:26 GMT
-Latest-Ledger: 892881
+Date: Tue, 30 Jun 2020 14:29:54 GMT
+Latest-Ledger: 985501
 Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 100
@@ -16,7 +16,7 @@ X-Ratelimit-Reset: 1
       "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026cursor=\u0026limit=10\u0026order=asc"
     },
     "next": {
-      "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026cursor=BTC_GABEVMLV76NOMY36FWN33I2LI3W2HA54N5VRFUR4VWIUDFIGBXDUK6CZ_credit_alphanum4\u0026limit=10\u0026order=asc"
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026cursor=BTC_GAAKHR4632BYMLSGN4ZCXZKODLAX377STYTDBF5ASY7NJQDSQWJIPFST_credit_alphanum4\u0026limit=10\u0026order=asc"
     },
     "prev": {
       "href": "https://horizon-testnet.stellar.org/assets?asset_code=BTC\u0026cursor=BTC_GA3F3MPEVGRADMCZTZ7CUP6ORNEVACMMYTCZHBT4NLQBQYDZC5Q2OXZC_credit_alphanum4\u0026limit=10\u0026order=desc"
@@ -53,7 +53,7 @@ X-Ratelimit-Reset: 1
         "asset_issuer": "GA4H3Q27JYUWEJALB3IE63GENYWV7KEIYR6BLGAIMPNL56NVRGR3ZECR",
         "paging_token": "BTC_GA4H3Q27JYUWEJALB3IE63GENYWV7KEIYR6BLGAIMPNL56NVRGR3ZECR_credit_alphanum4",
         "amount": "10000000.0000000",
-        "num_accounts": 66,
+        "num_accounts": 67,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
@@ -194,10 +194,10 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "BTC",
-        "asset_issuer": "GABEVMLV76NOMY36FWN33I2LI3W2HA54N5VRFUR4VWIUDFIGBXDUK6CZ",
-        "paging_token": "BTC_GABEVMLV76NOMY36FWN33I2LI3W2HA54N5VRFUR4VWIUDFIGBXDUK6CZ_credit_alphanum4",
+        "asset_issuer": "GAAKHR4632BYMLSGN4ZCXZKODLAX377STYTDBF5ASY7NJQDSQWJIPFST",
+        "paging_token": "BTC_GAAKHR4632BYMLSGN4ZCXZKODLAX377STYTDBF5ASY7NJQDSQWJIPFST_credit_alphanum4",
         "amount": "0.0000000",
-        "num_accounts": 1,
+        "num_accounts": 2,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,

@@ -3,11 +3,11 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Wed, 24 Jun 2020 14:01:29 GMT
-Latest-Ledger: 890105
+Date: Tue, 30 Jun 2020 13:54:47 GMT
+Latest-Ledger: 985130
 Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 100
+X-Ratelimit-Remaining: 99
 X-Ratelimit-Reset: 1
 
 {
@@ -16,7 +16,7 @@ X-Ratelimit-Reset: 1
       "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=\u0026limit=10\u0026order=asc"
     },
     "next": {
-      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA3BWNBE5ZVY5WYJB6TYJP7GD4GYPK4UMUUBOAC6F5L2YBPO3NKJGNLI_credit_alphanum4\u0026limit=10\u0026order=asc"
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA2TMA46WKGEB5ZG7N5VYOB3ZNHXRFWPAR3FAU3WUZNRQ3YPBHPS4QBN_credit_alphanum4\u0026limit=10\u0026order=asc"
     },
     "prev": {
       "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA22CYUSQH2SJQGV3MA7SMF454AWOZ6QUHLOE45JBZDOWU6VXB7RIBVX_credit_alphanum4\u0026limit=10\u0026order=desc"
@@ -122,6 +122,24 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "USD",
+        "asset_issuer": "GA2KRI2NXSI5JBCGKAPTOBOYUBTWKGOYMXKR4AEJJJEQSESDPN57E7TQ",
+        "paging_token": "USD_GA2KRI2NXSI5JBCGKAPTOBOYUBTWKGOYMXKR4AEJJJEQSESDPN57E7TQ_credit_alphanum4",
+        "amount": "100.0000000",
+        "num_accounts": 3,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
         "asset_issuer": "GA2LFAOUARR6J7VW2K3WFF6G5GPUC2C43HESXSMAIJG4SJVINIDYW7GU",
         "paging_token": "USD_GA2LFAOUARR6J7VW2K3WFF6G5GPUC2C43HESXSMAIJG4SJVINIDYW7GU_credit_alphanum4",
         "amount": "100.0000000",
@@ -176,28 +194,10 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "USD",
-        "asset_issuer": "GA2VRGDVYOVJOX5AFXA6Y7LUPBN7BEDGKFBKQPTBQJAZK7ZI3BESET6S",
-        "paging_token": "USD_GA2VRGDVYOVJOX5AFXA6Y7LUPBN7BEDGKFBKQPTBQJAZK7ZI3BESET6S_credit_alphanum4",
+        "asset_issuer": "GA2TMA46WKGEB5ZG7N5VYOB3ZNHXRFWPAR3FAU3WUZNRQ3YPBHPS4QBN",
+        "paging_token": "USD_GA2TMA46WKGEB5ZG7N5VYOB3ZNHXRFWPAR3FAU3WUZNRQ3YPBHPS4QBN_credit_alphanum4",
         "amount": "100.0000000",
-        "num_accounts": 2,
-        "flags": {
-          "auth_required": false,
-          "auth_revocable": false,
-          "auth_immutable": false
-        }
-      },
-      {
-        "_links": {
-          "toml": {
-            "href": ""
-          }
-        },
-        "asset_type": "credit_alphanum4",
-        "asset_code": "USD",
-        "asset_issuer": "GA3BWNBE5ZVY5WYJB6TYJP7GD4GYPK4UMUUBOAC6F5L2YBPO3NKJGNLI",
-        "paging_token": "USD_GA3BWNBE5ZVY5WYJB6TYJP7GD4GYPK4UMUUBOAC6F5L2YBPO3NKJGNLI_credit_alphanum4",
-        "amount": "100.0000000",
-        "num_accounts": 2,
+        "num_accounts": 3,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,

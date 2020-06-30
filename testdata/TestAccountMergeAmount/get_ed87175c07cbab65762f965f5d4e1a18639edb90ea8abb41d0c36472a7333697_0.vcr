@@ -1,0 +1,57 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 30 Jun 2020 13:54:09 GMT
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAUQPEWAE6GVAASV6YN2SVR6Q4MBI5HHMFZORZSIZVQHKD3KPPPS2C2G/payments?cursor=\u0026limit=1\u0026order=desc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAUQPEWAE6GVAASV6YN2SVR6Q4MBI5HHMFZORZSIZVQHKD3KPPPS2C2G/payments?cursor=4231075362512897\u0026limit=1\u0026order=desc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAUQPEWAE6GVAASV6YN2SVR6Q4MBI5HHMFZORZSIZVQHKD3KPPPS2C2G/payments?cursor=4231075362512897\u0026limit=1\u0026order=asc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/4231075362512897"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/228ad62c6ae90519f46dfbc3e8043cff13eccbbb3b3db8d31add24dcfb820abc"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/4231075362512897/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=4231075362512897"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=4231075362512897"
+          }
+        },
+        "id": "4231075362512897",
+        "paging_token": "4231075362512897",
+        "transaction_successful": true,
+        "source_account": "GAFY3NTUBKVJ7IZP7NKS6A2TKVT3ZMRNWBC5ZYB2CUYTNNYLCL2TPHCG",
+        "type": "account_merge",
+        "type_i": 8,
+        "created_at": "2020-06-30T13:54:00Z",
+        "transaction_hash": "228ad62c6ae90519f46dfbc3e8043cff13eccbbb3b3db8d31add24dcfb820abc",
+        "account": "GAFY3NTUBKVJ7IZP7NKS6A2TKVT3ZMRNWBC5ZYB2CUYTNNYLCL2TPHCG",
+        "into": "GAUQPEWAE6GVAASV6YN2SVR6Q4MBI5HHMFZORZSIZVQHKD3KPPPS2C2G"
+      }
+    ]
+  }
+}

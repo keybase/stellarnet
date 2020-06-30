@@ -1,0 +1,27 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 30 Jun 2020 13:55:54 GMT
+Latest-Ledger: 985142
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_embedded": {
+    "records": [
+      {
+        "source_asset_type": "native",
+        "source_amount": "23.0000000",
+        "destination_asset_type": "credit_alphanum4",
+        "destination_asset_code": "KXRN",
+        "destination_asset_issuer": "GAA4I76BDD55MCGUEQLCHWL7UDWYNH4X4S6A2SLOAUS4MBDN46BTUQLO",
+        "destination_amount": "10.0000000",
+        "path": []
+      }
+    ]
+  }
+}

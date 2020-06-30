@@ -73,8 +73,8 @@ func TestAssetSearch(t *testing.T) {
 		AssetType:               "credit_alphanum4",
 		AssetCode:               "DSD",
 		AssetIssuer:             "GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG",
-		Amount:                  "112403489.5500000",
-		NumAccounts:             4221,
+		Amount:                  "112427688.5500000",
+		NumAccounts:             4240,
 	}
 	require.Contains(t, res, expectedMatch)
 	require.Len(t, res, 5)
@@ -126,8 +126,8 @@ func TestAssetSearch(t *testing.T) {
 		AssetType:               "credit_alphanum12",
 		AssetCode:               "enec7732",
 		AssetIssuer:             "GCWZZVVOL37DLFJI5KQDSBRNAHMIPXNCYTZ3T523MG2SEKGLVOWX256Q",
-		Amount:                  "3183550000021.0000000",
-		NumAccounts:             647,
+		Amount:                  "3187363000021.0000000",
+		NumAccounts:             1094,
 	}
 	require.Contains(t, res, expectedMatch)
 }
@@ -185,7 +185,7 @@ func TestCreateCustomAssetIdempotent(t *testing.T) {
 	var assetCode string
 	if testclient.IsPlayback() {
 		// this needs to be updated if you re-record
-		assetCode = "JNAM"
+		assetCode = "ZYCA"
 	} else {
 		assetCode = testclient.RandomAssetCode()
 		fmt.Printf("creating asset: %s. Please replace in TestCreateCustomAssetIdempotent.\n", assetCode)

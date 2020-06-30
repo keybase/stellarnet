@@ -3,11 +3,11 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Wed, 24 Jun 2020 18:14:27 GMT
-Latest-Ledger: 892881
+Date: Tue, 30 Jun 2020 14:29:55 GMT
+Latest-Ledger: 985501
 Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 98
+X-Ratelimit-Remaining: 100
 X-Ratelimit-Reset: 1
 
 {
@@ -34,8 +34,8 @@ X-Ratelimit-Reset: 1
         "asset_code": "enec7732",
         "asset_issuer": "GCWZZVVOL37DLFJI5KQDSBRNAHMIPXNCYTZ3T523MG2SEKGLVOWX256Q",
         "paging_token": "enec7732_GCWZZVVOL37DLFJI5KQDSBRNAHMIPXNCYTZ3T523MG2SEKGLVOWX256Q_credit_alphanum12",
-        "amount": "3183550000021.0000000",
-        "num_accounts": 647,
+        "amount": "3187363000021.0000000",
+        "num_accounts": 1094,
         "flags": {
           "auth_required": false,
           "auth_revocable": false,

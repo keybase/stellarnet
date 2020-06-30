@@ -3,8 +3,8 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Wed, 24 Jun 2020 18:19:08 GMT
-Latest-Ledger: 892934
+Date: Tue, 30 Jun 2020 14:20:53 GMT
+Latest-Ledger: 985407
 Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
 X-Ratelimit-Remaining: 100
@@ -46,11 +46,11 @@ X-Ratelimit-Reset: 1
   },
   "id": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD",
   "account_id": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD",
-  "sequence": "3385821503684614",
+  "sequence": "3385821503684618",
   "subentry_count": 0,
   "home_domain": "keybase.io/blueasset",
-  "last_modified_ledger": 892932,
-  "last_modified_time": "2020-06-24T18:18:54Z",
+  "last_modified_ledger": 985405,
+  "last_modified_time": "2020-06-30T14:20:38Z",
   "thresholds": {
     "low_threshold": 0,
     "med_threshold": 0,
@@ -63,7 +63,7 @@ X-Ratelimit-Reset: 1
   },
   "balances": [
     {
-      "balance": "19.9999400",
+      "balance": "29.9999000",
       "buying_liabilities": "0.0000000",
       "selling_liabilities": "0.0000000",
       "asset_type": "native"
