@@ -6,8 +6,8 @@ import (
 	"encoding/hex"
 	"fmt"
 
-	"github.com/keybase/stellar-org/network"
 	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/network"
 	"github.com/stellar/go/xdr"
 )
 
@@ -21,6 +21,10 @@ func makeFeeBumpInnerTx(env xdr.TransactionEnvelope) (res xdr.FeeBumpTransaction
 	}
 }
 
+// FeeBumpTransactionWithFeeSource wraps transaction from base64 xdr encoded
+// `envelope` string into a Fee Bump transaction, bumping the fee to `fee` with
+// FeeSource `feeSource`. This function returns a SignResult with the fee bump
+// envelope with the transaction signed by `signer`.
 func FeeBumpTransactionWithFeeSource(envelope string, signer SeedStr, feeSource AddressStr, fee uint64) (res SignResult, err error) {
 	// Unpack target tx from envelope
 	var txEnv xdr.TransactionEnvelope
@@ -74,6 +78,9 @@ func FeeBumpTransactionWithFeeSource(envelope string, signer SeedStr, feeSource 
 	}, nil
 }
 
+// FeeBumpTransaction wraps transaction from `envelope` in a FeeBump
+// transaction. FeeBump transaction is signed by `signer` who is also the
+// FeeSource.
 func FeeBumpTransaction(envelope string, signer SeedStr, fee uint64) (SignResult, error) {
 	addr, err := signer.Address()
 	if err != nil {
