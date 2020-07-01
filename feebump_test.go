@@ -30,11 +30,23 @@ func TestBumpFeeTx(t *testing.T) {
 	_, err = Submit(tx.Signed)
 	require.NoError(t, err)
 
-	tx, err = PaymentXLMTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie),
-		"99", "" /* memoText */, sp, nil /* timeBounds */, 0)
+	// Create a transaction from Bob to Charlie with fee=0. We can't sent it
+	// without someone else covering the fee.
+
+	// NewBaseTx always clamps the fee to minimum fee, but we can change it
+	// later.
+	tx2 := NewBaseTx(addressStr(t, helper.Bob), sp, txnbuild.MinBaseFee)
+	// Bob has 100 lumens total, trying to spend 99, there is not enough
+	// balance in that account to pay the fee.
+	tx2.AddPaymentOp(addressStr(t, helper.Charlie), "99")
+	tx2.SetBaseFee(0)
+	tx2res, err := tx2.Sign(seedStr(t, helper.Bob))
 	require.NoError(t, err)
 
-	feeBump, err := FeeBumpTransaction(tx.Signed, seedStr(t, helper.Alice), 2*txnbuild.MinBaseFee)
+	_, err = Submit(tx2res.Signed)
+	require.Error(t, err)
+
+	feeBump, err := FeeBumpTransaction(tx2res.Signed, seedStr(t, helper.Alice), 2*txnbuild.MinBaseFee)
 	require.NoError(t, err)
 
 	t.Logf("Fee bump tx: %s", feeBump.Signed)

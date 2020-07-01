@@ -34,7 +34,7 @@ type Tx struct {
 // NewBaseTx creates a Tx with the common transaction elements.
 func NewBaseTx(source AddressStr, seqnoProvider SequenceProvider, baseFee uint64) *Tx {
 	if baseFee < build.MinBaseFee {
-		// baseFee = build.MinBaseFee
+		baseFee = build.MinBaseFee
 	}
 	t := &Tx{
 		source:    source,
@@ -53,6 +53,13 @@ func newBaseTxSeed(from SeedStr, seqnoProvider SequenceProvider, baseFee uint64)
 		return nil, err
 	}
 	return NewBaseTx(fromAddress, seqnoProvider, baseFee), nil
+}
+
+// SetBaseFee sets baseFee for the transaction being built. `baseFee` can be
+// lower than MinBaseFee (or even 0), so this function allows one to override
+// minimum fee clamp in NewBaseTx.
+func (t *Tx) SetBaseFee(baseFee uint64) {
+	t.baseFee = baseFee
 }
 
 // AddPaymentOp adds a payment operation to the transaction.
