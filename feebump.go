@@ -69,6 +69,9 @@ func FeeBumpTransactionWithFeeSource(envelope string, signer SeedStr, feeSource 
 	}
 	var buf bytes.Buffer
 	_, err = xdr.Marshal(&buf, outerEnvelope)
+	if err != nil {
+		return res, fmt.Errorf("failed to marshal envelope to XDR format: %w", err)
+	}
 	signed := base64.StdEncoding.EncodeToString(buf.Bytes())
 	txHashHex := hex.EncodeToString(feeBumpHash[:])
 
