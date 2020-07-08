@@ -12,7 +12,7 @@ import (
 	horizon "github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/keypair"
 	horizonProtocol "github.com/stellar/go/protocols/horizon"
-	build "github.com/stellar/go/txnbuild"
+	"github.com/stellar/go/txnbuild"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/require"
 )
@@ -301,7 +301,7 @@ func TestScenario(t *testing.T) {
 	sp := ClientSequenceProvider{Client: Client()}
 
 	t.Logf("bob merges account into alice's account")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), sp, nil /* timeBounds */, build.MinBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -318,7 +318,7 @@ func TestScenario(t *testing.T) {
 
 	t.Logf("alice merges into an unfunded account")
 	var nines uint64 = 999
-	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, sp, nil /* timeBounds */, build.MinBaseFee)
+	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -326,7 +326,7 @@ func TestScenario(t *testing.T) {
 	t.Logf("charlie merges into a funded account")
 	lip := helper.Keypair(t, "Lip")
 	testclient.GetTestLumens(t, lip)
-	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, sp, nil /* timeBounds */, build.MinBaseFee)
+	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 }
 
@@ -347,7 +347,7 @@ func TestAccountMergeAmount(t *testing.T) {
 	sp := ClientSequenceProvider{Client: Client()}
 
 	t.Logf("bob merges back to alice")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), sp, nil /* timeBounds */, build.MinBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -432,7 +432,7 @@ func TestTimeBounds(t *testing.T) {
 	testclient.GetTestLumens(t, helper.Alice)
 
 	type TimeBoundTest struct {
-		tb      build.Timebounds
+		tb      txnbuild.Timebounds
 		txError string
 	}
 	badTbs := []TimeBoundTest{
@@ -446,7 +446,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-			"10.0", "", sp, &tc.tb, build.MinBaseFee)
+			"10.0", "", sp, &tc.tb, txnbuild.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -456,7 +456,7 @@ func TestTimeBounds(t *testing.T) {
 
 	tb := MakeTimeboundsWithMaxTime(time.Date(2030, time.November, 10, 23, 0, 0, 0, time.UTC))
 	tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-		"10.0", "", sp, &tb, build.MinBaseFee)
+		"10.0", "", sp, &tb, txnbuild.MinBaseFee)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -467,7 +467,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-			"15.0", "", sp, &tc.tb, build.MinBaseFee)
+			"15.0", "", sp, &tc.tb, txnbuild.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -476,7 +476,7 @@ func TestTimeBounds(t *testing.T) {
 	}
 
 	tx, err = PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-		"15.0", "", sp, &tb, build.MinBaseFee)
+		"15.0", "", sp, &tb, txnbuild.MinBaseFee)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -496,7 +496,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := RelocateTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice),
-			true, nil, sp, &tc.tb, build.MinBaseFee)
+			true, nil, sp, &tc.tb, txnbuild.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -534,7 +534,7 @@ func TestConcurrentSubmit(t *testing.T) {
 	n := 20
 	prepared := make([]SignResult, n)
 	for i := 0; i < n; i++ {
-		sig, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), fmt.Sprintf("%d", i+1), "", sprov, nil, build.MinBaseFee)
+		sig, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), fmt.Sprintf("%d", i+1), "", sprov, nil, txnbuild.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -818,7 +818,7 @@ func TestAccountMergeFull(t *testing.T) {
 	issuerAddr, err := NewAddressStr(issuerPair.Address())
 	require.NoError(t, err)
 	distPair := helper.Keypair(t, "dist")
-	_, _, err = CreateCustomAssetWithKPs(sourceSeed, issuerPair, distPair, assetCode, "10000", "keybase.io/blueasset", "2.3", build.MinBaseFee)
+	_, _, err = CreateCustomAssetWithKPs(sourceSeed, issuerPair, distPair, assetCode, "10000", "keybase.io/blueasset", "2.3", txnbuild.MinBaseFee)
 	require.NoError(t, err)
 
 	// send 10 lumens from source to alice and bob to create their accounts
@@ -827,9 +827,9 @@ func TestAccountMergeFull(t *testing.T) {
 	_, _, _, err = SendXLM(sourceSeed, acctBob.address, "10.0", "" /* empty memo */)
 	require.NoError(t, err)
 	// create trustlines for our new asset to Alice and Bob
-	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, "10000", build.MinBaseFee)
+	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, "10000", txnbuild.MinBaseFee)
 	require.NoError(t, err)
-	_, err = CreateTrustline(seedStr(t, helper.Bob), assetCode, issuerAddr, "10000", build.MinBaseFee)
+	_, err = CreateTrustline(seedStr(t, helper.Bob), assetCode, issuerAddr, "10000", txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	// send a path payment from the source to Alice so alice can also have some of the custom asset
 	paths, err := acctSource.FindPaymentPaths(acctAlice.address, assetCode, issuerAddr, "10")
@@ -857,7 +857,7 @@ func TestAccountMergeFull(t *testing.T) {
 	sp := ClientSequenceProvider{Client: Client()}
 
 	// do the merge
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), sp, nil /* timeBounds */, build.MinBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -889,7 +889,7 @@ func TestAccountMergeFull(t *testing.T) {
 
 	// if we try to merge Bob's account into another account that doesn't support
 	// the custom asset, it will fail
-	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), sp, nil /* timeBounds */, build.MinBaseFee)
+	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "cannot merge")
 
@@ -903,7 +903,7 @@ func TestAccountMergeFull(t *testing.T) {
 	_, _, _, err = pathPayment(seedStr(t, helper.Bob), issuerAddr, path.SourceAsset(), sendAmountMax, path.DestinationAsset(), path.DestinationAmount, PathAssetSliceToAssetBase(path.Path), "pub memo path pay")
 	require.NoError(t, err)
 	// attempt the merge again from bob into charlie
-	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), sp, nil /* timeBounds */, build.MinBaseFee)
+	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)

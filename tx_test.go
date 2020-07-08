@@ -4,11 +4,11 @@ import (
 	"testing"
 
 	"github.com/keybase/stellarnet/testclient"
-	build "github.com/stellar/go/txnbuild"
+	"github.com/stellar/go/txnbuild"
 	"github.com/stretchr/testify/require"
 )
 
-const testBaseFee = build.MinBaseFee * 2
+const testBaseFee = txnbuild.MinBaseFee * 2
 
 func TestMultipleOps(t *testing.T) {
 	helper, client, network := testclient.Setup(t)

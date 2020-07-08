@@ -11,7 +11,7 @@ import (
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/network"
 	"github.com/stellar/go/price"
-	build "github.com/stellar/go/txnbuild"
+	"github.com/stellar/go/txnbuild"
 	"github.com/stellar/go/xdr"
 )
 
@@ -33,8 +33,8 @@ type Tx struct {
 
 // NewBaseTx creates a Tx with the common transaction elements.
 func NewBaseTx(source AddressStr, seqnoProvider SequenceProvider, baseFee uint64) *Tx {
-	if baseFee < build.MinBaseFee {
-		baseFee = build.MinBaseFee
+	if baseFee < txnbuild.MinBaseFee {
+		baseFee = txnbuild.MinBaseFee
 	}
 	t := &Tx{
 		source:    source,
@@ -409,8 +409,8 @@ func (t *Tx) AddTimeBounds(min, max int64) {
 	}
 }
 
-// AddBuiltTimeBounds adds time bounds to the transaction with a *build.Timebounds.
-func (t *Tx) AddBuiltTimeBounds(bt *build.Timebounds) {
+// AddBuiltTimeBounds adds time bounds to the transaction with a *txnbuild.Timebounds.
+func (t *Tx) AddBuiltTimeBounds(bt *txnbuild.Timebounds) {
 	if bt == nil {
 		return
 	}
