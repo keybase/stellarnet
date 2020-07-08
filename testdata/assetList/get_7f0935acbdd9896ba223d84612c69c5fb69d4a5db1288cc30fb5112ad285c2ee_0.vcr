@@ -1,0 +1,209 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 30 Jun 2020 13:58:00 GMT
+Latest-Ledger: 985165
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?cursor=079dc515808_GBMZRSH5JUVCWF6DHNFN42BVQP27KAHUAFEHUHH2K433YSN5GATK5KCK_credit_alphanum12\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?cursor=0DkiEGNcczGU_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?cursor=09mUz0d5aIrY_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": "https://127.0.0.1/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "09mUz0d5aIrY",
+        "asset_issuer": "GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ",
+        "paging_token": "09mUz0d5aIrY_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": "https://127.0.0.1/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "09VmbBAkGs4o",
+        "asset_issuer": "GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ",
+        "paging_token": "09VmbBAkGs4o_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": "https://127.0.0.1/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "0BnTierhU7qS",
+        "asset_issuer": "GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ",
+        "paging_token": "0BnTierhU7qS_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": "https://127.0.0.1/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "0BonKI5DDksB",
+        "asset_issuer": "GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ",
+        "paging_token": "0BonKI5DDksB_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12",
+        "amount": "10.0000000",
+        "num_accounts": 2,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": "https://127.0.0.1/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "0BPwbSoucl2S",
+        "asset_issuer": "GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ",
+        "paging_token": "0BPwbSoucl2S_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": "https://127.0.0.1/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "0CGP0ghjdOnO",
+        "asset_issuer": "GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ",
+        "paging_token": "0CGP0ghjdOnO_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12",
+        "amount": "200.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": "https://127.0.0.1/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "0cRXL2sj8OD3",
+        "asset_issuer": "GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ",
+        "paging_token": "0cRXL2sj8OD3_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12",
+        "amount": "10.0000000",
+        "num_accounts": 2,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": "https://127.0.0.1/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "0cuglyexnzln",
+        "asset_issuer": "GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ",
+        "paging_token": "0cuglyexnzln_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "0dff3544ffb",
+        "asset_issuer": "GAFNEAYM6GYCBOLBHWWCIU3WVD74VAGNIGSVVAJKWQGE6VNPKEQDGOJQ",
+        "paging_token": "0dff3544ffb_GAFNEAYM6GYCBOLBHWWCIU3WVD74VAGNIGSVVAJKWQGE6VNPKEQDGOJQ_credit_alphanum12",
+        "amount": "0.0000100",
+        "num_accounts": 3,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": "https://127.0.0.1/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "0DkiEGNcczGU",
+        "asset_issuer": "GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ",
+        "paging_token": "0DkiEGNcczGU_GBPF4NVXPZMFOIX6LX2I4VBTNXE2H5IG47SFCQJWKLKGBWILJPAELYUZ_credit_alphanum12",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      }
+    ]
+  }
+}

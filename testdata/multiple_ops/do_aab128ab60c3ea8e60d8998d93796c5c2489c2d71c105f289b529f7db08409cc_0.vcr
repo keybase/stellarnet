@@ -1,0 +1,61 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 30 Jun 2020 14:19:44 GMT
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/transactions/c4fa28094a10edc968564b988c4e9169be214e7e76e9e4106ae0cdc00f55d717"
+    },
+    "account": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAXMH4K5DH2ZHWTRO3BEISXD456SYYONWSUTMCMVFRDUNLADH7HW6AU7"
+    },
+    "ledger": {
+      "href": "https://horizon-testnet.stellar.org/ledgers/985397"
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/transactions/c4fa28094a10edc968564b988c4e9169be214e7e76e9e4106ae0cdc00f55d717/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/transactions/c4fa28094a10edc968564b988c4e9169be214e7e76e9e4106ae0cdc00f55d717/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "precedes": {
+      "href": "https://horizon-testnet.stellar.org/transactions?order=asc\u0026cursor=4232247888592896"
+    },
+    "succeeds": {
+      "href": "https://horizon-testnet.stellar.org/transactions?order=desc\u0026cursor=4232247888592896"
+    },
+    "transaction": {
+      "href": "https://horizon-testnet.stellar.org/transactions/c4fa28094a10edc968564b988c4e9169be214e7e76e9e4106ae0cdc00f55d717"
+    }
+  },
+  "id": "c4fa28094a10edc968564b988c4e9169be214e7e76e9e4106ae0cdc00f55d717",
+  "paging_token": "4232247888592896",
+  "successful": true,
+  "hash": "c4fa28094a10edc968564b988c4e9169be214e7e76e9e4106ae0cdc00f55d717",
+  "ledger": 985397,
+  "created_at": "2020-06-30T14:19:43Z",
+  "source_account": "GAXMH4K5DH2ZHWTRO3BEISXD456SYYONWSUTMCMVFRDUNLADH7HW6AU7",
+  "source_account_sequence": "4232243593609217",
+  "fee_account": "GAXMH4K5DH2ZHWTRO3BEISXD456SYYONWSUTMCMVFRDUNLADH7HW6AU7",
+  "fee_charged": "200",
+  "max_fee": "400",
+  "operation_count": 2,
+  "envelope_xdr": "AAAAAgAAAAAuw/FdGfWT2nF2wkRK4+d9LGHNtKk2CZUsR0asAz/PbwAAAZAADwk0AAAAAQAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAFsfFjftOPMlJnTsFAqNmRpreZMsyU7tJ5lTnAFAYuccAAAAAAX14QAAAAAAAAAAAAAAAACk67Ek+S7I+BJBUvtt9mLIU4q9AkJMz0ngC9eF/OaKzgAAAAAL68IAAAAAAAAAAAEDP89vAAAAQNczOKiooj879Up/Iz4LvJiUX3b2x7o1Ul8in0jN55tbj4Mkds798nEOgT30g4UyZTrobUUC3aHebLcvxd+3swU=",
+  "result_xdr": "AAAAAAAAAMgAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  "result_meta_xdr": "AAAAAgAAAAIAAAADAA8JNQAAAAAAAAAALsPxXRn1k9pxdsJESuPnfSxhzbSpNgmVLEdGrAM/z28AAAAXSHbnOAAPCTQAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAABAA8JNQAAAAAAAAAALsPxXRn1k9pxdsJESuPnfSxhzbSpNgmVLEdGrAM/z28AAAAXSHbnOAAPCTQAAAABAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAACAAAAAwAAAAMADwk1AAAAAAAAAAAuw/FdGfWT2nF2wkRK4+d9LGHNtKk2CZUsR0asAz/PbwAAABdIduc4AA8JNAAAAAEAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEADwk1AAAAAAAAAAAuw/FdGfWT2nF2wkRK4+d9LGHNtKk2CZUsR0asAz/PbwAAABdCgQY4AA8JNAAAAAEAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAADwk1AAAAAAAAAABbHxY37TjzJSZ07BQKjZkaa3mTLMlO7SeZU5wBQGLnHAAAAAAF9eEAAA8JNQAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAMAAAADAA8JNQAAAAAAAAAALsPxXRn1k9pxdsJESuPnfSxhzbSpNgmVLEdGrAM/z28AAAAXQoEGOAAPCTQAAAABAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAABAA8JNQAAAAAAAAAALsPxXRn1k9pxdsJESuPnfSxhzbSpNgmVLEdGrAM/z28AAAAXNpVEOAAPCTQAAAABAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAA8JNQAAAAAAAAAApOuxJPkuyPgSQVL7bfZiyFOKvQJCTM9J4AvXhfzmis4AAAAAC+vCAAAPCTUAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "fee_meta_xdr": "AAAAAgAAAAMADwk0AAAAAAAAAAAuw/FdGfWT2nF2wkRK4+d9LGHNtKk2CZUsR0asAz/PbwAAABdIdugAAA8JNAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEADwk1AAAAAAAAAAAuw/FdGfWT2nF2wkRK4+d9LGHNtKk2CZUsR0asAz/PbwAAABdIduc4AA8JNAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA==",
+  "memo_type": "none",
+  "signatures": [
+    "1zM4qKiiPzv1Sn8jPgu8mJRfdvbHujVSXyKfSM3nm1uPgyR2zv3ycQ6BPfSDhTJlOuhtRQLdod5sty/F37ezBQ=="
+  ]
+}

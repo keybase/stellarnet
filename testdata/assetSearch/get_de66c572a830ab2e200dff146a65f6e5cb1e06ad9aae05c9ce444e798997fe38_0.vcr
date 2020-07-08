@@ -1,0 +1,119 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 30 Jun 2020 14:29:54 GMT
+Latest-Ledger: 985501
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_issuer=GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_issuer=GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG\u0026cursor=zmcs101_GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG_credit_alphanum12\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_issuer=GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG\u0026cursor=abc1_GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG_credit_alphanum4\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "abc1",
+        "asset_issuer": "GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG",
+        "paging_token": "abc1_GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG_credit_alphanum4",
+        "amount": "10000.0000000",
+        "num_accounts": 12,
+        "flags": {
+          "auth_required": true,
+          "auth_revocable": true,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "DSD",
+        "asset_issuer": "GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG",
+        "paging_token": "DSD_GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG_credit_alphanum4",
+        "amount": "112427688.5500000",
+        "num_accounts": 4240,
+        "flags": {
+          "auth_required": true,
+          "auth_revocable": true,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "LBlV",
+        "asset_issuer": "GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG",
+        "paging_token": "LBlV_GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 2,
+        "flags": {
+          "auth_required": true,
+          "auth_revocable": true,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "test9",
+        "asset_issuer": "GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG",
+        "paging_token": "test9_GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG_credit_alphanum12",
+        "amount": "0.0000000",
+        "num_accounts": 2,
+        "flags": {
+          "auth_required": true,
+          "auth_revocable": true,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "zmcs101",
+        "asset_issuer": "GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG",
+        "paging_token": "zmcs101_GBDLELQNS2MJ6M7W3SZ4N6KYQPBVJHXCIS3P3OGBIGKJHEBISSKB3MJG_credit_alphanum12",
+        "amount": "1000.0000000",
+        "num_accounts": 14,
+        "flags": {
+          "auth_required": true,
+          "auth_revocable": true,
+          "auth_immutable": false
+        }
+      }
+    ]
+  }
+}

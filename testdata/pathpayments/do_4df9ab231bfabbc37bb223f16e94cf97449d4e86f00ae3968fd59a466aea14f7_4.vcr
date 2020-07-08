@@ -1,0 +1,80 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 30 Jun 2020 13:55:49 GMT
+Latest-Ledger: 985142
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF",
+  "account_id": "GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF",
+  "sequence": "4231114017210372",
+  "subentry_count": 0,
+  "last_modified_ledger": 985138,
+  "last_modified_time": "2020-06-30T13:55:27Z",
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false,
+    "auth_immutable": false
+  },
+  "balances": [
+    {
+      "balance": "9989.9999600",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "0.0000000",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "weight": 1,
+      "key": "GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {},
+  "paging_token": "GA6K3ZPZBAG2EX7RWPETLV3PGHYX7Z6VAI2VYTQNU5KCDJB6XFKAOKJF"
+}

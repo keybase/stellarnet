@@ -1,0 +1,140 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 30 Jun 2020 14:20:48 GMT
+Latest-Ledger: 985406
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K"
+    },
+    "transactions": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/transactions{?cursor,limit,order}",
+      "templated": true
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "payments": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/payments{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "offers": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/offers{?cursor,limit,order}",
+      "templated": true
+    },
+    "trades": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/trades{?cursor,limit,order}",
+      "templated": true
+    },
+    "data": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K/data/{key}",
+      "templated": true
+    }
+  },
+  "id": "GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K",
+  "account_id": "GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K",
+  "sequence": "3385830093619210",
+  "subentry_count": 10,
+  "last_modified_ledger": 985406,
+  "last_modified_time": "2020-06-30T14:20:43Z",
+  "thresholds": {
+    "low_threshold": 0,
+    "med_threshold": 0,
+    "high_threshold": 0
+  },
+  "flags": {
+    "auth_required": false,
+    "auth_revocable": false,
+    "auth_immutable": false
+  },
+  "balances": [
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 985172,
+      "is_authorized": true,
+      "is_authorized_to_maintain_liabilities": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "AHXL",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 788384,
+      "is_authorized": true,
+      "is_authorized_to_maintain_liabilities": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "HXYF",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 892937,
+      "is_authorized": true,
+      "is_authorized_to_maintain_liabilities": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "JNAM",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 890143,
+      "is_authorized": true,
+      "is_authorized_to_maintain_liabilities": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "QUKF",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "10000.0000000",
+      "limit": "10000.0000000",
+      "buying_liabilities": "0.0000000",
+      "selling_liabilities": "10000.0000000",
+      "last_modified_ledger": 788329,
+      "is_authorized": true,
+      "is_authorized_to_maintain_liabilities": true,
+      "asset_type": "credit_alphanum4",
+      "asset_code": "RWVU",
+      "asset_issuer": "GC27PYTALFMKHOC4ZSOST2XSTRCFYDEW7PSXZRJOPCSIM6A7M4WQVZYD"
+    },
+    {
+      "balance": "29.9998900",
+      "buying_liabilities": "115000.0000000",
+      "selling_liabilities": "0.0000000",
+      "asset_type": "native"
+    }
+  ],
+  "signers": [
+    {
+      "weight": 1,
+      "key": "GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K",
+      "type": "ed25519_public_key"
+    }
+  ],
+  "data": {},
+  "paging_token": "GD5GMAHXM4MLK2MBCJJSGIREI6VV6MA7IL3VWWKEI4JZQJPXQLXCSL3K"
+}

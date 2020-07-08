@@ -9,10 +9,10 @@ import (
 	perrors "github.com/pkg/errors"
 
 	"github.com/keybase/stellarnet/testclient"
-	"github.com/stellar/go/build"
-	"github.com/stellar/go/clients/horizon"
+	horizon "github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/keypair"
 	horizonProtocol "github.com/stellar/go/protocols/horizon"
+	"github.com/stellar/go/txnbuild"
 	"github.com/stellar/go/xdr"
 	"github.com/stretchr/testify/require"
 )
@@ -245,7 +245,7 @@ func TestScenario(t *testing.T) {
 	}
 
 	// try with a cursor
-	nextPayments, err := acctAlice.RecentPayments(alicePayments[0].PagingToken, 10)
+	nextPayments, err := acctAlice.RecentPayments(alicePayments[0].PagingToken(), 10)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -274,7 +274,7 @@ func TestScenario(t *testing.T) {
 	require.Equal(t, helper.Bob.Address(), payments[0].SourceAccount)
 	require.Equal(t, payments[0].SourceAccount, payments[0].From)
 	require.Equal(t, helper.Alice.Address(), payments[0].To)
-	require.Equal(t, "native", payments[0].AssetType)
+	require.Equal(t, "native", payments[0].Asset.Type)
 	require.Equal(t, "1.0000000", payments[0].Amount)
 
 	txdetails, err := TxDetails(bobTx[0].Internal.ID)
@@ -294,12 +294,14 @@ func TestScenario(t *testing.T) {
 	var tx xdr.TransactionEnvelope
 	err = xdr.SafeUnmarshalBase64(bobTx[0].Internal.EnvelopeXdr, &tx)
 	require.NoError(t, err)
-	txid3, err := HashTx(tx.Tx)
+	txid3, err := HashTxEnv(tx)
 	require.NoError(t, err)
 	require.Equal(t, txid2, txid3)
 
+	sp := ClientSequenceProvider{Client: Client()}
+
 	t.Logf("bob merges account into alice's account")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -316,7 +318,7 @@ func TestScenario(t *testing.T) {
 
 	t.Logf("alice merges into an unfunded account")
 	var nines uint64 = 999
-	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err = RelocateTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Charlie), false, &nines, sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -324,7 +326,7 @@ func TestScenario(t *testing.T) {
 	t.Logf("charlie merges into a funded account")
 	lip := helper.Keypair(t, "Lip")
 	testclient.GetTestLumens(t, lip)
-	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 }
 
@@ -342,8 +344,10 @@ func TestAccountMergeAmount(t *testing.T) {
 	_, _, _, err := SendXLM(seedStr(t, helper.Alice), addressStr(t, helper.Bob), transferAmount, "")
 	require.NoError(t, err)
 
+	sp := ClientSequenceProvider{Client: Client()}
+
 	t.Logf("bob merges back to alice")
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice), sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
@@ -358,7 +362,7 @@ func TestAccountMergeAmount(t *testing.T) {
 	payments, err := acctAlice.RecentPayments("", 1)
 	require.NoError(t, err)
 	require.Len(t, payments, 1)
-	require.Equal(t, "account_merge", payments[0].Type)
+	require.Equal(t, "account_merge", payments[0].Base.Type)
 
 	amount, err := AccountMergeAmount(payments[0].ID)
 	require.NoError(t, err)
@@ -369,8 +373,8 @@ func TestAccountMergeAmount(t *testing.T) {
 	payments, err = acctBob.RecentPayments("", 50)
 	require.NoError(t, err)
 	require.Len(t, payments, 2)
-	require.Equal(t, "account_merge", payments[0].Type)
-	require.Equal(t, "create_account", payments[1].Type)
+	require.Equal(t, "account_merge", payments[0].Base.Type)
+	require.Equal(t, "create_account", payments[1].Base.Type)
 
 	amount, err = AccountMergeAmount(payments[0].ID)
 	require.NoError(t, err)
@@ -428,7 +432,7 @@ func TestTimeBounds(t *testing.T) {
 	testclient.GetTestLumens(t, helper.Alice)
 
 	type TimeBoundTest struct {
-		tb      build.Timebounds
+		tb      txnbuild.Timebounds
 		txError string
 	}
 	badTbs := []TimeBoundTest{
@@ -438,9 +442,11 @@ func TestTimeBounds(t *testing.T) {
 			time.Date(2030, time.December, 10, 23, 0, 0, 0, time.UTC)), "tx_too_early"},
 	}
 
+	sp := ClientSequenceProvider{Client: Client()}
+
 	for _, tc := range badTbs {
 		tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-			"10.0", "", Client(), &tc.tb, build.DefaultBaseFee)
+			"10.0", "", sp, &tc.tb, txnbuild.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -450,7 +456,7 @@ func TestTimeBounds(t *testing.T) {
 
 	tb := MakeTimeboundsWithMaxTime(time.Date(2030, time.November, 10, 23, 0, 0, 0, time.UTC))
 	tx, err := CreateAccountXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-		"10.0", "", Client(), &tb, build.DefaultBaseFee)
+		"10.0", "", sp, &tb, txnbuild.MinBaseFee)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -461,7 +467,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-			"15.0", "", Client(), &tc.tb, build.DefaultBaseFee)
+			"15.0", "", sp, &tc.tb, txnbuild.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -470,7 +476,7 @@ func TestTimeBounds(t *testing.T) {
 	}
 
 	tx, err = PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob),
-		"15.0", "", Client(), &tb, build.DefaultBaseFee)
+		"15.0", "", sp, &tb, txnbuild.MinBaseFee)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -490,7 +496,7 @@ func TestTimeBounds(t *testing.T) {
 
 	for _, tc := range badTbs {
 		tx, err := RelocateTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Alice),
-			true, nil, Client(), &tc.tb, build.DefaultBaseFee)
+			true, nil, sp, &tc.tb, txnbuild.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -528,7 +534,7 @@ func TestConcurrentSubmit(t *testing.T) {
 	n := 20
 	prepared := make([]SignResult, n)
 	for i := 0; i < n; i++ {
-		sig, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), fmt.Sprintf("%d", i+1), "", sprov, nil, build.DefaultBaseFee)
+		sig, err := PaymentXLMTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), fmt.Sprintf("%d", i+1), "", sprov, nil, txnbuild.MinBaseFee)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -582,7 +588,7 @@ func TestTrustlines(t *testing.T) {
 	}
 
 	if len(tlines) != 1 {
-		t.Errorf("num trustlines: %d, expected 1", len(tlines))
+		t.Fatalf("num trustlines: %d, expected 1", len(tlines))
 	}
 	if tlines[0].Type != "native" {
 		t.Errorf("trustline type: %q, expected native", tlines[0].Type)
@@ -735,11 +741,12 @@ func TestPathPayments(t *testing.T) {
 		t.Fatal("path payment to alice not in recent txs")
 	}
 
-	var unpackedTx xdr.TransactionEnvelope
-	err = xdr.SafeUnmarshalBase64(pathTx.EnvelopeXdr, &unpackedTx)
+	var unpackedTxEnv xdr.TransactionEnvelope
+	err = xdr.SafeUnmarshalBase64(pathTx.EnvelopeXdr, &unpackedTxEnv)
 	if err != nil {
 		t.Fatal(err)
 	}
+	unpackedTx := unpackedTxEnv.MustV1()
 	t.Logf("envelope: %+v", unpackedTx)
 
 	if len(unpackedTx.Tx.Operations) != 1 {
@@ -751,9 +758,7 @@ func TestPathPayments(t *testing.T) {
 	}
 	t.Logf("path payment op: %+v", op.Body.PathPaymentStrictReceiveOp)
 	pathOp := op.Body.PathPaymentStrictReceiveOp
-	if pathOp.Destination.Address() != acctAlice.address.String() {
-		t.Errorf("destination: %s, expected alice %s", pathOp.Destination.Address(), acctAlice.address)
-	}
+	require.Equal(t, acctAlice.address.String(), MuxedAccountToAccountString(pathOp.Destination), "unexpected destination address")
 }
 
 type testSeqnoProv struct {
@@ -813,7 +818,7 @@ func TestAccountMergeFull(t *testing.T) {
 	issuerAddr, err := NewAddressStr(issuerPair.Address())
 	require.NoError(t, err)
 	distPair := helper.Keypair(t, "dist")
-	_, _, err = CreateCustomAssetWithKPs(sourceSeed, issuerPair, distPair, assetCode, "10000", "keybase.io/blueasset", "2.3", 200)
+	_, _, err = CreateCustomAssetWithKPs(sourceSeed, issuerPair, distPair, assetCode, "10000", "keybase.io/blueasset", "2.3", txnbuild.MinBaseFee)
 	require.NoError(t, err)
 
 	// send 10 lumens from source to alice and bob to create their accounts
@@ -822,9 +827,9 @@ func TestAccountMergeFull(t *testing.T) {
 	_, _, _, err = SendXLM(sourceSeed, acctBob.address, "10.0", "" /* empty memo */)
 	require.NoError(t, err)
 	// create trustlines for our new asset to Alice and Bob
-	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, "10000", 200)
+	_, err = CreateTrustline(seedStr(t, helper.Alice), assetCode, issuerAddr, "10000", txnbuild.MinBaseFee)
 	require.NoError(t, err)
-	_, err = CreateTrustline(seedStr(t, helper.Bob), assetCode, issuerAddr, "10000", 200)
+	_, err = CreateTrustline(seedStr(t, helper.Bob), assetCode, issuerAddr, "10000", txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	// send a path payment from the source to Alice so alice can also have some of the custom asset
 	paths, err := acctSource.FindPaymentPaths(acctAlice.address, assetCode, issuerAddr, "10")
@@ -849,19 +854,26 @@ func TestAccountMergeFull(t *testing.T) {
 		}
 	}
 
+	sp := ClientSequenceProvider{Client: Client()}
+
 	// do the merge
-	sig, err := AccountMergeTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err := AccountMergeTransaction(seedStr(t, helper.Alice), addressStr(t, helper.Bob), sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)
 
 	// bob now has all the assets
+	t.Logf("Bob account is %s", acctBob.address.String())
 	balances, err = acctBob.Balances()
 	require.NoError(t, err)
 	require.Equal(t, 2, len(balances))
 	for _, balance := range balances {
 		if balance.Asset.Type == "native" {
-			require.Equal(t, "19.9999450", balance.Balance)
+			// NOTE (zapu): If transactions here ever change their base fee to
+			// something higher than minimum, this balance might differ if
+			// network charges more than 100 stroops per operation in a tx.
+			require.Regexp(t, `^19.9999`, balance.Balance)
+			require.Equal(t, "19.9999500", balance.Balance)
 		} else if balance.Asset.Code == assetCode {
 			require.Equal(t, "10.0000000", balance.Balance)
 		} else {
@@ -877,7 +889,7 @@ func TestAccountMergeFull(t *testing.T) {
 
 	// if we try to merge Bob's account into another account that doesn't support
 	// the custom asset, it will fail
-	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "cannot merge")
 
@@ -891,7 +903,7 @@ func TestAccountMergeFull(t *testing.T) {
 	_, _, _, err = pathPayment(seedStr(t, helper.Bob), issuerAddr, path.SourceAsset(), sendAmountMax, path.DestinationAsset(), path.DestinationAmount, PathAssetSliceToAssetBase(path.Path), "pub memo path pay")
 	require.NoError(t, err)
 	// attempt the merge again from bob into charlie
-	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), Client(), nil /* timeBounds */, build.DefaultBaseFee)
+	sig, err = AccountMergeTransaction(seedStr(t, helper.Bob), addressStr(t, helper.Charlie), sp, nil /* timeBounds */, txnbuild.MinBaseFee)
 	require.NoError(t, err)
 	_, err = Submit(sig.Signed)
 	require.NoError(t, err)

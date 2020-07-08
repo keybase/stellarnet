@@ -1,0 +1,87 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 30 Jun 2020 13:54:09 GMT
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAFY3NTUBKVJ7IZP7NKS6A2TKVT3ZMRNWBC5ZYB2CUYTNNYLCL2TPHCG/payments?cursor=\u0026limit=50\u0026order=desc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAFY3NTUBKVJ7IZP7NKS6A2TKVT3ZMRNWBC5ZYB2CUYTNNYLCL2TPHCG/payments?cursor=4231071067566081\u0026limit=50\u0026order=desc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GAFY3NTUBKVJ7IZP7NKS6A2TKVT3ZMRNWBC5ZYB2CUYTNNYLCL2TPHCG/payments?cursor=4231075362512897\u0026limit=50\u0026order=asc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/4231075362512897"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/228ad62c6ae90519f46dfbc3e8043cff13eccbbb3b3db8d31add24dcfb820abc"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/4231075362512897/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=4231075362512897"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=4231075362512897"
+          }
+        },
+        "id": "4231075362512897",
+        "paging_token": "4231075362512897",
+        "transaction_successful": true,
+        "source_account": "GAFY3NTUBKVJ7IZP7NKS6A2TKVT3ZMRNWBC5ZYB2CUYTNNYLCL2TPHCG",
+        "type": "account_merge",
+        "type_i": 8,
+        "created_at": "2020-06-30T13:54:00Z",
+        "transaction_hash": "228ad62c6ae90519f46dfbc3e8043cff13eccbbb3b3db8d31add24dcfb820abc",
+        "account": "GAFY3NTUBKVJ7IZP7NKS6A2TKVT3ZMRNWBC5ZYB2CUYTNNYLCL2TPHCG",
+        "into": "GAUQPEWAE6GVAASV6YN2SVR6Q4MBI5HHMFZORZSIZVQHKD3KPPPS2C2G"
+      },
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/4231071067566081"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/24ce56866b8e8811fc2e0d0200eb9f765628e88e84257858277449dae28aaf13"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/4231071067566081/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=4231071067566081"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=4231071067566081"
+          }
+        },
+        "id": "4231071067566081",
+        "paging_token": "4231071067566081",
+        "transaction_successful": true,
+        "source_account": "GAUQPEWAE6GVAASV6YN2SVR6Q4MBI5HHMFZORZSIZVQHKD3KPPPS2C2G",
+        "type": "create_account",
+        "type_i": 0,
+        "created_at": "2020-06-30T13:53:54Z",
+        "transaction_hash": "24ce56866b8e8811fc2e0d0200eb9f765628e88e84257858277449dae28aaf13",
+        "starting_balance": "123.4560000",
+        "funder": "GAUQPEWAE6GVAASV6YN2SVR6Q4MBI5HHMFZORZSIZVQHKD3KPPPS2C2G",
+        "account": "GAFY3NTUBKVJ7IZP7NKS6A2TKVT3ZMRNWBC5ZYB2CUYTNNYLCL2TPHCG"
+      }
+    ]
+  }
+}

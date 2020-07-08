@@ -13,9 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/keybase/stellarnet/stellarnetwork"
 	"github.com/keybase/vcr"
-	"github.com/stellar/go/build"
-	"github.com/stellar/go/clients/horizon"
+	horizon "github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/keypair"
 )
 
@@ -127,8 +127,8 @@ func testClient(t *testing.T, live, record bool) (*horizon.Client, *vcr.VCR) {
 	}
 
 	return &horizon.Client{
-		URL:  "https://horizon-testnet.stellar.org",
-		HTTP: v,
+		HorizonURL: "https://horizon-testnet.stellar.org",
+		HTTP:       v,
 	}, v
 }
 
@@ -173,7 +173,7 @@ func loadConfig(t *testing.T, subdir string) *Config {
 
 // Setup is the primary entry point for testclient.  It creates a Helper
 // and the horizon client.
-func Setup(t *testing.T) (*Helper, *horizon.Client, build.Network) {
+func Setup(t *testing.T) (*Helper, *horizon.Client, stellarnetwork.StellarNetwork) {
 	var client *horizon.Client
 	client, tvcr = testClient(t, *live, *record)
 
@@ -181,7 +181,7 @@ func Setup(t *testing.T) (*Helper, *horizon.Client, build.Network) {
 	conf := loadConfig(t, "")
 	h.setConfig(t, conf)
 
-	return h, client, build.TestNetwork
+	return h, client, stellarnetwork.TestNetwork
 }
 
 // GetTestLumens will use the friendbot to get some lumens into kp's account.

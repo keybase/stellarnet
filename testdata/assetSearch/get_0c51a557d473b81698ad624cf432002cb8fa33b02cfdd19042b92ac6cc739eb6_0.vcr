@@ -1,13 +1,14 @@
 HTTP/1.1 400 Bad Request
-Content-Length: 254
+Content-Length: 278
 Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Type: application/problem+json; charset=utf-8
-Date: Mon, 07 Oct 2019 13:58:04 GMT
+Date: Tue, 30 Jun 2020 14:29:55 GMT
+Latest-Ledger: 985501
 Vary: Origin
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 93
-X-Ratelimit-Reset: 2
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
 
 {
   "type": "https://stellar.org/horizon-errors/bad_request",
@@ -16,6 +17,6 @@ X-Ratelimit-Reset: 2
   "detail": "The request you sent was invalid in some way.",
   "extras": {
     "invalid_field": "asset_issuer",
-    "reason": "invalid address"
+    "reason": "badissuerID is not a valid asset issuer"
   }
 }

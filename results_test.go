@@ -1,7 +1,6 @@
 package stellarnet
 
 import (
-	"fmt"
 	"strings"
 	"testing"
 )
@@ -70,7 +69,7 @@ func TestPathPaymentIntermediatePath(t *testing.T) {
 			pathSummary[i] = AssetBaseSummary(p)
 		}
 		single := strings.Join(pathSummary, " -> ")
-		fmt.Printf("path: %s\n", single)
+		t.Logf("path: %s\n", single)
 		if single != test.path {
 			t.Errorf("test %d, path %q, expected %q", i, single, test.path)
 		}

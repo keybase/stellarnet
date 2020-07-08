@@ -1,0 +1,209 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 30 Jun 2020 13:54:47 GMT
+Latest-Ledger: 985130
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 99
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA2TMA46WKGEB5ZG7N5VYOB3ZNHXRFWPAR3FAU3WUZNRQ3YPBHPS4QBN_credit_alphanum4\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA22CYUSQH2SJQGV3MA7SMF454AWOZ6QUHLOE45JBZDOWU6VXB7RIBVX_credit_alphanum4\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA22CYUSQH2SJQGV3MA7SMF454AWOZ6QUHLOE45JBZDOWU6VXB7RIBVX",
+        "paging_token": "USD_GA22CYUSQH2SJQGV3MA7SMF454AWOZ6QUHLOE45JBZDOWU6VXB7RIBVX_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA25RY2U3A7VAKQTNPSEGDWDRDS3QM66A2B4Y7YUYIFDKHZCAFAUU4HR",
+        "paging_token": "USD_GA25RY2U3A7VAKQTNPSEGDWDRDS3QM66A2B4Y7YUYIFDKHZCAFAUU4HR_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA2ANGATS7TPLTUPZYX7MHJ35OWUQAIEB4DSUS3ZG4YMCBBWFJZIBJU6",
+        "paging_token": "USD_GA2ANGATS7TPLTUPZYX7MHJ35OWUQAIEB4DSUS3ZG4YMCBBWFJZIBJU6_credit_alphanum4",
+        "amount": "0.0000000",
+        "num_accounts": 4,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA2CHIP62C3DC4ZNEUWLL2SCEQBBLSMPKJV5PYXEV4BGSNSUQDIT22PU",
+        "paging_token": "USD_GA2CHIP62C3DC4ZNEUWLL2SCEQBBLSMPKJV5PYXEV4BGSNSUQDIT22PU_credit_alphanum4",
+        "amount": "100.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA2J5CDLM2LTBG6YXJVR3L6EMSURWSDL2WB4BXN4UERB4BL2B45BYCLD",
+        "paging_token": "USD_GA2J5CDLM2LTBG6YXJVR3L6EMSURWSDL2WB4BXN4UERB4BL2B45BYCLD_credit_alphanum4",
+        "amount": "20.0000000",
+        "num_accounts": 1,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA2KRI2NXSI5JBCGKAPTOBOYUBTWKGOYMXKR4AEJJJEQSESDPN57E7TQ",
+        "paging_token": "USD_GA2KRI2NXSI5JBCGKAPTOBOYUBTWKGOYMXKR4AEJJJEQSESDPN57E7TQ_credit_alphanum4",
+        "amount": "100.0000000",
+        "num_accounts": 3,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA2LFAOUARR6J7VW2K3WFF6G5GPUC2C43HESXSMAIJG4SJVINIDYW7GU",
+        "paging_token": "USD_GA2LFAOUARR6J7VW2K3WFF6G5GPUC2C43HESXSMAIJG4SJVINIDYW7GU_credit_alphanum4",
+        "amount": "100.0000000",
+        "num_accounts": 3,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA2MNV7AEB2PEGZZ3CV36DX4G4FMMBMA3FPENY5ORRPY7HFWHKNPLZ6Z",
+        "paging_token": "USD_GA2MNV7AEB2PEGZZ3CV36DX4G4FMMBMA3FPENY5ORRPY7HFWHKNPLZ6Z_credit_alphanum4",
+        "amount": "100.0000000",
+        "num_accounts": 3,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA2NTCO3VPK3GW6IWDS2ANNY7UV4JWWFCU66DCSONDSANU7YW4OL56U2",
+        "paging_token": "USD_GA2NTCO3VPK3GW6IWDS2ANNY7UV4JWWFCU66DCSONDSANU7YW4OL56U2_credit_alphanum4",
+        "amount": "100.0000000",
+        "num_accounts": 2,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA2TMA46WKGEB5ZG7N5VYOB3ZNHXRFWPAR3FAU3WUZNRQ3YPBHPS4QBN",
+        "paging_token": "USD_GA2TMA46WKGEB5ZG7N5VYOB3ZNHXRFWPAR3FAU3WUZNRQ3YPBHPS4QBN_credit_alphanum4",
+        "amount": "100.0000000",
+        "num_accounts": 3,
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false
+        }
+      }
+    ]
+  }
+}

@@ -3,11 +3,12 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Mon, 07 Oct 2019 13:58:04 GMT
-Vary: Origin
+Date: Tue, 30 Jun 2020 14:29:55 GMT
+Latest-Ledger: 985501
+Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 94
-X-Ratelimit-Reset: 2
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
 
 {
   "_links": {

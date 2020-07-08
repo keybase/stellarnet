@@ -5,12 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"errors"
+	"fmt"
 
 	"github.com/stellar/go/amount"
-	"github.com/stellar/go/build"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/network"
 	"github.com/stellar/go/price"
+	"github.com/stellar/go/txnbuild"
 	"github.com/stellar/go/xdr"
 )
 
@@ -24,16 +25,16 @@ import (
 type Tx struct {
 	internal  xdr.Transaction
 	source    AddressStr
-	seqnoProv build.SequenceProvider
+	seqnoProv SequenceProvider
 	netPass   string
 	baseFee   uint64
 	err       error
 }
 
 // NewBaseTx creates a Tx with the common transaction elements.
-func NewBaseTx(source AddressStr, seqnoProvider build.SequenceProvider, baseFee uint64) *Tx {
-	if baseFee < build.DefaultBaseFee {
-		baseFee = build.DefaultBaseFee
+func NewBaseTx(source AddressStr, seqnoProvider SequenceProvider, baseFee uint64) *Tx {
+	if baseFee < txnbuild.MinBaseFee {
+		baseFee = txnbuild.MinBaseFee
 	}
 	t := &Tx{
 		source:    source,
@@ -46,12 +47,19 @@ func NewBaseTx(source AddressStr, seqnoProvider build.SequenceProvider, baseFee 
 
 // newBaseTxSeed is a convenience function to get the address out of `from` before
 // calling NewBaseTx.
-func newBaseTxSeed(from SeedStr, seqnoProvider build.SequenceProvider, baseFee uint64) (*Tx, error) {
+func newBaseTxSeed(from SeedStr, seqnoProvider SequenceProvider, baseFee uint64) (*Tx, error) {
 	fromAddress, err := from.Address()
 	if err != nil {
 		return nil, err
 	}
 	return NewBaseTx(fromAddress, seqnoProvider, baseFee), nil
+}
+
+// SetBaseFee sets baseFee for the transaction being built. `baseFee` can be
+// lower than MinBaseFee (or even 0), so this function allows one to override
+// minimum fee clamp in NewBaseTx.
+func (t *Tx) SetBaseFee(baseFee uint64) {
+	t.baseFee = baseFee
 }
 
 // AddPaymentOp adds a payment operation to the transaction.
@@ -65,7 +73,7 @@ func (t *Tx) AddPaymentOp(to AddressStr, amt string) {
 	if t.err != nil {
 		return
 	}
-	op.Destination, t.err = to.AccountID()
+	t.err = op.Destination.SetAddress(to.String())
 	if t.err != nil {
 		return
 	}
@@ -84,7 +92,7 @@ func (t *Tx) AddAssetPaymentOp(to AddressStr, asset xdr.Asset, amt string) {
 	if t.err != nil {
 		return
 	}
-	op.Destination, t.err = to.AccountID()
+	t.err = op.Destination.SetAddress(to.String())
 	if t.err != nil {
 		return
 	}
@@ -113,7 +121,7 @@ func (t *Tx) AddPathPaymentOp(to AddressStr, sendAsset AssetBase, sendAmountMax 
 	if t.err != nil {
 		return
 	}
-	op.Destination, t.err = to.AccountID()
+	t.err = op.Destination.SetAddress(to.String())
 	if t.err != nil {
 		return
 	}
@@ -161,13 +169,13 @@ func (t *Tx) AddAccountMergeOp(to AddressStr) {
 		return
 	}
 
-	accountID, err := to.AccountID()
-	if err != nil {
-		t.err = err
+	var muxedAccountID xdr.MuxedAccount
+	t.err = muxedAccountID.SetAddress(to.String())
+	if t.err != nil {
 		return
 	}
 
-	t.addOp(xdr.OperationTypeAccountMerge, accountID)
+	t.addOp(xdr.OperationTypeAccountMerge, muxedAccountID)
 }
 
 // AddInflationDestinationOp adds a set_options operation for the inflation
@@ -291,7 +299,7 @@ func (t *Tx) AddDeleteTrustlineOp(assetCode string, assetIssuer AddressStr) {
 func (t *Tx) addOp(opType xdr.OperationType, op interface{}) {
 	body, err := xdr.NewOperationBody(opType, op)
 	if err != nil {
-		t.err = err
+		t.err = fmt.Errorf("xdr.NewOperationBody for %s failed with: %w", opType.String(), err)
 		return
 	}
 	wop := xdr.Operation{
@@ -386,7 +394,7 @@ func (t *Tx) AddMemoID(id *uint64) {
 }
 
 // AddTimeBounds adds time bounds to the transaction.
-func (t *Tx) AddTimeBounds(min, max uint64) {
+func (t *Tx) AddTimeBounds(min, max int64) {
 	if t.err != nil {
 		return
 	}
@@ -401,8 +409,8 @@ func (t *Tx) AddTimeBounds(min, max uint64) {
 	}
 }
 
-// AddBuiltTimeBounds adds time bounds to the transaction with a *build.Timebounds.
-func (t *Tx) AddBuiltTimeBounds(bt *build.Timebounds) {
+// AddBuiltTimeBounds adds time bounds to the transaction with a *txnbuild.Timebounds.
+func (t *Tx) AddBuiltTimeBounds(bt *txnbuild.Timebounds) {
 	if bt == nil {
 		return
 	}
@@ -439,17 +447,18 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 	}
 	t.internal.SeqNum = seqno + 1
 	t.internal.Fee = xdr.Uint32(t.baseFee * uint64(len(t.internal.Operations)))
-	t.internal.SourceAccount, err = t.source.AccountID()
+	sourceAccount, err := t.source.MuxedAccount()
+	if err != nil {
+		return SignResult{}, fmt.Errorf("invalid SourceAccount (cannot convert to MuxedAccount): %w", err)
+	}
+	t.internal.SourceAccount = sourceAccount
+
+	hash, err := network.HashTransaction(t.internal, t.netPass)
 	if err != nil {
 		return SignResult{}, err
 	}
 
-	hash, err := network.HashTransaction(&t.internal, t.netPass)
-	if err != nil {
-		return SignResult{}, err
-	}
-
-	envelope := xdr.TransactionEnvelope{Tx: t.internal}
+	envelope := xdr.TransactionV1Envelope{Tx: t.internal}
 
 	for _, signer := range signers {
 		kp, err := keypair.Parse(signer.SecureNoLogString())
@@ -464,8 +473,12 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 		envelope.Signatures = append(envelope.Signatures, sig)
 	}
 
+	outerEnvelope, err := xdr.NewTransactionEnvelope(xdr.EnvelopeTypeEnvelopeTypeTx, envelope)
+	if err != nil {
+		return SignResult{}, fmt.Errorf("failed to create transaction envelope V0: %w", err)
+	}
 	var buf bytes.Buffer
-	_, err = xdr.Marshal(&buf, envelope)
+	_, err = xdr.Marshal(&buf, outerEnvelope)
 	if err != nil {
 		return SignResult{}, err
 	}

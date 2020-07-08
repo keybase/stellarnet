@@ -78,3 +78,33 @@ func (s AddressStr) AccountID() (acctID xdr.AccountId, err error) {
 	err = acctID.SetAddress(s.String())
 	return acctID, err
 }
+
+// MuxedAccount converts an AddressStr into an xdr.MuxedAccount
+func (s AddressStr) MuxedAccount() (mux xdr.MuxedAccount, err error) {
+	err = mux.SetAddress(s.String())
+	if err != nil {
+		return xdr.MuxedAccount{}, err
+	}
+	return mux, err
+}
+
+// AddressStrFromMuxedAccount returns address encoded into MuxedAccount as
+// AddressStr. If MuxedAccount had a memoID, it is dropped.
+func AddressStrFromMuxedAccount(mux xdr.MuxedAccount) (addrStr AddressStr, err error) {
+	acctID := mux.ToAccountId()
+	addr, err := acctID.GetAddress()
+	if err != nil {
+		return "", err
+	}
+	return NewAddressStr(addr)
+}
+
+// MuxedAccountToAccountString converts MuxedAccount's AccountID to string. If
+// MuxedAccount had a memoID, it is dropped.
+// NOTE: Stellar at some point will introduce string encoding for Accounts that
+// include MemoID. (see SEP-23). That will warrant another function, or maybe
+// there will be one provided by stellar/go.
+func MuxedAccountToAccountString(acc xdr.MuxedAccount) string {
+	addr := acc.ToAccountId()
+	return addr.Address()
+}

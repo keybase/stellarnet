@@ -50,10 +50,21 @@ func PathPaymentIntermediatePath(envelopeXDR string, opIndex int) ([]AssetMinima
 	if err := xdr.SafeUnmarshalBase64(envelopeXDR, &tx); err != nil {
 		return nil, err
 	}
-	if opIndex >= len(tx.Tx.Operations) {
+
+	switch tx.Type {
+	case xdr.EnvelopeTypeEnvelopeTypeTx, xdr.EnvelopeTypeEnvelopeTypeTxV0:
+		// all good - supported tx type
+	case xdr.EnvelopeTypeEnvelopeTypeTxFeeBump:
+		return nil, errors.New("got FeeBump transaction in PathPaymentIntermediatePath")
+	default:
+		return nil, errors.New("unknown transaction type")
+	}
+
+	operations := tx.Operations()
+	if opIndex >= len(operations) {
 		return nil, errors.New("opIndex out of range")
 	}
-	op := tx.Tx.Operations[opIndex]
+	op := operations[opIndex]
 	if op.Body.Type != xdr.OperationTypePathPaymentStrictReceive {
 		return nil, errors.New("not a path payment")
 	}

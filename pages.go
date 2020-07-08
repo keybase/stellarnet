@@ -3,7 +3,8 @@ package stellarnet
 import (
 	"time"
 
-	"github.com/stellar/go/clients/horizon"
+	horizon "github.com/stellar/go/protocols/horizon"
+	operations "github.com/stellar/go/protocols/horizon/operations"
 	"github.com/stellar/go/support/render/hal"
 )
 
@@ -35,7 +36,7 @@ type PaymentsPage struct {
 		Prev hal.Link `json:"prev"`
 	} `json:"_links"`
 	Embedded struct {
-		Records []horizon.Payment `json:"records"`
+		Records []operations.Payment `json:"records"`
 	} `json:"_embedded"`
 }
 
