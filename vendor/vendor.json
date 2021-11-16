@@ -75,14 +75,6 @@
 			"revisionTime": "2019-10-09T02:57:16Z"
 		},
 		{
-			"checksumSHA1": "EgxoUr2+Zcda0qQi1l8nCXdHqh4=",
-			"origin": "github.com/keybase/stellar-org",
-			"path": "github.com/stellar/go",
-			"revision": "0fc3bfe3dfa7aba69074e417e7dd47101b44e219",
-			"revisionTime": "2019-10-10T20:56:48Z",
-			"tree": true
-		},
-		{
 			"checksumSHA1": "B2aJD2oZzIr70Gm0Ri32WosOw3w=",
 			"path": "github.com/stellar/go-xdr/xdr3",
 			"revision": "0bc96f33a18ef2f963e75431dbed042129eb421b",
