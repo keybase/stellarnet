@@ -92,13 +92,13 @@ func opBodySummary(op xdr.Operation, pastTense bool) string {
 	case xdr.OperationTypeChangeTrust:
 		iop := op.Body.MustChangeTrustOp()
 		if iop.Limit == 0 {
-			return fmt.Sprintf("Remove%s trust line to %s", past("d"), XDRAssetSummary(iop.Line))
+			return fmt.Sprintf("Remove%s trust line to %s", past("d"), XDRChangeTrustAssetSummary(iop.Line))
 		}
 		const defaultPositiveLimit xdr.Int64 = 9223372036854775807
 		if iop.Limit == defaultPositiveLimit {
-			return fmt.Sprintf("Establish%s trust line to %s", past("ed"), XDRAssetSummary(iop.Line))
+			return fmt.Sprintf("Establish%s trust line to %s", past("ed"), XDRChangeTrustAssetSummary(iop.Line))
 		}
-		return fmt.Sprintf("Establish%s trust line to %s with limit %v", past("ed"), XDRAssetSummary(iop.Line), iop.Limit)
+		return fmt.Sprintf("Establish%s trust line to %s with limit %v", past("ed"), XDRChangeTrustAssetSummary(iop.Line), iop.Limit)
 	case xdr.OperationTypeAllowTrust:
 		iop := op.Body.MustAllowTrustOp()
 		var assetCode string
@@ -112,7 +112,7 @@ func opBodySummary(op xdr.Operation, pastTense bool) string {
 		default:
 			return "invalid allow trust asset code"
 		}
-		if iop.Authorize {
+		if iop.Authorize > 0 {
 			return fmt.Sprintf("Authorize%s trustline to %s for %s", past("d"), assetCode, iop.Trustor.Address())
 		}
 		return fmt.Sprintf("Deauthorize%s trustline to %s for %s", past("d"), assetCode, iop.Trustor.Address())

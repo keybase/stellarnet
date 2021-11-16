@@ -338,6 +338,30 @@ func XDRToAssetMinimal(x xdr.Asset) (AssetMinimal, error) {
 	}
 }
 
+// ChangeTrustXDRToAssetMinimal transforms xdr.ChangeTrustAsset to AssetMinimal.
+func ChangeTrustXDRToAssetMinimal(x xdr.ChangeTrustAsset) (AssetMinimal, error) {
+	switch x.Type {
+	case xdr.AssetTypeAssetTypeNative:
+		return AssetMinimal{}, nil
+	case xdr.AssetTypeAssetTypeCreditAlphanum4:
+		a := x.MustAlphaNum4()
+		n := bytes.IndexByte(a.AssetCode[:], 0)
+		if n == -1 {
+			n = 4
+		}
+		return AssetMinimal{AssetCode: string(a.AssetCode[:n]), AssetIssuer: a.Issuer.Address()}, nil
+	case xdr.AssetTypeAssetTypeCreditAlphanum12:
+		a := x.MustAlphaNum12()
+		n := bytes.IndexByte(a.AssetCode[:], 0)
+		if n == -1 {
+			n = 12
+		}
+		return AssetMinimal{AssetCode: string(a.AssetCode[:n]), AssetIssuer: a.Issuer.Address()}, nil
+	default:
+		return AssetMinimal{}, errors.New("invalid xdr asset type")
+	}
+}
+
 // AssetBaseSummary returns a string summary of an asset.
 func AssetBaseSummary(a AssetBase) string {
 	if a.TypeString() == "native" {
@@ -361,4 +385,13 @@ func XDRAssetSummary(x xdr.Asset) string {
 // XDRAssetAmountSummary returns a summary of an amount and an asset.
 func XDRAssetAmountSummary(amt xdr.Int64, asset xdr.Asset) string {
 	return StringFromStellarXdrAmount(amt) + " " + XDRAssetSummary(asset)
+}
+
+// XDRChangeTrustAssetSummary returns a string summary of an xdr.ChangeTrustAsset.
+func XDRChangeTrustAssetSummary(x xdr.ChangeTrustAsset) string {
+	a, err := ChangeTrustXDRToAssetMinimal(x)
+	if err != nil {
+		return "invalid asset"
+	}
+	return AssetBaseSummary(a)
 }
