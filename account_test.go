@@ -798,6 +798,7 @@ func findBestAsset(t *testing.T, code string) AssetSummary {
 }
 
 func TestAccountMergeFull(t *testing.T) {
+	t.Skip("not used by stellard")
 	// set up alice with an account that has native and non-native assets
 	// merge it into bob (who must also have trustlines to the same assets)
 	// verify that bob has the assets, and alice no longer exists

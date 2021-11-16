@@ -293,7 +293,7 @@ func makeXDRAsset(assetCode string, issuerID AddressStr) (xdr.Asset, error) {
 		asset := xdr.AlphaNum4{Issuer: issuer}
 		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
-	case x >= 5 && x <= 1:
+	case x >= 5 && x <= 12:
 		asset := xdr.AlphaNum12{Issuer: issuer}
 		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
