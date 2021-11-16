@@ -1,0 +1,59 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 16 Nov 2021 22:16:22 GMT
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 95
+X-Ratelimit-Reset: 2
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/transactions/1bfc1e714b05cb1d86f70f827d6dfadb34f7ed977c0686bd5dcdb6660a088294/payments?cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/transactions/1bfc1e714b05cb1d86f70f827d6dfadb34f7ed977c0686bd5dcdb6660a088294/payments?cursor=4416076783816705\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/transactions/1bfc1e714b05cb1d86f70f827d6dfadb34f7ed977c0686bd5dcdb6660a088294/payments?cursor=4416076783816705\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "self": {
+            "href": "https://horizon-testnet.stellar.org/operations/4416076783816705"
+          },
+          "transaction": {
+            "href": "https://horizon-testnet.stellar.org/transactions/1bfc1e714b05cb1d86f70f827d6dfadb34f7ed977c0686bd5dcdb6660a088294"
+          },
+          "effects": {
+            "href": "https://horizon-testnet.stellar.org/operations/4416076783816705/effects"
+          },
+          "succeeds": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=desc\u0026cursor=4416076783816705"
+          },
+          "precedes": {
+            "href": "https://horizon-testnet.stellar.org/effects?order=asc\u0026cursor=4416076783816705"
+          }
+        },
+        "id": "4416076783816705",
+        "paging_token": "4416076783816705",
+        "transaction_successful": true,
+        "source_account": "GBQZGOCRCFQA7IG3C4ZRHNVF7N2BFIO7QYZUX532HDYTNMMTZV5EBB5D",
+        "type": "payment",
+        "type_i": 1,
+        "created_at": "2021-11-16T22:16:21Z",
+        "transaction_hash": "1bfc1e714b05cb1d86f70f827d6dfadb34f7ed977c0686bd5dcdb6660a088294",
+        "asset_type": "native",
+        "from": "GBQZGOCRCFQA7IG3C4ZRHNVF7N2BFIO7QYZUX532HDYTNMMTZV5EBB5D",
+        "to": "GCPBU4DQF5KVPX3X5HDN7PPRQIBZQ3VDXTBUNLK24GJF5KQ7PJP3PQLS",
+        "amount": "1.0000000"
+      }
+    ]
+  }
+}

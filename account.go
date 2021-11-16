@@ -135,8 +135,6 @@ func NewAccount(address AddressStr) *Account {
 // load uses the horizon client to get the current account
 // information.
 func (a *Account) load() error {
-	fmt.Printf("loading account details for %s\n", a.address.String())
-	fmt.Printf("url: %s\n", Client().HorizonURL)
 	internal, err := Client().AccountDetail(horizonclient.AccountRequest{AccountID: a.address.String()})
 	if err != nil {
 		return errMapAccount(err)
@@ -413,7 +411,6 @@ func (a *Account) RecentTransactionsAndOps() ([]Transaction, error) {
 	var page TransactionsPage
 	err = getDecodeJSONStrict(link+"?order=desc&limit=10", Client().HTTP.Get, &page)
 	if err != nil {
-		panic("here")
 		return nil, errMap(err)
 	}
 
@@ -1161,7 +1158,6 @@ func getDecodeJSONStrict(urlIn string, getter func(string) (*http.Response, erro
 	}
 	resp, err := getter(urlParsed.String())
 	if err != nil {
-		panic("h1")
 		return errMap(err)
 	}
 	defer resp.Body.Close()
@@ -1171,21 +1167,15 @@ func getDecodeJSONStrict(urlIn string, getter func(string) (*http.Response, erro
 		}
 		err := json.NewDecoder(resp.Body).Decode(&horizonError.Problem)
 		if err != nil {
-			panic("h2")
 			return Error{
 				Display:      "stellar network error",
 				Details:      fmt.Sprintf("horizon http error: %v %v, decode body error: %s", resp.StatusCode, resp.Status, err),
 				HorizonError: horizonError,
 			}
 		}
-		fmt.Printf("horizon error: %+v\n", horizonError)
-		fmt.Printf("horizon error problem: %+v\n", horizonError.Problem)
-		fmt.Printf("url: %s (%s)\n", urlIn, urlParsed)
-		panic("h3")
 		return errMap(horizonError)
 	}
 	if err := json.NewDecoder(resp.Body).Decode(dest); err != nil {
-		panic("h4")
 		return errMap(err)
 	}
 

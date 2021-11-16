@@ -1,0 +1,62 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 16 Nov 2021 22:17:58 GMT
+Latest-Ledger: 1028216
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=OKQX\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=OKQX\u0026cursor=OKQX_GDLCWZAC72CEGZ6KGDH3NFT6DF64R6FX44JWWPB6E3GKXENIF3PFYYYW_credit_alphanum4\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=OKQX\u0026cursor=OKQX_GDLCWZAC72CEGZ6KGDH3NFT6DF64R6FX44JWWPB6E3GKXENIF3PFYYYW_credit_alphanum4\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": "https://keybase.io/blueasset/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "OKQX",
+        "asset_issuer": "GDLCWZAC72CEGZ6KGDH3NFT6DF64R6FX44JWWPB6E3GKXENIF3PFYYYW",
+        "paging_token": "OKQX_GDLCWZAC72CEGZ6KGDH3NFT6DF64R6FX44JWWPB6E3GKXENIF3PFYYYW_credit_alphanum4",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "10000.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "10000.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      }
+    ]
+  }
+}

@@ -1,0 +1,62 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 16 Nov 2021 22:18:09 GMT
+Latest-Ledger: 1028218
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=EUR\u0026asset_issuer=GAWVBKU4RDWYNRBWB7IBKEKXSQHPCFSGE7PGJAGNSXY34X7B73VZL6C2\u0026cursor=\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=EUR\u0026asset_issuer=GAWVBKU4RDWYNRBWB7IBKEKXSQHPCFSGE7PGJAGNSXY34X7B73VZL6C2\u0026cursor=EUR_GAWVBKU4RDWYNRBWB7IBKEKXSQHPCFSGE7PGJAGNSXY34X7B73VZL6C2_credit_alphanum4\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=EUR\u0026asset_issuer=GAWVBKU4RDWYNRBWB7IBKEKXSQHPCFSGE7PGJAGNSXY34X7B73VZL6C2\u0026cursor=EUR_GAWVBKU4RDWYNRBWB7IBKEKXSQHPCFSGE7PGJAGNSXY34X7B73VZL6C2_credit_alphanum4\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "EUR",
+        "asset_issuer": "GAWVBKU4RDWYNRBWB7IBKEKXSQHPCFSGE7PGJAGNSXY34X7B73VZL6C2",
+        "paging_token": "EUR_GAWVBKU4RDWYNRBWB7IBKEKXSQHPCFSGE7PGJAGNSXY34X7B73VZL6C2_credit_alphanum4",
+        "num_accounts": 11,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "8141000.0000000",
+        "accounts": {
+          "authorized": 11,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 5
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "8141000.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": true,
+          "auth_revocable": true,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      }
+    ]
+  }
+}
