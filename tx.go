@@ -7,10 +7,10 @@ import (
 	"errors"
 
 	"github.com/stellar/go/amount"
-	"github.com/stellar/go/build"
 	"github.com/stellar/go/keypair"
 	"github.com/stellar/go/network"
 	"github.com/stellar/go/price"
+	"github.com/stellar/go/txnbuild"
 	"github.com/stellar/go/xdr"
 )
 
@@ -24,16 +24,16 @@ import (
 type Tx struct {
 	internal  xdr.Transaction
 	source    AddressStr
-	seqnoProv build.SequenceProvider
+	seqnoProv txnbuild.SequenceProvider
 	netPass   string
 	baseFee   uint64
 	err       error
 }
 
 // NewBaseTx creates a Tx with the common transaction elements.
-func NewBaseTx(source AddressStr, seqnoProvider build.SequenceProvider, baseFee uint64) *Tx {
-	if baseFee < build.DefaultBaseFee {
-		baseFee = build.DefaultBaseFee
+func NewBaseTx(source AddressStr, seqnoProvider txnbuild.SequenceProvider, baseFee uint64) *Tx {
+	if baseFee < txnbuild.DefaultBaseFee {
+		baseFee = txnbuild.DefaultBaseFee
 	}
 	t := &Tx{
 		source:    source,
@@ -46,7 +46,7 @@ func NewBaseTx(source AddressStr, seqnoProvider build.SequenceProvider, baseFee 
 
 // newBaseTxSeed is a convenience function to get the address out of `from` before
 // calling NewBaseTx.
-func newBaseTxSeed(from SeedStr, seqnoProvider build.SequenceProvider, baseFee uint64) (*Tx, error) {
+func newBaseTxSeed(from SeedStr, seqnoProvider txnbuild.SequenceProvider, baseFee uint64) (*Tx, error) {
 	fromAddress, err := from.Address()
 	if err != nil {
 		return nil, err
@@ -401,8 +401,8 @@ func (t *Tx) AddTimeBounds(min, max uint64) {
 	}
 }
 
-// AddBuiltTimeBounds adds time bounds to the transaction with a *build.Timebounds.
-func (t *Tx) AddBuiltTimeBounds(bt *build.Timebounds) {
+// AddBuiltTimeBounds adds time bounds to the transaction with a *txnbuild.Timebounds.
+func (t *Tx) AddBuiltTimeBounds(bt *txnbuild.Timebounds) {
 	if bt == nil {
 		return
 	}

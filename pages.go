@@ -3,14 +3,14 @@ package stellarnet
 import (
 	"time"
 
-	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/protocols/horizon/operations"
 	"github.com/stellar/go/support/render/hal"
 )
 
 // TransactionEmbed is used to get the Links in addition to
 // the horizon.Transaction from the transactions endpoints.
 type TransactionEmbed struct {
-	horizon.Transaction
+	horizonclient.Transaction
 }
 
 // TransactionsPage is used to unmarshal the results from the account
@@ -35,7 +35,7 @@ type PaymentsPage struct {
 		Prev hal.Link `json:"prev"`
 	} `json:"_links"`
 	Embedded struct {
-		Records []horizon.Payment `json:"records"`
+		Records []operations.Payment `json:"records"`
 	} `json:"_embedded"`
 }
 
