@@ -2,6 +2,7 @@ package stellarnet
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/stellar/go/xdr"
 )
@@ -50,10 +51,11 @@ func PathPaymentIntermediatePath(envelopeXDR string, opIndex int) ([]AssetMinima
 	if err := xdr.SafeUnmarshalBase64(envelopeXDR, &tx); err != nil {
 		return nil, err
 	}
-	if opIndex >= len(tx.V1.Tx.Operations) {
+	fmt.Printf("tx: %+v\n", tx)
+	if opIndex >= len(tx.Operations()) {
 		return nil, errors.New("opIndex out of range")
 	}
-	op := tx.V1.Tx.Operations[opIndex]
+	op := tx.Operations()[opIndex]
 	if op.Body.Type != xdr.OperationTypePathPaymentStrictReceive {
 		return nil, errors.New("not a path payment")
 	}
