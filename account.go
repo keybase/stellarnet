@@ -40,6 +40,7 @@ func SetClientAndNetwork(c *horizonclient.Client, n string) {
 	configLock.Lock()
 	defer configLock.Unlock()
 	gclient = c
+	lclient = &legacyClient{gclient}
 	gnetwork = n
 }
 
@@ -48,6 +49,7 @@ func SetClientURLAndNetwork(url string, n string) {
 	configLock.Lock()
 	defer configLock.Unlock()
 	gclient = MakeClient(url)
+	lclient = &legacyClient{gclient}
 	gnetwork = n
 }
 
@@ -56,6 +58,7 @@ func SetClient(c *horizonclient.Client) {
 	configLock.Lock()
 	defer configLock.Unlock()
 	gclient = c
+	lclient = &legacyClient{gclient}
 }
 
 // MakeClient makes a horizon client.
@@ -132,6 +135,8 @@ func NewAccount(address AddressStr) *Account {
 // load uses the horizon client to get the current account
 // information.
 func (a *Account) load() error {
+	fmt.Printf("loading account details for %s\n", a.address.String())
+	fmt.Printf("url: %s\n", Client().HorizonURL)
 	internal, err := Client().AccountDetail(horizonclient.AccountRequest{AccountID: a.address.String()})
 	if err != nil {
 		return errMapAccount(err)
@@ -356,10 +361,13 @@ func (a *Account) RecentPayments(cursor string, limit int) ([]operations.Payment
 		limit = 100
 	}
 
-	link := a.paymentsLink(cursor, limit)
+	link, err := horizonLink(Client().HorizonURL, a.paymentsLink(cursor, limit))
+	if err != nil {
+		return nil, errMap(err)
+	}
 
 	var page PaymentsPage
-	err := getDecodeJSONStrict(link, Client().HTTP.Get, &page)
+	err = getDecodeJSONStrict(link, Client().HTTP.Get, &page)
 	if err != nil {
 		return nil, errMap(err)
 	}
@@ -376,7 +384,10 @@ func (a *Account) Transactions(cursor string, limit int) (res []horizonProtocol.
 		limit = 100
 	}
 
-	link := a.transactionsLink(cursor, limit)
+	link, err := horizonLink(Client().HorizonURL, a.transactionsLink(cursor, limit))
+	if err != nil {
+		return nil, false, errMap(err)
+	}
 
 	var page TransactionsPage
 	err = getDecodeJSONStrict(link, Client().HTTP.Get, &page)
@@ -395,10 +406,14 @@ func (a *Account) Transactions(cursor string, limit int) (res []horizonProtocol.
 // RecentTransactionsAndOps returns the account's recent transactions, for
 // all types of transactions.
 func (a *Account) RecentTransactionsAndOps() ([]Transaction, error) {
-	link := Client().HorizonURL + "/accounts/" + a.address.String() + "/transactions"
-	var page TransactionsPage
-	err := getDecodeJSONStrict(link+"?order=desc&limit=10", Client().HTTP.Get, &page)
+	link, err := horizonLink(Client().HorizonURL, "/accounts/"+a.address.String()+"/transactions")
 	if err != nil {
+		return nil, err
+	}
+	var page TransactionsPage
+	err = getDecodeJSONStrict(link+"?order=desc&limit=10", Client().HTTP.Get, &page)
+	if err != nil {
+		panic("here")
 		return nil, errMap(err)
 	}
 
@@ -419,9 +434,12 @@ func (a *Account) RecentTransactionsAndOps() ([]Transaction, error) {
 }
 
 func (a *Account) loadOperations(tx Transaction) ([]Operation, error) {
-	link := Client().HorizonURL + "/transactions/" + tx.Internal.ID + "/operations"
+	link, err := horizonLink(Client().HorizonURL, "/transactions/"+tx.Internal.ID+"/operations")
+	if err != nil {
+		return nil, err
+	}
 	var page OperationsPage
-	err := getDecodeJSONStrict(link, Client().HTTP.Get, &page)
+	err = getDecodeJSONStrict(link, Client().HTTP.Get, &page)
 	if err != nil {
 		return nil, errMap(err)
 	}
@@ -436,7 +454,11 @@ func TxPayments(txID string) ([]operations.Payment, error) {
 		return nil, err
 	}
 	var page PaymentsPage
-	err = getDecodeJSONStrict(Client().HorizonURL+"/transactions/"+txID+"/payments", Client().HTTP.Get, &page)
+	link, err := horizonLink(Client().HorizonURL, "/transactions/"+txID+"/payments")
+	if err != nil {
+		return nil, err
+	}
+	err = getDecodeJSONStrict(link, Client().HTTP.Get, &page)
 	if err != nil {
 		return nil, errMap(err)
 	}
@@ -446,7 +468,11 @@ func TxPayments(txID string) ([]operations.Payment, error) {
 // TxDetails gets a horizonProtocol.Transaction for txID.
 func TxDetails(txID string) (horizonProtocol.Transaction, error) {
 	var embed TransactionEmbed
-	if err := getDecodeJSONStrict(Client().HorizonURL+"/transactions/"+txID, Client().HTTP.Get, &embed); err != nil {
+	link, err := horizonLink(Client().HorizonURL, "/transactions/"+txID)
+	if err != nil {
+		return horizonProtocol.Transaction{}, errMap(err)
+	}
+	if err := getDecodeJSONStrict(link, Client().HTTP.Get, &embed); err != nil {
 		return horizonProtocol.Transaction{}, errMap(err)
 	}
 	return embed.Transaction, nil
@@ -1093,7 +1119,7 @@ func CreateCustomAssetWithKPs(source SeedStr, issuerPair, distPair *keypair.Full
 
 // paymentsLink returns the horizon endpoint to get payment information.
 func (a *Account) paymentsLink(cursor string, limit int) string {
-	link := Client().HorizonURL + "/accounts/" + a.address.String() + "/payments"
+	link := "/accounts/" + a.address.String() + "/payments"
 	if cursor != "" {
 		return fmt.Sprintf("%s?cursor=%s&order=desc&limit=%d", link, cursor, limit)
 	}
@@ -1102,7 +1128,7 @@ func (a *Account) paymentsLink(cursor string, limit int) string {
 
 // transactionsLink returns the horizon endpoint to get payment information.
 func (a *Account) transactionsLink(cursor string, limit int) string {
-	link := Client().HorizonURL + "/accounts/" + a.address.String() + "/transactions"
+	link := "/accounts/" + a.address.String() + "/transactions"
 	if cursor != "" {
 		return fmt.Sprintf("%s?cursor=%s&order=desc&limit=%d", link, cursor, limit)
 	}
@@ -1125,9 +1151,14 @@ func minBytes(bs []byte, deflt byte) byte {
 // getDecodeJSONStrict gets from a url and decodes the response.
 // Returns errors on non-200 response codes.
 // Inspired by: https://github.com/stellar/go/blob/4c8cfd0/clients/horizon/internal.go#L16
-func getDecodeJSONStrict(url string, getter func(string) (*http.Response, error), dest interface{}) error {
-	resp, err := getter(url)
+func getDecodeJSONStrict(urlIn string, getter func(string) (*http.Response, error), dest interface{}) error {
+	urlParsed, err := url.Parse(urlIn)
 	if err != nil {
+		return errMap(err)
+	}
+	resp, err := getter(urlParsed.String())
+	if err != nil {
+		panic("h1")
 		return errMap(err)
 	}
 	defer resp.Body.Close()
@@ -1137,17 +1168,35 @@ func getDecodeJSONStrict(url string, getter func(string) (*http.Response, error)
 		}
 		err := json.NewDecoder(resp.Body).Decode(&horizonError.Problem)
 		if err != nil {
+			panic("h2")
 			return Error{
 				Display:      "stellar network error",
 				Details:      fmt.Sprintf("horizon http error: %v %v, decode body error: %s", resp.StatusCode, resp.Status, err),
 				HorizonError: horizonError,
 			}
 		}
+		fmt.Printf("horizon error: %+v\n", horizonError)
+		fmt.Printf("horizon error problem: %+v\n", horizonError.Problem)
+		fmt.Printf("url: %s (%s)\n", urlIn, urlParsed)
+		panic("h3")
 		return errMap(horizonError)
 	}
 	if err := json.NewDecoder(resp.Body).Decode(dest); err != nil {
+		panic("h4")
 		return errMap(err)
 	}
 
 	return nil
+}
+
+func horizonLink(base, path string) (string, error) {
+	u, err := url.Parse(base)
+	if err != nil {
+		return "", err
+	}
+	u, err = u.Parse(path)
+	if err != nil {
+		return "", err
+	}
+	return u.String(), nil
 }
