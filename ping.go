@@ -11,7 +11,7 @@ import (
 // HorizonStatus returns the root status information from the global horizon
 // server.
 func HorizonStatus() (horizonProtocol.Root, error) {
-	return HorizonStatusForClient(Client())
+	return HorizonStatusForClient(HorizonClient())
 }
 
 // HorizonStatusForClient returns the root status information from client's horizon

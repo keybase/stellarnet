@@ -378,8 +378,8 @@ func (u *unvalidatedURI) validateTx(getter HTTPGetter) (*ValidatedStellarURI, er
 func validateTxEnv(txEnv xdr.TransactionEnvelope) (validated xdr.TransactionEnvelope, err error) {
 	var emptyTxEnv xdr.TransactionEnvelope
 	var emptySourceAccount xdr.AccountId
-	for _, op := range txEnv.Tx.Operations {
-		if op.SourceAccount != nil && *op.SourceAccount == emptySourceAccount {
+	for _, op := range txEnv.V1.Tx.Operations {
+		if op.SourceAccount != nil && op.SourceAccount.ToAccountId() == emptySourceAccount {
 			return emptyTxEnv, ErrInvalidParameter{Key: "SourceAccount"}
 		}
 	}

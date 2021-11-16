@@ -32,8 +32,8 @@ type Tx struct {
 
 // NewBaseTx creates a Tx with the common transaction elements.
 func NewBaseTx(source AddressStr, seqnoProvider SequenceProvider, baseFee uint64) *Tx {
-	if baseFee < txnbuild.DefaultBaseFee {
-		baseFee = txnbuild.DefaultBaseFee
+	if baseFee < txnbuild.MinBaseFee {
+		baseFee = txnbuild.MinBaseFee
 	}
 	t := &Tx{
 		source:    source,

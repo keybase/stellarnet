@@ -255,11 +255,11 @@ func makeXDRAsset(assetCode string, issuerID AddressStr) (xdr.Asset, error) {
 	x := len(assetCode)
 	switch {
 	case x >= 1 && x <= 4:
-		asset := xdr.AssetAlphaNum4{Issuer: issuer}
+		asset := xdr.AlphaNum4{Issuer: issuer}
 		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
-	case x >= 5 && x <= 12:
-		asset := xdr.AssetAlphaNum12{Issuer: issuer}
+	case x >= 5 && x <= 1:
+		asset := xdr.AlphaNum12{Issuer: issuer}
 		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
 	default:
@@ -302,11 +302,11 @@ func assetBaseToXDR(a AssetBase) (xdr.Asset, error) {
 	x := len(a.CodeString())
 	switch {
 	case x >= 1 && x <= 4:
-		asset := xdr.AssetAlphaNum4{Issuer: issuerID}
+		asset := xdr.AlphaNum4{Issuer: issuerID}
 		copy(asset.AssetCode[:], []byte(a.CodeString()[0:x]))
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
 	case x >= 5 && x <= 12:
-		asset := xdr.AssetAlphaNum12{Issuer: issuerID}
+		asset := xdr.AlphaNum12{Issuer: issuerID}
 		copy(asset.AssetCode[:], []byte(a.CodeString()[0:x]))
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
 	default:

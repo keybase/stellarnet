@@ -90,11 +90,18 @@ func SetNetwork(n string) {
 	gnetwork = n
 }
 
-// Client returns the horizon client.
+// Client returns the legacyClient-wrapped horizon client.
 func Client() *legacyClient {
 	configLock.Lock()
 	defer configLock.Unlock()
 	return lclient
+}
+
+// HorizonClient returns the horizon client.
+func HorizonClient() *horizonclient.Client {
+	configLock.Lock()
+	defer configLock.Unlock()
+	return gclient
 }
 
 // Network returns the horizon network
