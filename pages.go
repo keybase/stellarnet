@@ -3,6 +3,7 @@ package stellarnet
 import (
 	"time"
 
+	"github.com/stellar/go/protocols/horizon"
 	"github.com/stellar/go/protocols/horizon/operations"
 	"github.com/stellar/go/support/render/hal"
 )
@@ -10,7 +11,7 @@ import (
 // TransactionEmbed is used to get the Links in addition to
 // the horizon.Transaction from the transactions endpoints.
 type TransactionEmbed struct {
-	horizonclient.Transaction
+	horizon.Transaction
 }
 
 // TransactionsPage is used to unmarshal the results from the account

@@ -24,14 +24,14 @@ import (
 type Tx struct {
 	internal  xdr.Transaction
 	source    AddressStr
-	seqnoProv txnbuild.SequenceProvider
+	seqnoProv SequenceProvider
 	netPass   string
 	baseFee   uint64
 	err       error
 }
 
 // NewBaseTx creates a Tx with the common transaction elements.
-func NewBaseTx(source AddressStr, seqnoProvider txnbuild.SequenceProvider, baseFee uint64) *Tx {
+func NewBaseTx(source AddressStr, seqnoProvider SequenceProvider, baseFee uint64) *Tx {
 	if baseFee < txnbuild.DefaultBaseFee {
 		baseFee = txnbuild.DefaultBaseFee
 	}
@@ -46,7 +46,7 @@ func NewBaseTx(source AddressStr, seqnoProvider txnbuild.SequenceProvider, baseF
 
 // newBaseTxSeed is a convenience function to get the address out of `from` before
 // calling NewBaseTx.
-func newBaseTxSeed(from SeedStr, seqnoProvider txnbuild.SequenceProvider, baseFee uint64) (*Tx, error) {
+func newBaseTxSeed(from SeedStr, seqnoProvider SequenceProvider, baseFee uint64) (*Tx, error) {
 	fromAddress, err := from.Address()
 	if err != nil {
 		return nil, err
