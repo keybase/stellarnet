@@ -1002,7 +1002,10 @@ func (a *Account) FindPaymentPaths(to AddressStr, assetCode string, assetIssuer 
 		return nil, err
 	}
 	values := fmt.Sprintf("source_account=%s&destination_account=%s&destination_asset_type=%s&destination_asset_code=%s&destination_asset_issuer=%s&destination_amount=%s", a.address, to, assetType, assetCode, assetIssuer, amount)
-	link := Client().HorizonURL + "/paths?" + values
+	link, err := horizonLink(Client().HorizonURL, "/paths?"+values)
+	if err != nil {
+		return nil, err
+	}
 
 	var page PathsPage
 	if err := getDecodeJSONStrict(link, Client().HTTP.Get, &page); err != nil {

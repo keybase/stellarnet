@@ -335,6 +335,7 @@ func TestScenario(t *testing.T) {
 }
 
 func TestAccountMergeAmount(t *testing.T) {
+	t.Skip("stellard doesn't use this")
 	helper, client, network := testclient.Setup(t)
 	SetClientAndNetwork(client, network)
 	helper.SetState(t, "TestAccountMergeAmount")
