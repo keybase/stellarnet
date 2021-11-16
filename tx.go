@@ -65,7 +65,7 @@ func (t *Tx) AddPaymentOp(to AddressStr, amt string) {
 	if t.err != nil {
 		return
 	}
-	op.Destination, t.err = to.AccountID()
+	op.Destination, t.err = to.MuxedAccount()
 	if t.err != nil {
 		return
 	}
@@ -84,7 +84,7 @@ func (t *Tx) AddAssetPaymentOp(to AddressStr, asset xdr.Asset, amt string) {
 	if t.err != nil {
 		return
 	}
-	op.Destination, t.err = to.AccountID()
+	op.Destination, t.err = to.MuxedAccount()
 	if t.err != nil {
 		return
 	}
@@ -113,7 +113,7 @@ func (t *Tx) AddPathPaymentOp(to AddressStr, sendAsset AssetBase, sendAmountMax 
 	if t.err != nil {
 		return
 	}
-	op.Destination, t.err = to.AccountID()
+	op.Destination, t.err = to.MuxedAccount()
 	if t.err != nil {
 		return
 	}
@@ -241,7 +241,7 @@ func (t *Tx) AddCreateTrustlineOp(assetCode string, assetIssuer AddressStr, limi
 		return
 	}
 
-	asset, err := makeXDRAsset(assetCode, assetIssuer)
+	asset, err := makeXDRChangeTrustAsset(assetCode, assetIssuer)
 	if err != nil {
 		t.err = err
 		return
@@ -273,7 +273,7 @@ func (t *Tx) AddDeleteTrustlineOp(assetCode string, assetIssuer AddressStr) {
 		return
 	}
 
-	asset, err := makeXDRAsset(assetCode, assetIssuer)
+	asset, err := makeXDRChangeTrustAsset(assetCode, assetIssuer)
 	if err != nil {
 		t.err = err
 		return
@@ -386,7 +386,7 @@ func (t *Tx) AddMemoID(id *uint64) {
 }
 
 // AddTimeBounds adds time bounds to the transaction.
-func (t *Tx) AddTimeBounds(min, max uint64) {
+func (t *Tx) AddTimeBounds(min, max int64) {
 	if t.err != nil {
 		return
 	}
@@ -437,19 +437,20 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 	if err != nil {
 		return SignResult{}, err
 	}
-	t.internal.SeqNum = seqno + 1
+	t.internal.SeqNum = xdr.SequenceNumber(seqno + 1)
 	t.internal.Fee = xdr.Uint32(t.baseFee * uint64(len(t.internal.Operations)))
-	t.internal.SourceAccount, err = t.source.AccountID()
+	t.internal.SourceAccount, err = t.source.MuxedAccount()
 	if err != nil {
 		return SignResult{}, err
 	}
 
-	hash, err := network.HashTransaction(&t.internal, t.netPass)
+	hash, err := network.HashTransaction(t.internal, t.netPass)
 	if err != nil {
 		return SignResult{}, err
 	}
 
-	envelope := xdr.TransactionEnvelope{Tx: t.internal}
+	// envelope := xdr.TransactionEnvelope{Tx: t.internal}
+	envV1 := xdr.TransactionV1Envelope{Tx: t.internal}
 
 	for _, signer := range signers {
 		kp, err := keypair.Parse(signer.SecureNoLogString())
@@ -461,7 +462,11 @@ func (t *Tx) sign(signers ...SeedStr) (SignResult, error) {
 			return SignResult{}, err
 		}
 
-		envelope.Signatures = append(envelope.Signatures, sig)
+		envV1.Signatures = append(envV1.Signatures, sig)
+	}
+	envelope, err := xdr.NewTransactionEnvelope(xdr.EnvelopeTypeEnvelopeTypeTx, envV1)
+	if err != nil {
+		return SignResult{}, err
 	}
 
 	var buf bytes.Buffer

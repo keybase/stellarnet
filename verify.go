@@ -11,18 +11,19 @@ import (
 // VerifyEnvelope verifies that there is a SourceAccount signature in the
 // envelope.
 func VerifyEnvelope(txEnv xdr.TransactionEnvelope) error {
-	sourceAccount := txEnv.Tx.SourceAccount.Address()
-	kp, err := keypair.Parse(sourceAccount)
+	sourceAccount := txEnv.SourceAccount()
+	addr := sourceAccount.Address()
+	kp, err := keypair.Parse(addr)
 	if err != nil {
 		return err
 	}
-	hash, err := snetwork.HashTransaction(&txEnv.Tx, NetworkPassphrase())
+	hash, err := snetwork.HashTransaction(txEnv.V1.Tx, NetworkPassphrase())
 	if err != nil {
 		return err
 	}
 
 	var found bool
-	for _, sig := range txEnv.Signatures {
+	for _, sig := range txEnv.Signatures() {
 		if sig.Hint != kp.Hint() {
 			continue
 		}

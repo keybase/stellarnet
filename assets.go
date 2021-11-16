@@ -243,6 +243,30 @@ func AssetList(cursor string, limit int, order string) (res []AssetSummary, next
 	return assets, nextCursor, nil
 }
 
+func makeXDRChangeTrustAsset(assetCode string, issuerID AddressStr) (xdr.ChangeTrustAsset, error) {
+	if len(assetCode) == 0 && len(issuerID) == 0 {
+		return xdr.NewChangeTrustAsset(xdr.AssetTypeAssetTypeNative, nil)
+	}
+
+	issuer, err := issuerID.AccountID()
+	if err != nil {
+		return xdr.ChangeTrustAsset{}, err
+	}
+	x := len(assetCode)
+	switch {
+	case x >= 1 && x <= 4:
+		asset := xdr.AlphaNum4{Issuer: issuer}
+		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
+		return xdr.NewChangeTrustAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
+	case x >= 5 && x <= 1:
+		asset := xdr.AlphaNum12{Issuer: issuer}
+		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
+		return xdr.NewChangeTrustAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
+	default:
+		return xdr.ChangeTrustAsset{}, errors.New("invalid assetCode length")
+	}
+}
+
 func makeXDRAsset(assetCode string, issuerID AddressStr) (xdr.Asset, error) {
 	if len(assetCode) == 0 && len(issuerID) == 0 {
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeNative, nil)
