@@ -928,9 +928,9 @@ type SubmitResult struct {
 
 // Submit submits a signed transaction to horizon.
 func Submit(signed string) (res SubmitResult, err error) {
-	var resp horizonProtocol.TransactionSuccess
+	var resp horizonProtocol.Transaction
 	for i := 0; i < submitAttempts; i++ {
-		resp, err = Client().SubmitTransaction(signed)
+		resp, err = Client().SubmitTransactionXDR(signed)
 		if err != nil {
 			// the error might be wrapped, so get the unwrapped error
 			xerr := perrors.Cause(err)
@@ -953,7 +953,7 @@ func Submit(signed string) (res SubmitResult, err error) {
 			return SubmitResult{Attempt: i}, errMap(err)
 		}
 
-		return SubmitResult{Ledger: resp.Ledger, TxID: resp.Hash, Attempt: i, ResultXDR: resp.Result}, nil
+		return SubmitResult{Ledger: resp.Ledger, TxID: resp.Hash, Attempt: i, ResultXDR: resp.ResultXdr}, nil
 	}
 
 	return SubmitResult{Attempt: submitAttempts}, errMap(err)
