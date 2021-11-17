@@ -14,9 +14,9 @@ import (
 	"time"
 
 	"github.com/keybase/vcr"
-	"github.com/stellar/go/build"
-	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/clients/horizonclient"
 	"github.com/stellar/go/keypair"
+	"github.com/stellar/go/network"
 )
 
 // FriendbotAddress is the last known public address for the test network friendbot.
@@ -113,7 +113,7 @@ func (h *Helper) Keypair(t *testing.T, name string) *keypair.Full {
 	return kp
 }
 
-func testClient(t *testing.T, live, record bool) (*horizon.Client, *vcr.VCR) {
+func testClient(t *testing.T, live, record bool) (*horizonclient.Client, *vcr.VCR) {
 	v := vcr.New("testdata")
 	switch {
 	case record:
@@ -126,9 +126,9 @@ func testClient(t *testing.T, live, record bool) (*horizon.Client, *vcr.VCR) {
 		t.Logf("playing recorded http requests")
 	}
 
-	return &horizon.Client{
-		URL:  "https://horizon-testnet.stellar.org",
-		HTTP: v,
+	return &horizonclient.Client{
+		HorizonURL: "https://horizon-testnet.stellar.org",
+		HTTP:       v,
 	}, v
 }
 
@@ -173,15 +173,15 @@ func loadConfig(t *testing.T, subdir string) *Config {
 
 // Setup is the primary entry point for testclient.  It creates a Helper
 // and the horizon client.
-func Setup(t *testing.T) (*Helper, *horizon.Client, build.Network) {
-	var client *horizon.Client
+func Setup(t *testing.T) (*Helper, *horizonclient.Client, string) {
+	var client *horizonclient.Client
 	client, tvcr = testClient(t, *live, *record)
 
 	h := NewHelper()
 	conf := loadConfig(t, "")
 	h.setConfig(t, conf)
 
-	return h, client, build.TestNetwork
+	return h, client, network.TestNetworkPassphrase
 }
 
 // GetTestLumens will use the friendbot to get some lumens into kp's account.

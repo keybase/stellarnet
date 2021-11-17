@@ -91,7 +91,11 @@ func (a *AssetSummary) IssuerString() string {
 // Asset returns details about an asset that matches assetCode
 // from issuerID.
 func Asset(assetCode string, issuerID AddressStr) (*AssetSummary, error) {
-	u, err := url.Parse(Client().URL + "/assets")
+	link, err := horizonLink(Client().HorizonURL, "/assets")
+	if err != nil {
+		return nil, errMap(err)
+	}
+	u, err := url.Parse(link)
 	if err != nil {
 		return nil, errMap(err)
 	}
@@ -156,8 +160,11 @@ func AssetSearch(arg AssetSearchArg) (res []AssetSummary, err error) {
 		// bail on an empty search
 		return res, nil
 	}
-
-	u, err := url.Parse(Client().URL + "/assets")
+	link, err := horizonLink(Client().HorizonURL, "/assets")
+	if err != nil {
+		return nil, errMap(err)
+	}
+	u, err := url.Parse(link)
 	if err != nil {
 		return nil, errMap(err)
 	}
@@ -197,7 +204,11 @@ func AssetList(cursor string, limit int, order string) (res []AssetSummary, next
 	if limit < 1 || limit > 200 {
 		limit = 200
 	}
-	u, err := url.Parse(Client().URL + "/assets")
+	link, err := horizonLink(Client().HorizonURL, "/assets")
+	if err != nil {
+		return nil, "", errMap(err)
+	}
+	u, err := url.Parse(link)
 	if err != nil {
 		return nil, "", errMap(err)
 	}
@@ -243,6 +254,30 @@ func AssetList(cursor string, limit int, order string) (res []AssetSummary, next
 	return assets, nextCursor, nil
 }
 
+func makeXDRChangeTrustAsset(assetCode string, issuerID AddressStr) (xdr.ChangeTrustAsset, error) {
+	if len(assetCode) == 0 && len(issuerID) == 0 {
+		return xdr.NewChangeTrustAsset(xdr.AssetTypeAssetTypeNative, nil)
+	}
+
+	issuer, err := issuerID.AccountID()
+	if err != nil {
+		return xdr.ChangeTrustAsset{}, err
+	}
+	x := len(assetCode)
+	switch {
+	case x >= 1 && x <= 4:
+		asset := xdr.AlphaNum4{Issuer: issuer}
+		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
+		return xdr.NewChangeTrustAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
+	case x >= 5 && x <= 1:
+		asset := xdr.AlphaNum12{Issuer: issuer}
+		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
+		return xdr.NewChangeTrustAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
+	default:
+		return xdr.ChangeTrustAsset{}, errors.New("invalid assetCode length")
+	}
+}
+
 func makeXDRAsset(assetCode string, issuerID AddressStr) (xdr.Asset, error) {
 	if len(assetCode) == 0 && len(issuerID) == 0 {
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeNative, nil)
@@ -255,11 +290,11 @@ func makeXDRAsset(assetCode string, issuerID AddressStr) (xdr.Asset, error) {
 	x := len(assetCode)
 	switch {
 	case x >= 1 && x <= 4:
-		asset := xdr.AssetAlphaNum4{Issuer: issuer}
+		asset := xdr.AlphaNum4{Issuer: issuer}
 		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
 	case x >= 5 && x <= 12:
-		asset := xdr.AssetAlphaNum12{Issuer: issuer}
+		asset := xdr.AlphaNum12{Issuer: issuer}
 		copy(asset.AssetCode[:], []byte(assetCode[0:x]))
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
 	default:
@@ -302,11 +337,11 @@ func assetBaseToXDR(a AssetBase) (xdr.Asset, error) {
 	x := len(a.CodeString())
 	switch {
 	case x >= 1 && x <= 4:
-		asset := xdr.AssetAlphaNum4{Issuer: issuerID}
+		asset := xdr.AlphaNum4{Issuer: issuerID}
 		copy(asset.AssetCode[:], []byte(a.CodeString()[0:x]))
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum4, asset)
 	case x >= 5 && x <= 12:
-		asset := xdr.AssetAlphaNum12{Issuer: issuerID}
+		asset := xdr.AlphaNum12{Issuer: issuerID}
 		copy(asset.AssetCode[:], []byte(a.CodeString()[0:x]))
 		return xdr.NewAsset(xdr.AssetTypeAssetTypeCreditAlphanum12, asset)
 	default:
@@ -316,6 +351,30 @@ func assetBaseToXDR(a AssetBase) (xdr.Asset, error) {
 
 // XDRToAssetMinimal transforms xdr.Asset to AssetMinimal.
 func XDRToAssetMinimal(x xdr.Asset) (AssetMinimal, error) {
+	switch x.Type {
+	case xdr.AssetTypeAssetTypeNative:
+		return AssetMinimal{}, nil
+	case xdr.AssetTypeAssetTypeCreditAlphanum4:
+		a := x.MustAlphaNum4()
+		n := bytes.IndexByte(a.AssetCode[:], 0)
+		if n == -1 {
+			n = 4
+		}
+		return AssetMinimal{AssetCode: string(a.AssetCode[:n]), AssetIssuer: a.Issuer.Address()}, nil
+	case xdr.AssetTypeAssetTypeCreditAlphanum12:
+		a := x.MustAlphaNum12()
+		n := bytes.IndexByte(a.AssetCode[:], 0)
+		if n == -1 {
+			n = 12
+		}
+		return AssetMinimal{AssetCode: string(a.AssetCode[:n]), AssetIssuer: a.Issuer.Address()}, nil
+	default:
+		return AssetMinimal{}, errors.New("invalid xdr asset type")
+	}
+}
+
+// ChangeTrustXDRToAssetMinimal transforms xdr.ChangeTrustAsset to AssetMinimal.
+func ChangeTrustXDRToAssetMinimal(x xdr.ChangeTrustAsset) (AssetMinimal, error) {
 	switch x.Type {
 	case xdr.AssetTypeAssetTypeNative:
 		return AssetMinimal{}, nil
@@ -361,4 +420,13 @@ func XDRAssetSummary(x xdr.Asset) string {
 // XDRAssetAmountSummary returns a summary of an amount and an asset.
 func XDRAssetAmountSummary(amt xdr.Int64, asset xdr.Asset) string {
 	return StringFromStellarXdrAmount(amt) + " " + XDRAssetSummary(asset)
+}
+
+// XDRChangeTrustAssetSummary returns a string summary of an xdr.ChangeTrustAsset.
+func XDRChangeTrustAssetSummary(x xdr.ChangeTrustAsset) string {
+	a, err := ChangeTrustXDRToAssetMinimal(x)
+	if err != nil {
+		return "invalid asset"
+	}
+	return AssetBaseSummary(a)
 }

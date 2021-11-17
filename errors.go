@@ -6,8 +6,7 @@ import (
 	"net/url"
 
 	perrors "github.com/pkg/errors"
-
-	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/clients/horizonclient"
 )
 
 // TimeoutHandler will be called whenever a timeout error happens.
@@ -55,7 +54,7 @@ var ErrAssetAlreadyExists = errors.New("asset already exists")
 type Error struct {
 	Display       string
 	Details       string
-	HorizonError  *horizon.Error
+	HorizonError  *horizonclient.Error
 	OriginalError error
 }
 
@@ -82,7 +81,7 @@ func errMap(err error) error {
 	case Error:
 		// already wrapped it up
 		return xerr
-	case *horizon.Error:
+	case *horizonclient.Error:
 		if isOpNoDestination(xerr) {
 			return ErrDestinationAccountNotFound
 		}
@@ -123,7 +122,7 @@ func errMapAccount(err error) error {
 	return xerr
 }
 
-func isOpNoDestination(herr *horizon.Error) bool {
+func isOpNoDestination(herr *horizonclient.Error) bool {
 	resultCodes, err := herr.ResultCodes()
 	if err != nil {
 		return false

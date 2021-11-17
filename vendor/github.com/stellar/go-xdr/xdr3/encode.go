@@ -80,7 +80,9 @@ func Marshal(w io.Writer, v interface{}) (int, error) {
 // An Encoder wraps an io.Writer that will receive the XDR encoded byte stream.
 // See NewEncoder.
 type Encoder struct {
-	w io.Writer
+	// used to minimize heap allocations during encoding
+	scratchBuf [8]byte
+	w          io.Writer
 }
 
 // EncodeInt writes the XDR encoded representation of the passed 32-bit signed
@@ -93,16 +95,15 @@ type Encoder struct {
 // 	RFC Section 4.1 - Integer
 // 	32-bit big-endian signed integer in range [-2147483648, 2147483647]
 func (enc *Encoder) EncodeInt(v int32) (int, error) {
-	var b [4]byte
-	b[0] = byte(v >> 24)
-	b[1] = byte(v >> 16)
-	b[2] = byte(v >> 8)
-	b[3] = byte(v)
+	enc.scratchBuf[0] = byte(v >> 24)
+	enc.scratchBuf[1] = byte(v >> 16)
+	enc.scratchBuf[2] = byte(v >> 8)
+	enc.scratchBuf[3] = byte(v)
 
-	n, err := enc.w.Write(b[:])
+	n, err := enc.w.Write(enc.scratchBuf[:4])
 	if err != nil {
 		msg := fmt.Sprintf(errIOEncode, err.Error(), 4)
-		err := marshalError("EncodeInt", ErrIO, msg, b[:n], err)
+		err := marshalError("EncodeInt", ErrIO, msg, enc.scratchBuf[:n], err)
 		return n, err
 	}
 
@@ -120,16 +121,15 @@ func (enc *Encoder) EncodeInt(v int32) (int, error) {
 // 	RFC Section 4.2 - Unsigned Integer
 // 	32-bit big-endian unsigned integer in range [0, 4294967295]
 func (enc *Encoder) EncodeUint(v uint32) (int, error) {
-	var b [4]byte
-	b[0] = byte(v >> 24)
-	b[1] = byte(v >> 16)
-	b[2] = byte(v >> 8)
-	b[3] = byte(v)
+	enc.scratchBuf[0] = byte(v >> 24)
+	enc.scratchBuf[1] = byte(v >> 16)
+	enc.scratchBuf[2] = byte(v >> 8)
+	enc.scratchBuf[3] = byte(v)
 
-	n, err := enc.w.Write(b[:])
+	n, err := enc.w.Write(enc.scratchBuf[:4])
 	if err != nil {
 		msg := fmt.Sprintf(errIOEncode, err.Error(), 4)
-		err := marshalError("EncodeUint", ErrIO, msg, b[:n], err)
+		err := marshalError("EncodeUint", ErrIO, msg, enc.scratchBuf[:4], err)
 		return n, err
 	}
 
@@ -184,20 +184,19 @@ func (enc *Encoder) EncodeBool(v bool) (int, error) {
 // 	RFC Section 4.5 - Hyper Integer
 // 	64-bit big-endian signed integer in range [-9223372036854775808, 9223372036854775807]
 func (enc *Encoder) EncodeHyper(v int64) (int, error) {
-	var b [8]byte
-	b[0] = byte(v >> 56)
-	b[1] = byte(v >> 48)
-	b[2] = byte(v >> 40)
-	b[3] = byte(v >> 32)
-	b[4] = byte(v >> 24)
-	b[5] = byte(v >> 16)
-	b[6] = byte(v >> 8)
-	b[7] = byte(v)
+	enc.scratchBuf[0] = byte(v >> 56)
+	enc.scratchBuf[1] = byte(v >> 48)
+	enc.scratchBuf[2] = byte(v >> 40)
+	enc.scratchBuf[3] = byte(v >> 32)
+	enc.scratchBuf[4] = byte(v >> 24)
+	enc.scratchBuf[5] = byte(v >> 16)
+	enc.scratchBuf[6] = byte(v >> 8)
+	enc.scratchBuf[7] = byte(v)
 
-	n, err := enc.w.Write(b[:])
+	n, err := enc.w.Write(enc.scratchBuf[:8])
 	if err != nil {
 		msg := fmt.Sprintf(errIOEncode, err.Error(), 8)
-		err := marshalError("EncodeHyper", ErrIO, msg, b[:n], err)
+		err := marshalError("EncodeHyper", ErrIO, msg, enc.scratchBuf[:8], err)
 		return n, err
 	}
 
@@ -215,20 +214,19 @@ func (enc *Encoder) EncodeHyper(v int64) (int, error) {
 // 	RFC Section 4.5 - Unsigned Hyper Integer
 // 	64-bit big-endian unsigned integer in range [0, 18446744073709551615]
 func (enc *Encoder) EncodeUhyper(v uint64) (int, error) {
-	var b [8]byte
-	b[0] = byte(v >> 56)
-	b[1] = byte(v >> 48)
-	b[2] = byte(v >> 40)
-	b[3] = byte(v >> 32)
-	b[4] = byte(v >> 24)
-	b[5] = byte(v >> 16)
-	b[6] = byte(v >> 8)
-	b[7] = byte(v)
+	enc.scratchBuf[0] = byte(v >> 56)
+	enc.scratchBuf[1] = byte(v >> 48)
+	enc.scratchBuf[2] = byte(v >> 40)
+	enc.scratchBuf[3] = byte(v >> 32)
+	enc.scratchBuf[4] = byte(v >> 24)
+	enc.scratchBuf[5] = byte(v >> 16)
+	enc.scratchBuf[6] = byte(v >> 8)
+	enc.scratchBuf[7] = byte(v)
 
-	n, err := enc.w.Write(b[:])
+	n, err := enc.w.Write(enc.scratchBuf[:8])
 	if err != nil {
 		msg := fmt.Sprintf(errIOEncode, err.Error(), 8)
-		err := marshalError("EncodeUhyper", ErrIO, msg, b[:n], err)
+		err := marshalError("EncodeUhyper", ErrIO, msg, enc.scratchBuf[:n], err)
 		return n, err
 	}
 
@@ -293,7 +291,12 @@ func (enc *Encoder) EncodeFixedOpaque(v []byte) (int, error) {
 
 	// Write any padding if needed.
 	if pad > 0 {
-		b := make([]byte, pad)
+		// the maximum value of pad is 3, so the scratch buffer should be enough
+		_ = enc.scratchBuf[2]
+		b := enc.scratchBuf[:pad]
+		for i := 0; i < pad; i++ {
+			b[i] = 0x0
+		}
 		n2, err := enc.w.Write(b)
 		n += n2
 		if err != nil {

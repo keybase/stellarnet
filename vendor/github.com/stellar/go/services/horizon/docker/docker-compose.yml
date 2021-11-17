@@ -1,0 +1,39 @@
+version: '3'
+services:
+  horizon-postgres:
+    image: postgres:9.6.17-alpine
+    restart: on-failure
+    environment:
+      - POSTGRES_HOST_AUTH_METHOD=trust
+      - POSTGRES_DB=horizon
+    ports:
+      - "5432:5432"
+    volumes:
+      - "horizon-db-data:/var/lib/postgresql/data"
+
+  horizon:
+    depends_on:
+      - horizon-postgres
+    build:
+      # set build context to the root directory of the go monorepo
+      context: ../../../
+      dockerfile: services/horizon/docker/Dockerfile.dev
+    restart: on-failure
+    ports:
+      - "8000:8000"
+      - "11725:11725"
+    environment:
+      - DATABASE_URL=postgres://postgres@host.docker.internal:5432/horizon?sslmode=disable
+      - CAPTIVE_CORE_CONFIG_APPEND_PATH=/captive-core-testnet.cfg
+      - HISTORY_ARCHIVE_URLS=https://history.stellar.org/prd/core-testnet/core_testnet_001
+      - NETWORK_PASSPHRASE=Test SDF Network ; September 2015
+      - INGEST=true
+      - PER_HOUR_RATE_LIMIT=0
+    volumes:
+      - ./captive-core-testnet.cfg:/captive-core-testnet.cfg
+    command: ["--apply-migrations"]
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  horizon-db-data:

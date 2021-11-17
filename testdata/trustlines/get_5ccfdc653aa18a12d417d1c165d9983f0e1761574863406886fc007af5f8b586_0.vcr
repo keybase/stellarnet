@@ -3,10 +3,11 @@ Cache-Control: no-cache, no-store, max-age=0
 Connection: keep-alive
 Content-Disposition: inline
 Content-Type: application/hal+json; charset=utf-8
-Date: Mon, 07 Oct 2019 13:56:47 GMT
-Vary: Origin
+Date: Tue, 16 Nov 2021 22:16:54 GMT
+Latest-Ledger: 1028204
+Vary: Accept-Encoding
 X-Ratelimit-Limit: 101
-X-Ratelimit-Remaining: 99
+X-Ratelimit-Remaining: 100
 X-Ratelimit-Reset: 1
 
 {
@@ -15,10 +16,10 @@ X-Ratelimit-Reset: 1
       "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=\u0026limit=10\u0026order=asc"
     },
     "next": {
-      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA3GMWQQFBOZCPGK72RENYTTHR7ZZ47EKDYJMQBQ2ZQ3ZPSRWOPE7CJD_credit_alphanum4\u0026limit=10\u0026order=asc"
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA27QP3SKSF2ZDZDVYIH6TBW4LIW4AOXWUPNDC67IUW4LGHMJP5DE2CS_credit_alphanum4\u0026limit=10\u0026order=asc"
     },
     "prev": {
-      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA2BVYLKEEBKOYXKO7DLRC5NWPQ6YDCWPEQBLR6OWEA3TK2FMFMYYJZB_credit_alphanum4\u0026limit=10\u0026order=desc"
+      "href": "https://horizon-testnet.stellar.org/assets?asset_code=USD\u0026cursor=USD_GA234B7P5ME6FTFLZ77PBYMRUJ3L33I6UPNYZ3XAUY4NNT7QWIAV7GL5_credit_alphanum4\u0026limit=10\u0026order=desc"
     }
   },
   "_embedded": {
@@ -31,14 +32,29 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "USD",
-        "asset_issuer": "GA2BVYLKEEBKOYXKO7DLRC5NWPQ6YDCWPEQBLR6OWEA3TK2FMFMYYJZB",
-        "paging_token": "USD_GA2BVYLKEEBKOYXKO7DLRC5NWPQ6YDCWPEQBLR6OWEA3TK2FMFMYYJZB_credit_alphanum4",
+        "asset_issuer": "GA234B7P5ME6FTFLZ77PBYMRUJ3L33I6UPNYZ3XAUY4NNT7QWIAV7GL5",
+        "paging_token": "USD_GA234B7P5ME6FTFLZ77PBYMRUJ3L33I6UPNYZ3XAUY4NNT7QWIAV7GL5_credit_alphanum4",
+        "num_accounts": 3,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
         "amount": "100.0000000",
-        "num_accounts": 4,
+        "accounts": {
+          "authorized": 3,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "100.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
-          "auth_immutable": false
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
         }
       },
       {
@@ -49,14 +65,29 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "USD",
-        "asset_issuer": "GA2EWKPXWJJYZTBA5XIETBMSI7WTIQ2A5AATCM2QGHWRFH4X3SOG7KRS",
-        "paging_token": "USD_GA2EWKPXWJJYZTBA5XIETBMSI7WTIQ2A5AATCM2QGHWRFH4X3SOG7KRS_credit_alphanum4",
+        "asset_issuer": "GA23VOWM7G635EE7OCZLG7KXBX7UDUHJSZETXUNPH5HIF4SCBORWVTPG",
+        "paging_token": "USD_GA23VOWM7G635EE7OCZLG7KXBX7UDUHJSZETXUNPH5HIF4SCBORWVTPG_credit_alphanum4",
+        "num_accounts": 3,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
         "amount": "100.0000000",
-        "num_accounts": 2,
+        "accounts": {
+          "authorized": 3,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "100.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
-          "auth_immutable": false
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
         }
       },
       {
@@ -67,32 +98,62 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "USD",
-        "asset_issuer": "GA2MSQT354CO3JE755MFSR74XC7QVNSYOVUGCNG2O7A44GAXOISO2SHE",
-        "paging_token": "USD_GA2MSQT354CO3JE755MFSR74XC7QVNSYOVUGCNG2O7A44GAXOISO2SHE_credit_alphanum4",
-        "amount": "1234567.0000000",
+        "asset_issuer": "GA245WG6LCULDLHSPDR65RJ7PZSJQMZW4ZPYLZISICX53Q7XQAQJYETS",
+        "paging_token": "USD_GA245WG6LCULDLHSPDR65RJ7PZSJQMZW4ZPYLZISICX53Q7XQAQJYETS_credit_alphanum4",
+        "num_accounts": 0,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "0.0000000",
+        "accounts": {
+          "authorized": 0,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 1
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "0.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": true,
+          "auth_revocable": true,
+          "auth_immutable": false,
+          "auth_clawback_enabled": true
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA24BXFBCBZMWWU2Z7N5UCGOGCJXQQV5TJQQ3GEBRYSAAVG5MUD2UIN5",
+        "paging_token": "USD_GA24BXFBCBZMWWU2Z7N5UCGOGCJXQQV5TJQQ3GEBRYSAAVG5MUD2UIN5_credit_alphanum4",
         "num_accounts": 1,
-        "flags": {
-          "auth_required": false,
-          "auth_revocable": false,
-          "auth_immutable": false
-        }
-      },
-      {
-        "_links": {
-          "toml": {
-            "href": ""
-          }
-        },
-        "asset_type": "credit_alphanum4",
-        "asset_code": "USD",
-        "asset_issuer": "GA2S5CQT6CWLHE2WHCNDJYCN3GCORODHUEYLQA4K33INORCTR5UANHAT",
-        "paging_token": "USD_GA2S5CQT6CWLHE2WHCNDJYCN3GCORODHUEYLQA4K33INORCTR5UANHAT_credit_alphanum4",
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
         "amount": "100.0000000",
-        "num_accounts": 3,
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "100.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
-          "auth_immutable": false
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
         }
       },
       {
@@ -103,50 +164,29 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "USD",
-        "asset_issuer": "GA2V6ZR7WWV2WBNHN52T4FEKGB3KIVH6W5HZIDUZNBU3JN3ONTHXFLSP",
-        "paging_token": "USD_GA2V6ZR7WWV2WBNHN52T4FEKGB3KIVH6W5HZIDUZNBU3JN3ONTHXFLSP_credit_alphanum4",
-        "amount": "100000000.0000000",
-        "num_accounts": 2,
-        "flags": {
-          "auth_required": false,
-          "auth_revocable": false,
-          "auth_immutable": false
-        }
-      },
-      {
-        "_links": {
-          "toml": {
-            "href": ""
-          }
-        },
-        "asset_type": "credit_alphanum4",
-        "asset_code": "USD",
-        "asset_issuer": "GA2ZMY5YG3QN7KGFN6RRNRYEKYVS7CT7UOPR2OC72MLWBMWJ7UYYGHYZ",
-        "paging_token": "USD_GA2ZMY5YG3QN7KGFN6RRNRYEKYVS7CT7UOPR2OC72MLWBMWJ7UYYGHYZ_credit_alphanum4",
-        "amount": "100000000.0000000",
-        "num_accounts": 10,
-        "flags": {
-          "auth_required": false,
-          "auth_revocable": false,
-          "auth_immutable": false
-        }
-      },
-      {
-        "_links": {
-          "toml": {
-            "href": ""
-          }
-        },
-        "asset_type": "credit_alphanum4",
-        "asset_code": "USD",
-        "asset_issuer": "GA32K4I5FID5RCV3OQFEGBDZRMZIMIJRZ3PS4B4U5NB63OXMUCOY2BIY",
-        "paging_token": "USD_GA32K4I5FID5RCV3OQFEGBDZRMZIMIJRZ3PS4B4U5NB63OXMUCOY2BIY_credit_alphanum4",
-        "amount": "100.0000000",
+        "asset_issuer": "GA24F5WIQ7GU2EGXMJGSSD4S7M3COGVQJRQMKW3CY7YGPFOVXBAX2YZT",
+        "paging_token": "USD_GA24F5WIQ7GU2EGXMJGSSD4S7M3COGVQJRQMKW3CY7YGPFOVXBAX2YZT_credit_alphanum4",
         "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "20.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "20.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
-          "auth_immutable": false
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
         }
       },
       {
@@ -157,14 +197,95 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "USD",
-        "asset_issuer": "GA33FLJMVGK7UALA2YCTTJ3GTVLN3Z6GJCNZEH6SDJKUBVA7ZSHIKGPU",
-        "paging_token": "USD_GA33FLJMVGK7UALA2YCTTJ3GTVLN3Z6GJCNZEH6SDJKUBVA7ZSHIKGPU_credit_alphanum4",
+        "asset_issuer": "GA25XEO5C7GSI2VQEU3YRG4QFSJ36ASG7XKELSCMP6V7OEUDVXKXML63",
+        "paging_token": "USD_GA25XEO5C7GSI2VQEU3YRG4QFSJ36ASG7XKELSCMP6V7OEUDVXKXML63_credit_alphanum4",
+        "num_accounts": 3,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
         "amount": "100.0000000",
+        "accounts": {
+          "authorized": 3,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "100.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA26LI7TCVO3ESOGUT6DWQ233IT7UXLZ3N2CAGZBO6YWTJPJD4XIG7AU",
+        "paging_token": "USD_GA26LI7TCVO3ESOGUT6DWQ233IT7UXLZ3N2CAGZBO6YWTJPJD4XIG7AU_credit_alphanum4",
+        "num_accounts": 3,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "100.0000000",
+        "accounts": {
+          "authorized": 3,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "100.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum4",
+        "asset_code": "USD",
+        "asset_issuer": "GA26O3SVVVYMN45LNT2COX2ES2EV3MHZLVKWNBDPLQCCW6DV6YWN4BNP",
+        "paging_token": "USD_GA26O3SVVVYMN45LNT2COX2ES2EV3MHZLVKWNBDPLQCCW6DV6YWN4BNP_credit_alphanum4",
         "num_accounts": 2,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "100.0000000",
+        "accounts": {
+          "authorized": 2,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "100.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
-          "auth_immutable": false
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
         }
       },
       {
@@ -175,14 +296,29 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "USD",
-        "asset_issuer": "GA3BSRYSGRNOMVSJPZUITZ56CZDTRJ4Z4F4LBHRWRYCHRLTEWCQIIH63",
-        "paging_token": "USD_GA3BSRYSGRNOMVSJPZUITZ56CZDTRJ4Z4F4LBHRWRYCHRLTEWCQIIH63_credit_alphanum4",
+        "asset_issuer": "GA26WVEGFGZNWCYWMHNCR4CBVKZV5HFZQAIAI2NLGBCR42LZH2LHBH3D",
+        "paging_token": "USD_GA26WVEGFGZNWCYWMHNCR4CBVKZV5HFZQAIAI2NLGBCR42LZH2LHBH3D_credit_alphanum4",
+        "num_accounts": 2,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
         "amount": "100.0000000",
-        "num_accounts": 3,
+        "accounts": {
+          "authorized": 2,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "100.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
-          "auth_immutable": false
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
         }
       },
       {
@@ -193,14 +329,29 @@ X-Ratelimit-Reset: 1
         },
         "asset_type": "credit_alphanum4",
         "asset_code": "USD",
-        "asset_issuer": "GA3GMWQQFBOZCPGK72RENYTTHR7ZZ47EKDYJMQBQ2ZQ3ZPSRWOPE7CJD",
-        "paging_token": "USD_GA3GMWQQFBOZCPGK72RENYTTHR7ZZ47EKDYJMQBQ2ZQ3ZPSRWOPE7CJD_credit_alphanum4",
+        "asset_issuer": "GA27QP3SKSF2ZDZDVYIH6TBW4LIW4AOXWUPNDC67IUW4LGHMJP5DE2CS",
+        "paging_token": "USD_GA27QP3SKSF2ZDZDVYIH6TBW4LIW4AOXWUPNDC67IUW4LGHMJP5DE2CS_credit_alphanum4",
+        "num_accounts": 2,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
         "amount": "100.0000000",
-        "num_accounts": 3,
+        "accounts": {
+          "authorized": 2,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "100.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
         "flags": {
           "auth_required": false,
           "auth_revocable": false,
-          "auth_immutable": false
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
         }
       }
     ]

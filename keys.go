@@ -78,3 +78,8 @@ func (s AddressStr) AccountID() (acctID xdr.AccountId, err error) {
 	err = acctID.SetAddress(s.String())
 	return acctID, err
 }
+
+// MuxedAccount converts an AddressStr into an xdr.MuxedAccount.
+func (s AddressStr) MuxedAccount() (xdr.MuxedAccount, error) {
+	return xdr.AddressToMuxedAccount(s.String())
+}

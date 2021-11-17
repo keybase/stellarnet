@@ -1,0 +1,359 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 16 Nov 2021 22:18:10 GMT
+Latest-Ledger: 1028218
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/assets?cursor=0000158EEB_GDY3S2LCJOWPU6A22VE5ULK3ZT6WZQRGJ3HDGTZW67XVTQLHPBOE52KE_credit_alphanum12\u0026limit=10\u0026order=asc"
+    },
+    "next": {
+      "href": "https://horizon-testnet.stellar.org/assets?cursor=00011488F6_GDY3S2LCJOWPU6A22VE5ULK3ZT6WZQRGJ3HDGTZW67XVTQLHPBOE52KE_credit_alphanum12\u0026limit=10\u0026order=asc"
+    },
+    "prev": {
+      "href": "https://horizon-testnet.stellar.org/assets?cursor=00011488F6_GA26RGSABBCQDHNGBS7X6OJPEN7F3WSJBQOCWUODMSLZCXRKPTTVBGI6_credit_alphanum12\u0026limit=10\u0026order=desc"
+    }
+  },
+  "_embedded": {
+    "records": [
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "00011488F6",
+        "asset_issuer": "GA26RGSABBCQDHNGBS7X6OJPEN7F3WSJBQOCWUODMSLZCXRKPTTVBGI6",
+        "paging_token": "00011488F6_GA26RGSABBCQDHNGBS7X6OJPEN7F3WSJBQOCWUODMSLZCXRKPTTVBGI6_credit_alphanum12",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "1.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "1.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "00011488F6",
+        "asset_issuer": "GA3NJ3JRVB4FYSSOJZM6YYGONES7NQLDODPZGFGP3I2GP2BHDFW5W6FM",
+        "paging_token": "00011488F6_GA3NJ3JRVB4FYSSOJZM6YYGONES7NQLDODPZGFGP3I2GP2BHDFW5W6FM_credit_alphanum12",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "1.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "1.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "00011488F6",
+        "asset_issuer": "GACVJKEVJK74J5QZ5YWAWURF5TLDQ5CH2BGMMAVBYOTUDNJL7VHZQFBE",
+        "paging_token": "00011488F6_GACVJKEVJK74J5QZ5YWAWURF5TLDQ5CH2BGMMAVBYOTUDNJL7VHZQFBE_credit_alphanum12",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "1.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "1.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "00011488F6",
+        "asset_issuer": "GAQQR6SISZFHHYOKN2NXP7ZXZCZFWBNHWL6RY67ICHCZDS74X6ZIH3M3",
+        "paging_token": "00011488F6_GAQQR6SISZFHHYOKN2NXP7ZXZCZFWBNHWL6RY67ICHCZDS74X6ZIH3M3_credit_alphanum12",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "1.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "1.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "00011488F6",
+        "asset_issuer": "GC2NVZ645EOCPBXTIRAJSYAD5WYQ3DGGLYBRH3PAIZ2ZD3D24STLGWE7",
+        "paging_token": "00011488F6_GC2NVZ645EOCPBXTIRAJSYAD5WYQ3DGGLYBRH3PAIZ2ZD3D24STLGWE7_credit_alphanum12",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "1.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "1.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": "https://nft.kalepail.com/.well-known/stellar.toml"
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "00011488F6",
+        "asset_issuer": "GCFTA4CKPPLLVWT24TMY4DV6YHTL27KZV54W7ZHKWSNOTMZEMVT3IKEK",
+        "paging_token": "00011488F6_GCFTA4CKPPLLVWT24TMY4DV6YHTL27KZV54W7ZHKWSNOTMZEMVT3IKEK_credit_alphanum12",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "1.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "1.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": true,
+          "auth_immutable": false,
+          "auth_clawback_enabled": true
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "00011488F6",
+        "asset_issuer": "GCHZD5S3MSEPTMV2RZPGV5NOO3YFYOFJVXDOCMCGCYTYTLR4Y7TBONT3",
+        "paging_token": "00011488F6_GCHZD5S3MSEPTMV2RZPGV5NOO3YFYOFJVXDOCMCGCYTYTLR4Y7TBONT3_credit_alphanum12",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "1.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "1.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "00011488F6",
+        "asset_issuer": "GCPSEBUDPMODFAEZMKSYQGIXBMCF53RLM7DGZHBVAXADOKDYBWF42L22",
+        "paging_token": "00011488F6_GCPSEBUDPMODFAEZMKSYQGIXBMCF53RLM7DGZHBVAXADOKDYBWF42L22_credit_alphanum12",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "1.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "1.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "00011488F6",
+        "asset_issuer": "GDDNIVFMNAPPMS6A4FW7UTFAPOSN7IJFSH6GSEVJBZAF5R5ADJFTEJNF",
+        "paging_token": "00011488F6_GDDNIVFMNAPPMS6A4FW7UTFAPOSN7IJFSH6GSEVJBZAF5R5ADJFTEJNF_credit_alphanum12",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "1.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "1.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      },
+      {
+        "_links": {
+          "toml": {
+            "href": ""
+          }
+        },
+        "asset_type": "credit_alphanum12",
+        "asset_code": "00011488F6",
+        "asset_issuer": "GDY3S2LCJOWPU6A22VE5ULK3ZT6WZQRGJ3HDGTZW67XVTQLHPBOE52KE",
+        "paging_token": "00011488F6_GDY3S2LCJOWPU6A22VE5ULK3ZT6WZQRGJ3HDGTZW67XVTQLHPBOE52KE_credit_alphanum12",
+        "num_accounts": 1,
+        "num_claimable_balances": 0,
+        "num_liquidity_pools": 0,
+        "amount": "1.0000000",
+        "accounts": {
+          "authorized": 1,
+          "authorized_to_maintain_liabilities": 0,
+          "unauthorized": 0
+        },
+        "claimable_balances_amount": "0.0000000",
+        "liquidity_pools_amount": "0.0000000",
+        "balances": {
+          "authorized": "1.0000000",
+          "authorized_to_maintain_liabilities": "0.0000000",
+          "unauthorized": "0.0000000"
+        },
+        "flags": {
+          "auth_required": false,
+          "auth_revocable": false,
+          "auth_immutable": false,
+          "auth_clawback_enabled": false
+        }
+      }
+    ]
+  }
+}

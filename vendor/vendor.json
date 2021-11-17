@@ -69,24 +69,22 @@
 			"revisionTime": "2018-12-26T10:54:42Z"
 		},
 		{
+			"checksumSHA1": "z/YxxS1zqTSPbvM55UZgiFd1akI=",
+			"path": "github.com/segmentio/go-loggly",
+			"revision": "7a70408c3650c37ba8e58a934f686d0c44cb9b58",
+			"revisionTime": "2018-07-28T23:46:23Z"
+		},
+		{
 			"checksumSHA1": "iQKxa7KhhJQ+gjQOWYaTxSjtZw8=",
 			"path": "github.com/shopspring/decimal",
 			"revision": "f1972eb1d1f519e2e5f4b51f2dea765e8c93a130",
 			"revisionTime": "2019-10-09T02:57:16Z"
 		},
 		{
-			"checksumSHA1": "EgxoUr2+Zcda0qQi1l8nCXdHqh4=",
-			"origin": "github.com/keybase/stellar-org",
-			"path": "github.com/stellar/go",
-			"revision": "0fc3bfe3dfa7aba69074e417e7dd47101b44e219",
-			"revisionTime": "2019-10-10T20:56:48Z",
-			"tree": true
-		},
-		{
-			"checksumSHA1": "B2aJD2oZzIr70Gm0Ri32WosOw3w=",
+			"checksumSHA1": "1iR2PfNS+legAn2O+LIbSM7AzG0=",
 			"path": "github.com/stellar/go-xdr/xdr3",
-			"revision": "0bc96f33a18ef2f963e75431dbed042129eb421b",
-			"revisionTime": "2018-09-03T00:21:17Z"
+			"revision": "8017fc4bdfee412460b17f99d7d56fde3ab29047",
+			"revisionTime": "2021-11-03T14:48:02Z"
 		},
 		{
 			"checksumSHA1": "IIsn0Wdi5rHU8xca+FzDd+YeYlc=",

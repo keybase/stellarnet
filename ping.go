@@ -4,19 +4,19 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/stellar/go/clients/horizon"
+	"github.com/stellar/go/clients/horizonclient"
 	horizonProtocol "github.com/stellar/go/protocols/horizon"
 )
 
 // HorizonStatus returns the root status information from the global horizon
 // server.
 func HorizonStatus() (horizonProtocol.Root, error) {
-	return HorizonStatusForClient(Client())
+	return HorizonStatusForClient(HorizonClient())
 }
 
 // HorizonStatusForClient returns the root status information from client's horizon
 // server.
-func HorizonStatusForClient(client *horizon.Client) (horizonProtocol.Root, error) {
+func HorizonStatusForClient(client *horizonclient.Client) (horizonProtocol.Root, error) {
 	if client == nil {
 		return horizonProtocol.Root{}, errors.New("nil horizon client")
 	}

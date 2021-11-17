@@ -1,0 +1,61 @@
+HTTP/1.1 200 OK
+Cache-Control: no-cache, no-store, max-age=0
+Connection: keep-alive
+Content-Disposition: inline
+Content-Type: application/hal+json; charset=utf-8
+Date: Tue, 16 Nov 2021 22:18:55 GMT
+Vary: Accept-Encoding
+X-Ratelimit-Limit: 101
+X-Ratelimit-Remaining: 100
+X-Ratelimit-Reset: 1
+
+{
+  "_links": {
+    "self": {
+      "href": "https://horizon-testnet.stellar.org/transactions/c9a330f4c0e49d1a7137327da4b7d06e42a5404934d5a2999ec063636bf1c2e9"
+    },
+    "account": {
+      "href": "https://horizon-testnet.stellar.org/accounts/GASQRQI5JFCPGJ4CLSBU6622ZFKSLTLKGORGSV44RMIVLRUUHLY7MHUQ"
+    },
+    "ledger": {
+      "href": "https://horizon-testnet.stellar.org/ledgers/1028227"
+    },
+    "operations": {
+      "href": "https://horizon-testnet.stellar.org/transactions/c9a330f4c0e49d1a7137327da4b7d06e42a5404934d5a2999ec063636bf1c2e9/operations{?cursor,limit,order}",
+      "templated": true
+    },
+    "effects": {
+      "href": "https://horizon-testnet.stellar.org/transactions/c9a330f4c0e49d1a7137327da4b7d06e42a5404934d5a2999ec063636bf1c2e9/effects{?cursor,limit,order}",
+      "templated": true
+    },
+    "precedes": {
+      "href": "https://horizon-testnet.stellar.org/transactions?order=asc\u0026cursor=4416201337872384"
+    },
+    "succeeds": {
+      "href": "https://horizon-testnet.stellar.org/transactions?order=desc\u0026cursor=4416201337872384"
+    },
+    "transaction": {
+      "href": "https://horizon-testnet.stellar.org/transactions/c9a330f4c0e49d1a7137327da4b7d06e42a5404934d5a2999ec063636bf1c2e9"
+    }
+  },
+  "id": "c9a330f4c0e49d1a7137327da4b7d06e42a5404934d5a2999ec063636bf1c2e9",
+  "paging_token": "4416201337872384",
+  "successful": true,
+  "hash": "c9a330f4c0e49d1a7137327da4b7d06e42a5404934d5a2999ec063636bf1c2e9",
+  "ledger": 1028227,
+  "created_at": "2021-11-16T22:18:54Z",
+  "source_account": "GASQRQI5JFCPGJ4CLSBU6622ZFKSLTLKGORGSV44RMIVLRUUHLY7MHUQ",
+  "source_account_sequence": "4416197042896897",
+  "fee_account": "GASQRQI5JFCPGJ4CLSBU6622ZFKSLTLKGORGSV44RMIVLRUUHLY7MHUQ",
+  "fee_charged": "200",
+  "max_fee": "400",
+  "operation_count": 2,
+  "envelope_xdr": "AAAAAgAAAAAlCMEdSUTzJ4Jcg097WslVJc1qM6JpV5yLEVXGlDrx9gAAAZAAD7CCAAAAAQAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAK7jBcB/zj4PYNbpjIYxoZf/uBuGaVpX+PIGTznVBCSAAAAAAAX14QAAAAAAAAAAAAAAAABB5MF5srlw6xruY76HXIvgAbFkM4Wskvtt0FjoD5JSJgAAAAAL68IAAAAAAAAAAAGUOvH2AAAAQKKC9WB3a5xFXEoRBQrrME7kXL+qXlwdpBug8Uv/HiCvBiHoxFNQKk3VWLupfN7jjeCQ59NmLANPiYsUJMreng4=",
+  "result_xdr": "AAAAAAAAAMgAAAAAAAAAAgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
+  "result_meta_xdr": "AAAAAgAAAAIAAAADAA+wgwAAAAAAAAAAJQjBHUlE8yeCXINPe1rJVSXNajOiaVecixFVxpQ68fYAAAAXSHbnOAAPsIIAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAABAA+wgwAAAAAAAAAAJQjBHUlE8yeCXINPe1rJVSXNajOiaVecixFVxpQ68fYAAAAXSHbnOAAPsIIAAAABAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAACAAAAAwAAAAMAD7CDAAAAAAAAAAAlCMEdSUTzJ4Jcg097WslVJc1qM6JpV5yLEVXGlDrx9gAAABdIduc4AA+wggAAAAEAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEAD7CDAAAAAAAAAAAlCMEdSUTzJ4Jcg097WslVJc1qM6JpV5yLEVXGlDrx9gAAABdCgQY4AA+wggAAAAEAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAAAD7CDAAAAAAAAAACu4wXAf84+D2DW6YyGMaGX/7gbhmlaV/jyBk851QQkgAAAAAAF9eEAAA+wgwAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAMAAAADAA+wgwAAAAAAAAAAJQjBHUlE8yeCXINPe1rJVSXNajOiaVecixFVxpQ68fYAAAAXQoEGOAAPsIIAAAABAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAABAA+wgwAAAAAAAAAAJQjBHUlE8yeCXINPe1rJVSXNajOiaVecixFVxpQ68fYAAAAXNpVEOAAPsIIAAAABAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAAAA+wgwAAAAAAAAAAQeTBebK5cOsa7mO+h1yL4AGxZDOFrJL7bdBY6A+SUiYAAAAAC+vCAAAPsIMAAAAAAAAAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAAAAAAAAAAAAA",
+  "fee_meta_xdr": "AAAAAgAAAAMAD7CCAAAAAAAAAAAlCMEdSUTzJ4Jcg097WslVJc1qM6JpV5yLEVXGlDrx9gAAABdIdugAAA+wggAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAAAAAAEAD7CDAAAAAAAAAAAlCMEdSUTzJ4Jcg097WslVJc1qM6JpV5yLEVXGlDrx9gAAABdIduc4AA+wggAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAAAAAAAA==",
+  "memo_type": "none",
+  "signatures": [
+    "ooL1YHdrnEVcShEFCuswTuRcv6peXB2kG6DxS/8eIK8GIejEU1AqTdVYu6l83uON4JDn02YsA0+JixQkyt6eDg=="
+  ]
+}

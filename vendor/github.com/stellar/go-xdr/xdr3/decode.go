@@ -90,7 +90,9 @@ func Unmarshal(r io.Reader, v interface{}) (int, error) {
 // necessary in complex scenarios where automatic reflection-based decoding
 // won't work.
 type Decoder struct {
-	r io.Reader
+	// used to minimize heap allocations during decoding
+	scratchBuf [8]byte
+	r          io.Reader
 }
 
 // DecodeInt treats the next 4 bytes as an XDR encoded integer and returns the
@@ -102,16 +104,15 @@ type Decoder struct {
 // 	RFC Section 4.1 - Integer
 // 	32-bit big-endian signed integer in range [-2147483648, 2147483647]
 func (d *Decoder) DecodeInt() (int32, int, error) {
-	var buf [4]byte
-	n, err := io.ReadFull(d.r, buf[:])
+	n, err := io.ReadFull(d.r, d.scratchBuf[:4])
 	if err != nil {
 		msg := fmt.Sprintf(errIODecode, err.Error(), 4)
-		err := unmarshalError("DecodeInt", ErrIO, msg, buf[:n], err)
+		err := unmarshalError("DecodeInt", ErrIO, msg, d.scratchBuf[:n], err)
 		return 0, n, err
 	}
 
-	rv := int32(buf[3]) | int32(buf[2])<<8 |
-		int32(buf[1])<<16 | int32(buf[0])<<24
+	rv := int32(d.scratchBuf[3]) | int32(d.scratchBuf[2])<<8 |
+		int32(d.scratchBuf[1])<<16 | int32(d.scratchBuf[0])<<24
 	return rv, n, nil
 }
 
@@ -124,16 +125,15 @@ func (d *Decoder) DecodeInt() (int32, int, error) {
 // 	RFC Section 4.2 - Unsigned Integer
 // 	32-bit big-endian unsigned integer in range [0, 4294967295]
 func (d *Decoder) DecodeUint() (uint32, int, error) {
-	var buf [4]byte
-	n, err := io.ReadFull(d.r, buf[:])
+	n, err := io.ReadFull(d.r, d.scratchBuf[:4])
 	if err != nil {
 		msg := fmt.Sprintf(errIODecode, err.Error(), 4)
-		err := unmarshalError("DecodeUint", ErrIO, msg, buf[:n], err)
+		err := unmarshalError("DecodeUint", ErrIO, msg, d.scratchBuf[:n], err)
 		return 0, n, err
 	}
 
-	rv := uint32(buf[3]) | uint32(buf[2])<<8 |
-		uint32(buf[1])<<16 | uint32(buf[0])<<24
+	rv := uint32(d.scratchBuf[3]) | uint32(d.scratchBuf[2])<<8 |
+		uint32(d.scratchBuf[1])<<16 | uint32(d.scratchBuf[0])<<24
 	return rv, n, nil
 }
 
@@ -197,18 +197,17 @@ func (d *Decoder) DecodeBool() (bool, int, error) {
 // 	RFC Section 4.5 - Hyper Integer
 // 	64-bit big-endian signed integer in range [-9223372036854775808, 9223372036854775807]
 func (d *Decoder) DecodeHyper() (int64, int, error) {
-	var buf [8]byte
-	n, err := io.ReadFull(d.r, buf[:])
+	n, err := io.ReadFull(d.r, d.scratchBuf[:8])
 	if err != nil {
 		msg := fmt.Sprintf(errIODecode, err.Error(), 8)
-		err := unmarshalError("DecodeHyper", ErrIO, msg, buf[:n], err)
+		err := unmarshalError("DecodeHyper", ErrIO, msg, d.scratchBuf[:n], err)
 		return 0, n, err
 	}
 
-	rv := int64(buf[7]) | int64(buf[6])<<8 |
-		int64(buf[5])<<16 | int64(buf[4])<<24 |
-		int64(buf[3])<<32 | int64(buf[2])<<40 |
-		int64(buf[1])<<48 | int64(buf[0])<<56
+	rv := int64(d.scratchBuf[7]) | int64(d.scratchBuf[6])<<8 |
+		int64(d.scratchBuf[5])<<16 | int64(d.scratchBuf[4])<<24 |
+		int64(d.scratchBuf[3])<<32 | int64(d.scratchBuf[2])<<40 |
+		int64(d.scratchBuf[1])<<48 | int64(d.scratchBuf[0])<<56
 	return rv, n, err
 }
 
@@ -222,18 +221,17 @@ func (d *Decoder) DecodeHyper() (int64, int, error) {
 // 	RFC Section 4.5 - Unsigned Hyper Integer
 // 	64-bit big-endian unsigned integer in range [0, 18446744073709551615]
 func (d *Decoder) DecodeUhyper() (uint64, int, error) {
-	var buf [8]byte
-	n, err := io.ReadFull(d.r, buf[:])
+	n, err := io.ReadFull(d.r, d.scratchBuf[:8])
 	if err != nil {
 		msg := fmt.Sprintf(errIODecode, err.Error(), 8)
-		err := unmarshalError("DecodeUhyper", ErrIO, msg, buf[:n], err)
+		err := unmarshalError("DecodeUhyper", ErrIO, msg, d.scratchBuf[:n], err)
 		return 0, n, err
 	}
 
-	rv := uint64(buf[7]) | uint64(buf[6])<<8 |
-		uint64(buf[5])<<16 | uint64(buf[4])<<24 |
-		uint64(buf[3])<<32 | uint64(buf[2])<<40 |
-		uint64(buf[1])<<48 | uint64(buf[0])<<56
+	rv := uint64(d.scratchBuf[7]) | uint64(d.scratchBuf[6])<<8 |
+		uint64(d.scratchBuf[5])<<16 | uint64(d.scratchBuf[4])<<24 |
+		uint64(d.scratchBuf[3])<<32 | uint64(d.scratchBuf[2])<<40 |
+		uint64(d.scratchBuf[1])<<48 | uint64(d.scratchBuf[0])<<56
 	return rv, n, nil
 }
 
@@ -246,16 +244,15 @@ func (d *Decoder) DecodeUhyper() (uint64, int, error) {
 // 	RFC Section 4.6 - Floating Point
 // 	32-bit single-precision IEEE 754 floating point
 func (d *Decoder) DecodeFloat() (float32, int, error) {
-	var buf [4]byte
-	n, err := io.ReadFull(d.r, buf[:])
+	n, err := io.ReadFull(d.r, d.scratchBuf[:4])
 	if err != nil {
 		msg := fmt.Sprintf(errIODecode, err.Error(), 4)
-		err := unmarshalError("DecodeFloat", ErrIO, msg, buf[:n], err)
+		err := unmarshalError("DecodeFloat", ErrIO, msg, d.scratchBuf[:n], err)
 		return 0, n, err
 	}
 
-	val := uint32(buf[3]) | uint32(buf[2])<<8 |
-		uint32(buf[1])<<16 | uint32(buf[0])<<24
+	val := uint32(d.scratchBuf[3]) | uint32(d.scratchBuf[2])<<8 |
+		uint32(d.scratchBuf[1])<<16 | uint32(d.scratchBuf[0])<<24
 	return math.Float32frombits(val), n, nil
 }
 
@@ -269,18 +266,17 @@ func (d *Decoder) DecodeFloat() (float32, int, error) {
 // 	RFC Section 4.7 -  Double-Precision Floating Point
 // 	64-bit double-precision IEEE 754 floating point
 func (d *Decoder) DecodeDouble() (float64, int, error) {
-	var buf [8]byte
-	n, err := io.ReadFull(d.r, buf[:])
+	n, err := io.ReadFull(d.r, d.scratchBuf[:8])
 	if err != nil {
 		msg := fmt.Sprintf(errIODecode, err.Error(), 8)
-		err := unmarshalError("DecodeDouble", ErrIO, msg, buf[:n], err)
+		err := unmarshalError("DecodeDouble", ErrIO, msg, d.scratchBuf[:n], err)
 		return 0, n, err
 	}
 
-	val := uint64(buf[7]) | uint64(buf[6])<<8 |
-		uint64(buf[5])<<16 | uint64(buf[4])<<24 |
-		uint64(buf[3])<<32 | uint64(buf[2])<<40 |
-		uint64(buf[1])<<48 | uint64(buf[0])<<56
+	val := uint64(d.scratchBuf[7]) | uint64(d.scratchBuf[6])<<8 |
+		uint64(d.scratchBuf[5])<<16 | uint64(d.scratchBuf[4])<<24 |
+		uint64(d.scratchBuf[3])<<32 | uint64(d.scratchBuf[2])<<40 |
+		uint64(d.scratchBuf[1])<<48 | uint64(d.scratchBuf[0])<<56
 	return math.Float64frombits(val), n, nil
 }
 
@@ -300,44 +296,63 @@ func (d *Decoder) DecodeDouble() (float64, int, error) {
 // 	RFC Section 4.9 - Fixed-Length Opaque Data
 // 	Fixed-length uninterpreted data zero-padded to a multiple of four
 func (d *Decoder) DecodeFixedOpaque(size int32) ([]byte, int, error) {
+	out := make([]byte, size)
+	n, err := d.DecodeFixedOpaqueInplace(out)
+	if err != nil {
+		return nil, n, err
+	}
+	return out, n, nil
+}
+
+// DecodeFixedOpaqueInplace is an in-place version of DecodeFixedOpaque.
+// It improves performance when the destination is pre-allocated (which avoids
+// internally allocating an extra slice and does not require further copying)
+func (d *Decoder) DecodeFixedOpaqueInplace(out []byte) (int, error) {
+	size := len(out)
 	// Nothing to do if size is 0.
 	if size == 0 {
-		return nil, 0, nil
+		return 0, nil
 	}
 
 	pad := (4 - (size % 4)) % 4
 	paddedSize := size + pad
 	if uint(paddedSize) > uint(maxInt32) {
-		err := unmarshalError("DecodeFixedOpaque", ErrOverflow,
+		err := unmarshalError("DecodeFixedOpaqueInplace", ErrOverflow,
 			errMaxSlice, paddedSize, nil)
-		return nil, 0, err
+		return 0, err
 	}
 
-	buf := make([]byte, paddedSize)
-	n, err := io.ReadFull(d.r, buf)
+	n, err := io.ReadFull(d.r, out)
 	if err != nil {
-		msg := fmt.Sprintf(errIODecode, err.Error(), paddedSize)
-		err := unmarshalError("DecodeFixedOpaque", ErrIO, msg, buf[:n],
+		msg := fmt.Sprintf(errIODecode, err.Error(), size)
+		err := unmarshalError("DecodeFixedOpaqueInplace", ErrIO, msg, out[:n],
 			err)
-		return nil, n, err
+		return n, err
 	}
 
-	if !d.checkPadding(buf, size) {
-		msg := "non-zero padding"
-		err := unmarshalError("DecodeFixedOpaque", ErrIO, msg, buf[:n], nil)
-		return nil, n, err
-	}
-
-	return buf[0:size], n, nil
-}
-
-func (d *Decoder) checkPadding(buf []byte, size int32) bool {
-	for _, pad := range buf[size:len(buf)] {
-		if pad != 0x00 {
-			return false
+	if pad > 0 {
+		// the maximum value of pad is 3, so the scratch buffer should be enough
+		_ = d.scratchBuf[2]
+		padding := d.scratchBuf[:pad]
+		n2, err := io.ReadFull(d.r, padding)
+		if err != nil {
+			msg := fmt.Sprintf(errIODecode, err.Error(), pad)
+			err := unmarshalError("DecodeFixedOpaqueInplace", ErrIO, msg, out[:n],
+				err)
+			return n, err
+		}
+		n += n2
+		// check all the padding bytes to be zero
+		for _, p := range padding {
+			if p != 0x00 {
+				msg := "non-zero padding"
+				err := unmarshalError("DecodeFixedOpaqueInplace", ErrIO, msg, padding[:n2], nil)
+				return n, err
+			}
 		}
 	}
-	return true
+
+	return n, nil
 }
 
 // DecodeOpaque treats the next bytes as variable length XDR encoded opaque
@@ -428,12 +443,8 @@ func (d *Decoder) decodeFixedArray(v reflect.Value, ignoreOpaque bool) (int, err
 	// Treat [#]byte (byte is alias for uint8) as opaque data unless
 	// ignored.
 	if !ignoreOpaque && v.Type().Elem().Kind() == reflect.Uint8 {
-		data, n, err := d.DecodeFixedOpaque(int32(v.Len()))
-		if err != nil {
-			return n, err
-		}
-		reflect.Copy(v, reflect.ValueOf(data))
-		return n, nil
+		dest := v.Slice(0, v.Len()).Bytes()
+		return d.DecodeFixedOpaqueInplace(dest)
 	}
 
 	// Decode each array element.
@@ -509,11 +520,23 @@ func (d *Decoder) decodeArray(v reflect.Value, ignoreOpaque bool, maxSize int) (
 	return n, nil
 }
 
+func setUnionArmsToNil(v reflect.Value) {
+	for i := 0; i < v.NumField(); i++ {
+		f := v.Field(i)
+		if f.Kind() != reflect.Ptr {
+			continue
+		}
+		v.Set(reflect.Zero(v.Type()))
+	}
+}
+
 // decodeUnion
 func (d *Decoder) decodeUnion(v reflect.Value) (int, error) {
 	// we should have already checked that v is a union
 	// prior to this call, so we panic if v is not a union
 	u := v.Interface().(Union)
+
+	setUnionArmsToNil(v)
 
 	i, n, err := d.DecodeInt()
 	if err != nil {
@@ -929,6 +952,26 @@ func (d *Decoder) decode(ve reflect.Value, maxSize int) (int, error) {
 	return 0, err
 }
 
+func setPtrToNil(v *reflect.Value) error {
+	if v.Kind() != reflect.Ptr {
+		msg := fmt.Sprintf("value is not a pointer: '%v'",
+			v.Type().String())
+		err := unmarshalError("decodePtr", ErrBadArguments, msg,
+			nil, nil)
+		return err
+	}
+	if !v.CanSet() {
+		msg := fmt.Sprintf("pointer value cannot be changed for '%v'",
+			v.Type().String())
+		err := unmarshalError("decodePtr", ErrNotSettable, msg,
+			nil, nil)
+		return err
+	}
+
+	v.Set(reflect.Zero(v.Type()))
+	return nil
+}
+
 func allocPtrIfNil(v *reflect.Value) error {
 	if v.Kind() != reflect.Ptr {
 		msg := fmt.Sprintf("value is not a pointer: '%v'",
@@ -957,7 +1000,12 @@ func (d *Decoder) decodePtr(v reflect.Value) (int, error) {
 
 	present, n, err := d.DecodeBool()
 
-	if err != nil || !present {
+	if err != nil {
+		return n, err
+	}
+
+	if !present {
+		err = setPtrToNil(&v)
 		return n, err
 	}
 
