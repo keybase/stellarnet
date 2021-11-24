@@ -150,6 +150,9 @@ func (h *HorizonFeeStatFetcher) FeeStatFetch() (FeeStatsResponse, error) {
 		return FeeStatsResponse{}, errors.New("no horizon client")
 	}
 	statsURL, err := horizonLink(c.HorizonURL, "/fee_stats")
+	if err != nil {
+		return FeeStatsResponse{}, err
+	}
 
 	var resp FeeStatsResponse
 	err = getDecodeJSONStrict(statsURL, c.HTTP.Get, &resp)
