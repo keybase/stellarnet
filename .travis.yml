@@ -5,7 +5,7 @@ go:
 
 script:
   - go vet .
-  - go install -u golang.org/x/lint/golint@latest
+  - go install golang.org/x/lint/golint@latest
   - golint -set_exit_status .
   - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.43.0
   - golangci-lint run
