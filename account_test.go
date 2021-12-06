@@ -331,7 +331,7 @@ func TestScenario(t *testing.T) {
 		testclient.GetTestLumens(t, lip)
 	*/
 	// sig, err = RelocateTransaction(seedStr(t, helper.Charlie), addressStr(t, lip), true, &nines, Client(), nil /* timeBounds */, txnbuild.MinBaseFee)
-	//require.NoError(t, err)
+	// require.NoError(t, err)
 }
 
 func TestAccountMergeAmount(t *testing.T) {
@@ -765,11 +765,13 @@ func TestPathPayments(t *testing.T) {
 	}
 }
 
+// nolint
 type testSeqnoProv struct {
 	seqno int64
 	sync.Mutex
 }
 
+// nolint
 func (x *testSeqnoProv) SequenceForAccount(s string) (int64, error) {
 	x.Lock()
 	defer x.Unlock()

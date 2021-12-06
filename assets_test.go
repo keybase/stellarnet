@@ -185,7 +185,7 @@ func TestCreateCustomAssetIdempotent(t *testing.T) {
 	var assetCode string
 	if testclient.IsPlayback() {
 		// this needs to be updated if you re-record
-		assetCode = "PRQH"
+		assetCode = "MYLG"
 	} else {
 		assetCode = testclient.RandomAssetCode()
 		fmt.Printf("creating asset: %s. Please replace in TestCreateCustomAssetIdempotent.\n", assetCode)
