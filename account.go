@@ -28,7 +28,7 @@ import (
 
 var configLock sync.Mutex
 var gclient = horizonclient.DefaultPublicNetClient
-var lclient = &legacyClient{gclient}
+var lclient = &LegacyClient{gclient}
 var gnetwork = snetwork.PublicNetworkPassphrase
 
 const defaultMemo = "via keybase"
@@ -40,7 +40,7 @@ func SetClientAndNetwork(c *horizonclient.Client, n string) {
 	configLock.Lock()
 	defer configLock.Unlock()
 	gclient = c
-	lclient = &legacyClient{gclient}
+	lclient = &LegacyClient{gclient}
 	gnetwork = n
 }
 
@@ -49,7 +49,7 @@ func SetClientURLAndNetwork(url string, n string) {
 	configLock.Lock()
 	defer configLock.Unlock()
 	gclient = MakeClient(url)
-	lclient = &legacyClient{gclient}
+	lclient = &LegacyClient{gclient}
 	gnetwork = n
 }
 
@@ -58,7 +58,7 @@ func SetClient(c *horizonclient.Client) {
 	configLock.Lock()
 	defer configLock.Unlock()
 	gclient = c
-	lclient = &legacyClient{gclient}
+	lclient = &LegacyClient{gclient}
 }
 
 // MakeClient makes a horizon client.
@@ -83,7 +83,7 @@ func SetClientURL(url string) {
 	configLock.Lock()
 	defer configLock.Unlock()
 	gclient = MakeClient(url)
-	lclient = &legacyClient{gclient}
+	lclient = &LegacyClient{gclient}
 }
 
 // SetNetwork sets the horizon network.
@@ -94,7 +94,7 @@ func SetNetwork(n string) {
 }
 
 // Client returns the legacyClient-wrapped horizon client.
-func Client() *legacyClient {
+func Client() *LegacyClient {
 	configLock.Lock()
 	defer configLock.Unlock()
 	return lclient

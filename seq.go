@@ -10,11 +10,11 @@ type SequenceProvider interface {
 	SequenceForAccount(aid string) (int64, error)
 }
 
-type legacyClient struct {
+type LegacyClient struct {
 	*horizonclient.Client
 }
 
-func (c *legacyClient) SequenceForAccount(aid string) (int64, error) {
+func (c *LegacyClient) SequenceForAccount(aid string) (int64, error) {
 
 	acct, err := c.AccountDetail(horizonclient.AccountRequest{AccountID: aid})
 	if err != nil {

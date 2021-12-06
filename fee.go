@@ -24,6 +24,8 @@ type FeeStatsResponse struct {
 	MaxFee              FeeStatsSubResponse `json:"max_fee"`
 }
 
+// FeeStatsSubResponse describes part of the json response from the horizon
+// /fee_stats endpoint. See FeeStatsResponse.
 type FeeStatsSubResponse struct {
 	Min  string `json:"min"`
 	Max  string `json:"max"`
